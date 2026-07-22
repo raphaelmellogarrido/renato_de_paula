@@ -7,7 +7,6 @@ import nodemailer from 'nodemailer'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const DIST_DIR = path.join(__dirname, '..', 'dist')
-const BASE_PATH = '/renato-de-paula'
 
 const app = express()
 app.use(cors())
@@ -58,14 +57,10 @@ app.post('/api/contact', async (req, res) => {
   }
 })
 
-app.use(BASE_PATH, express.static(DIST_DIR))
+app.use(express.static(DIST_DIR))
 
-app.get(`${BASE_PATH}/*splat`, (req, res) => {
+app.get('/*splat', (req, res) => {
   res.sendFile(path.join(DIST_DIR, 'index.html'))
-})
-
-app.get('/', (req, res) => {
-  res.redirect(BASE_PATH)
 })
 
 app.listen(PORT, () => {
