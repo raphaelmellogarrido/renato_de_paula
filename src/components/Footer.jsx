@@ -1,0 +1,67 @@
+import { Link } from "react-router-dom";
+
+function Footer() {
+  return (
+    <footer className="footer">
+      <div className="container">
+        <div>
+          <h4>Dr. Renato de Paula</h4>
+          <p style={{ maxWidth: 260 }}>Nefrologista dedicado à prevenção, escuta ativa e educação em saúde.</p>
+        </div>
+
+        <div>
+          <h4>Navegação</h4>
+          <ul className="footer-links">
+            <li>
+              <Link to="/">Home</Link>
+            </li>
+            <li>
+              <Link to="/cursos">Cursos</Link>
+            </li>
+            <li>
+              <Link to="/consulta">Consulta</Link>
+            </li>
+            <li>
+              <Link to="/sobre">Sobre</Link>
+            </li>
+            <li>
+              <Link to="/contato">Contato</Link>
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <h4>Contato</h4>
+          <ul className="footer-links">
+            <li>
+              <a href="https://wa.me/+5521969066030" target="_blank" rel="noreferrer">
+                WhatsApp
+              </a>
+            </li>
+            <li>
+              <a href="https://www.instagram.com/dr.renatodepaula/" target="_blank" rel="noreferrer">
+                Instagram
+              </a>
+            </li>
+            <li>
+              <a href="mailto:contato@renatodepaula.com.br">contato@renatodepaula.com.br</a>
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <h4>Credenciais</h4>
+          <p style={{ maxWidth: 260 }}>
+            CRM-RJ 52.011743-8
+            <br />
+            Especialista em Nefrologia
+          </p>
+        </div>
+      </div>
+
+      <div className="footer-bottom">© {new Date().getFullYear()} Dr. Renato Silva de Paula. Todos os direitos reservados. O conteúdo deste site tem caráter informativo e não substitui uma consulta médica.</div>
+    </footer>
+  );
+}
+
+export default Footer;
