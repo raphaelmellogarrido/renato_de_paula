@@ -1,7 +1,13 @@
 import 'dotenv/config'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import express from 'express'
 import cors from 'cors'
 import nodemailer from 'nodemailer'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const DIST_DIR = path.join(__dirname, '..', 'dist')
+const BASE_PATH = '/renato-de-paula'
 
 const app = express()
 app.use(cors())
@@ -52,6 +58,16 @@ app.post('/api/contact', async (req, res) => {
   }
 })
 
+app.use(BASE_PATH, express.static(DIST_DIR))
+
+app.get(`${BASE_PATH}/*splat`, (req, res) => {
+  res.sendFile(path.join(DIST_DIR, 'index.html'))
+})
+
+app.get('/', (req, res) => {
+  res.redirect(BASE_PATH)
+})
+
 app.listen(PORT, () => {
-  console.log(`Servidor de contato rodando em http://localhost:${PORT}`)
+  console.log(`Servidor rodando em http://localhost:${PORT}`)
 })
