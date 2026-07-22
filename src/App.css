@@ -470,6 +470,78 @@
   background: #fff;
 }
 
+.field.valid label {
+  color: var(--primary);
+}
+
+.field.valid input,
+.field.valid select,
+.field.valid textarea {
+  border-color: var(--primary);
+}
+
+.valid-check {
+  color: var(--primary);
+  font-weight: 800;
+}
+
+.phone-group {
+  display: flex;
+  gap: 10px;
+}
+
+.phone-group select {
+  flex: 0 0 150px;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.input-check-wrap {
+  position: relative;
+  display: flex;
+}
+
+.ddd-wrap {
+  flex: 0 0 76px;
+}
+
+.numero-wrap {
+  flex: 1;
+}
+
+.phone-group .ddd-input {
+  width: 100%;
+  text-align: center;
+}
+
+.phone-group .numero-input {
+  width: 100%;
+}
+
+.phone-group input.valid {
+  border-color: var(--primary);
+  padding-right: 30px;
+}
+
+.input-check {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--primary);
+  font-weight: 800;
+  pointer-events: none;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 /* Two column layout */
 .two-col {
   display: flex;
@@ -597,6 +669,18 @@
   }
   .form-row {
     flex-direction: column;
+  }
+  .phone-group {
+    flex-wrap: wrap;
+  }
+  .phone-group select {
+    flex: 1 1 100%;
+  }
+  .ddd-wrap {
+    flex: 0 0 76px;
+  }
+  .numero-wrap {
+    flex: 1;
   }
   .stat-row {
     gap: 24px;

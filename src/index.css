@@ -137,6 +137,11 @@ img {
   background: var(--primary-dark);
 }
 
+.btn-pill {
+  border-radius: 999px;
+  padding: 17px 34px;
+}
+
 .btn-secondary {
   background: transparent;
   color: var(--primary);
