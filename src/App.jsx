@@ -8,6 +8,7 @@ import Cursos from "./pages/Cursos";
 import Consulta from "./pages/Consulta";
 import Sobre from "./pages/Sobre";
 import Contato from "./pages/Contato";
+import Dores from "./pages/Dores";
 import "./App.css";
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/cursos" element={<Cursos />} />
           <Route path="/consulta" element={<Consulta />} />
+          <Route path="/dores" element={<Dores />} />
           <Route path="/sobre" element={<Sobre />} />
           <Route path="/contato" element={<Contato />} />
           <Route path="*" element={<Navigate to="/" replace />} />

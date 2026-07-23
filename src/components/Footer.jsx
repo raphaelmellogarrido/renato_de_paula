@@ -34,7 +34,7 @@ function Footer() {
           <h4>Contato</h4>
           <ul className="footer-links">
             <li>
-              <a href="https://wa.me/+5521969066030" target="_blank" rel="noreferrer">
+              <a href="https://wa.me/+5521976624767" target="_blank" rel="noreferrer">
                 WhatsApp
               </a>
             </li>
@@ -44,7 +44,7 @@ function Footer() {
               </a>
             </li>
             <li>
-              <a href="mailto:contato@renatodepaula.com.br">contato@renatodepaula.com.br</a>
+              <a href="mailto:contato@renatodepaula.com">contato@renatodepaula.com</a>
             </li>
           </ul>
         </div>

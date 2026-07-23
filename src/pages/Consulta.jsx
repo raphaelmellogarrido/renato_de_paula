@@ -52,7 +52,7 @@ function Consulta() {
             <h3>Agende sua consulta</h3>
             <p>Escolha o canal mais conveniente para você. Nossa equipe cuidará de encontrar o melhor horário.</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 20 }}>
-              <a className="btn btn-primary btn-block" href="https://wa.me/+5521969066030" target="_blank" rel="noreferrer">
+              <a className="btn btn-primary btn-block" href="https://wa.me/+5521976624767" target="_blank" rel="noreferrer">
                 Agendar pelo WhatsApp
               </a>
               <a className="btn btn-secondary btn-block" href="https://www.doctoralia.com.br/" target="_blank" rel="noreferrer">
