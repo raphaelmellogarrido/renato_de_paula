@@ -1,5 +1,6 @@
 import 'dotenv/config'
 import path from 'node:path'
+import fs from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import express from 'express'
 import cors from 'cors'
@@ -11,6 +12,16 @@ const DIST_DIR = path.join(__dirname, '..', 'dist')
 // Vídeos grandes (>100MB) ficam fora do Git e do build (dist/ é apagado a
 // cada `npm run build`). Servidos à parte para sobreviver a novos deploys.
 const VIDEOS_DIR = process.env.VIDEOS_DIR || path.join(__dirname, 'videos')
+
+console.log('--- Diagnóstico VIDEOS_DIR ---')
+console.log('VIDEOS_DIR (env):', JSON.stringify(process.env.VIDEOS_DIR))
+console.log('VIDEOS_DIR (resolvido):', VIDEOS_DIR)
+try {
+  const arquivos = fs.readdirSync(VIDEOS_DIR)
+  console.log('Conteúdo da pasta:', arquivos)
+} catch (err) {
+  console.error('Não foi possível ler VIDEOS_DIR:', err.message)
+}
 
 const app = express()
 app.use(cors())
