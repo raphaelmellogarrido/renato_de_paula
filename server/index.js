@@ -41,13 +41,21 @@ const marketingTransporter = nodemailer.createTransport({
   },
 })
 
-// Diagnóstico temporário: confirma o que o Node realmente recebeu das
-// variáveis de ambiente (nunca loga a senha em si, só o tamanho dela,
-// pra comparar com o esperado sem expor o segredo nos logs).
+// Diagnóstico temporário: usa JSON.stringify para revelar caracteres
+// invisíveis (espaço, quebra de linha, etc.) que não aparecem num log
+// normal. Remover depois que o problema de autenticação for resolvido.
+function inspecionar(valor) {
+  if (!valor) return 'undefined/vazio'
+  const codigos = [...valor].map((c) => c.charCodeAt(0))
+  return `${JSON.stringify(valor)} — tamanho: ${valor.length} — códigos: [${codigos.join(', ')}]`
+}
+
 console.log('--- Diagnóstico SMTP ---')
 console.log('SMTP_HOST:', JSON.stringify(process.env.SMTP_HOST))
 console.log('SMTP_PORT:', JSON.stringify(process.env.SMTP_PORT))
 console.log('SMTP_USER:', JSON.stringify(process.env.SMTP_USER))
+console.log('SMTP_PASS:', inspecionar(process.env.SMTP_PASS))
+console.log('MARKETING_SMTP_PASS:', inspecionar(process.env.MARKETING_SMTP_PASS))
 console.log('SMTP_PASS length:', (process.env.SMTP_PASS || '').length, '(esperado: 10)')
 console.log('MARKETING_SMTP_USER:', JSON.stringify(process.env.MARKETING_SMTP_USER))
 console.log('MARKETING_SMTP_PASS length:', (process.env.MARKETING_SMTP_PASS || '').length, '(esperado: 10)')
