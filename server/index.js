@@ -41,6 +41,26 @@ const marketingTransporter = nodemailer.createTransport({
   },
 })
 
+// Diagnóstico temporário: confirma o que o Node realmente recebeu das
+// variáveis de ambiente (nunca loga a senha em si, só o tamanho dela,
+// pra comparar com o esperado sem expor o segredo nos logs).
+console.log('--- Diagnóstico SMTP ---')
+console.log('SMTP_HOST:', JSON.stringify(process.env.SMTP_HOST))
+console.log('SMTP_PORT:', JSON.stringify(process.env.SMTP_PORT))
+console.log('SMTP_USER:', JSON.stringify(process.env.SMTP_USER))
+console.log('SMTP_PASS length:', (process.env.SMTP_PASS || '').length, '(esperado: 10)')
+console.log('MARKETING_SMTP_USER:', JSON.stringify(process.env.MARKETING_SMTP_USER))
+console.log('MARKETING_SMTP_PASS length:', (process.env.MARKETING_SMTP_PASS || '').length, '(esperado: 10)')
+
+transporter.verify((err) => {
+  if (err) console.error('Verificação SMTP (contato) falhou:', err.message)
+  else console.log('Verificação SMTP (contato): OK')
+})
+marketingTransporter.verify((err) => {
+  if (err) console.error('Verificação SMTP (marketing) falhou:', err.message)
+  else console.log('Verificação SMTP (marketing): OK')
+})
+
 app.post('/api/contact', async (req, res) => {
   const { nome, email, telefone, assunto, mensagem } = req.body || {}
 
