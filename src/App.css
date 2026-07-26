@@ -977,7 +977,9 @@
   opacity: 0;
 }
 
-.guarded-video:hover .guarded-video-toggle.is-playing,
+/* :hover não é usado aqui de propósito — em celulares o toque pode
+   deixar o estado de hover "grudado", fazendo o ícone de pausa ficar
+   visível por cima do vídeo mesmo depois de tocar em outro lugar. */
 .guarded-video-toggle.is-playing:focus-visible {
   opacity: 1;
 }
