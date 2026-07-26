@@ -7,6 +7,7 @@ function GuardedVideo({ src, onEnded, label }) {
   const videoRef = useRef(null)
   const maxTimeRef = useRef(0)
   const [playing, setPlaying] = useState(false)
+  const [erro, setErro] = useState('')
 
   function handleTimeUpdate() {
     const v = videoRef.current
@@ -24,11 +25,25 @@ function GuardedVideo({ src, onEnded, label }) {
 
   function togglePlay() {
     const v = videoRef.current
+    setErro('')
+
     if (v.paused) {
-      v.play()
+      const resultado = v.play()
+      if (resultado?.catch) {
+        resultado.catch((err) => {
+          console.error('Erro ao reproduzir vídeo:', err)
+          setErro('Não foi possível reproduzir o vídeo. Toque novamente ou tente com outra conexão.')
+        })
+      }
     } else {
       v.pause()
     }
+  }
+
+  function handleVideoError() {
+    const v = videoRef.current
+    console.error('Erro ao carregar vídeo:', v?.error)
+    setErro('Não foi possível carregar o vídeo. Verifique sua conexão e tente novamente.')
   }
 
   return (
@@ -48,6 +63,7 @@ function GuardedVideo({ src, onEnded, label }) {
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
         onEnded={onEnded}
+        onError={handleVideoError}
         onClick={togglePlay}
       />
       <button
@@ -58,6 +74,7 @@ function GuardedVideo({ src, onEnded, label }) {
       >
         {playing ? '❚❚' : '▶'}
       </button>
+      {erro && <div className="error-box guarded-video-erro">{erro}</div>}
     </div>
   )
 }

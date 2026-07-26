@@ -739,6 +739,11 @@
   margin-bottom: 18px;
 }
 
+.guarded-video-erro {
+  margin: 12px 0 0;
+  font-size: 14px;
+}
+
 /* Triagem do Saber — motor de perguntas e respostas */
 .decision-stage {
   display: flex;

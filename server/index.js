@@ -29,6 +29,18 @@ const transporter = nodemailer.createTransport({
   },
 })
 
+// Caixa separada para os emails da Meditação (boas-vindas + disparo em
+// massa), mantendo contato@ só para o formulário de contato.
+const marketingTransporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: Number(process.env.SMTP_PORT) || 587,
+  secure: Number(process.env.SMTP_PORT) === 465,
+  auth: {
+    user: process.env.MARKETING_SMTP_USER,
+    pass: process.env.MARKETING_SMTP_PASS,
+  },
+})
+
 app.post('/api/contact', async (req, res) => {
   const { nome, email, telefone, assunto, mensagem } = req.body || {}
 
@@ -83,8 +95,8 @@ app.post('/api/meditacao/inscrever', async (req, res) => {
   // Email de boas-vindas — não bloqueia a resposta nem falha o cadastro
   // caso o envio dê problema (o cadastro em si já foi salvo com sucesso).
   try {
-    await transporter.sendMail({
-      from: `"Dr. Renato de Paula" <${process.env.SMTP_USER}>`,
+    await marketingTransporter.sendMail({
+      from: `"Dr. Renato de Paula" <${process.env.MARKETING_SMTP_USER}>`,
       to: emailNormalizado,
       subject: 'Seu cadastro foi confirmado — bem-vindo(a)!',
       html: `
@@ -118,9 +130,9 @@ app.post('/api/meditacao/enviar', async (req, res) => {
       return res.json({ ok: true, enviados: 0 })
     }
 
-    await transporter.sendMail({
-      from: `"Dr. Renato de Paula" <${process.env.SMTP_USER}>`,
-      to: process.env.SMTP_USER,
+    await marketingTransporter.sendMail({
+      from: `"Dr. Renato de Paula" <${process.env.MARKETING_SMTP_USER}>`,
+      to: process.env.MARKETING_SMTP_USER,
       bcc: emails,
       subject: assunto,
       html: String(mensagem).replace(/\n/g, '<br>'),
