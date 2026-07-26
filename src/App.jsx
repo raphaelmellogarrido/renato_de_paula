@@ -8,7 +8,8 @@ import Cursos from "./pages/Cursos";
 import Consulta from "./pages/Consulta";
 import Sobre from "./pages/Sobre";
 import Contato from "./pages/Contato";
-import Dores from "./pages/Dores";
+import Triagem from "./pages/Triagem";
+import Meditacao from "./pages/Meditacao";
 import "./App.css";
 
 function App() {
@@ -22,7 +23,9 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/cursos" element={<Cursos />} />
           <Route path="/consulta" element={<Consulta />} />
-          <Route path="/dores" element={<Dores />} />
+          <Route path="/triagem" element={<Triagem />} />
+          <Route path="/meditacao" element={<Meditacao />} />
+          <Route path="/lives" element={<Navigate to="/meditacao#cadastro-live" replace />} />
           <Route path="/sobre" element={<Sobre />} />
           <Route path="/contato" element={<Contato />} />
           <Route path="*" element={<Navigate to="/" replace />} />

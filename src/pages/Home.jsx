@@ -1,302 +1,251 @@
-import { Link } from 'react-router-dom'
-import heroImg from '../assets/renato.png'
-import atendendoImg from '../assets/renato_atendendo.png'
+import { Link } from "react-router-dom";
+import fotoPrincipal from "../assets/renato.png";
 
-const MODULOS = [
-  {
-    titulo: 'Módulo 1 — Reconhecendo a dor',
-    desc: 'Sinais de alerta que exigem atendimento imediato e como agir nas primeiras horas.',
-    aulas: ['Aula 1 — Dores e sinais de alerta', 'Aula 2 — Gelo, calor, movimento e fisioterapia'],
-  },
-  {
-    titulo: 'Módulo 2 — Tratamentos e cuidados',
-    desc: 'O que existe disponível, como funciona e os limites de cada abordagem.',
-    aulas: [
-      'Aula 3 — Tratamentos tópicos: pomadas, géis e adesivos',
-      'Aula 4 — Analgésicos comuns: benefícios e cuidados',
-      'Aula 5 — Anti-inflamatórios: riscos à saúde',
-    ],
-  },
-  {
-    titulo: 'Módulo 3 — Quando buscar ajuda médica',
-    desc: 'Acompanhamento, exames e as opções que só um profissional pode indicar.',
-    aulas: ['Aula 6 — Uso frequente e necessidade de exames', 'Aula 7 — Outras opções médicas para dores específicas'],
-  },
-]
+const FOTO = fotoPrincipal;
+
+const METODO = [
+  { n: "01", titulo: "História e sintomas", texto: "O que começou, como evoluiu e o que realmente limita a vida." },
+  { n: "02", titulo: "Exames e diagnósticos", texto: "Organização crítica do que já foi investigado e do que ainda falta." },
+  { n: "03", titulo: "Medicamentos", texto: "O que é necessário, o que pode ser revisto e o que exige cautela." },
+  { n: "04", titulo: "Rotina e hábitos", texto: "Sono, alimentação, movimento, trabalho e possibilidades reais." },
+  { n: "05", titulo: "Contexto emocional", texto: "Estresse, relações e padrões que influenciam o cuidado." },
+  { n: "06", titulo: "Sentido e valores", texto: "Espiritualidade e propósito quando forem importantes para a pessoa." },
+];
+
+const TRAJETORIA = [
+  { titulo: "UFRJ", texto: "Formação médica clássica, com base em ciência, hospital e raciocínio clínico." },
+  { titulo: "Austrália", texto: "Parte da formação vivida fora do Brasil, com novas referências culturais e acadêmicas." },
+  { titulo: "Aeronáutica", texto: "Disciplina, responsabilidade, trabalho em equipe e decisões em contextos reais." },
+  { titulo: "Nefrologia", texto: "Contato profundo com doença crônica, vulnerabilidade, tecnologia e continuidade do cuidado." },
+  { titulo: "Internet e educação", texto: "Tradução do conhecimento médico para ampliar autonomia e alcançar pessoas fora do consultório." },
+  { titulo: "Viagens, neurociência e meditação", texto: "Reflexões sobre sofrimento, comportamento, consciência, espiritualidade e mudança." },
+];
 
 function Home() {
   return (
     <>
-      {/* 1. Hero principal */}
+      {/* 1. Hero */}
       <section className="hero">
         <div className="container hero-grid">
           <div className="hero-copy">
-            <span className="eyebrow">Dr. Renato Silva de Paula • Nefrologista</span>
-            <h1>Menos Dor, Mais Segurança</h1>
-            <p className="lede">
-              Um programa completo em vídeo para você entender sinais de alerta,
-              tratamentos e quando realmente procurar um médico — com linguagem
-              simples e responsável.
-            </p>
+            <p style={{ fontWeight: 700, color: "var(--primary)", marginBottom: 8 }}>Médico pela UFRJ</p>
+            <h1>Medicina clínica além do medicamento.</h1>
+            <p className="lede">Uma forma de cuidar que parte da medicina clássica, organiza o que está acontecendo e considera a pessoa por inteiro — sem abandonar a ciência, os diagnósticos ou os tratamentos necessários.</p>
             <div className="hero-actions">
-              <Link to="/cursos" className="btn btn-primary btn-pill">
-                Quero Conhecer o Programa
+              <Link to="/consulta" className="btn btn-primary btn-pill btn-mobile-full">
+                Agendar consulta
               </Link>
-              <Link to="/cursos" className="btn-ghost">
-                Prefiro só o e-book por R$ 47
-              </Link>
+              <a href="#posicionamento" className="btn-ghost">
+                Conhecer meu trabalho
+              </a>
             </div>
-            <div className="stat-row">
-              <div className="stat">
-                <strong>850mil+</strong>
-                <span>visualizações no vídeo original</span>
-              </div>
-              <div className="stat">
-                <strong>7 aulas</strong>
-                <span>gravadas e objetivas</span>
-              </div>
-            </div>
+            <p style={{ marginTop: 20, fontSize: 14, color: "var(--text)" }}>Formação médica clássica. Visão ampliada do ser humano.</p>
           </div>
           <div className="hero-media">
-            <img src={heroImg} alt="Dr. Renato Silva de Paula" />
+            <img src={FOTO} alt="Dr. Renato Silva de Paula" />
           </div>
         </div>
       </section>
 
-      {/* 2. Sobre o médico */}
-      <section className="section">
+      {/* 2. Autoridade / Posicionamento */}
+      <section id="posicionamento" className="section">
         <div className="container two-col">
           <div className="hero-media">
-            <img src={atendendoImg} alt="Dr. Renato Silva de Paula atendendo" />
+            <img src={FOTO} alt="Dr. Renato Silva de Paula em ambiente clínico" />
           </div>
           <div>
-            <span className="eyebrow">Conheça o nefrologista</span>
-            <h2>Mais de 850 mil seguidores confiam no trabalho do Dr. Renato</h2>
-            <p className="lede">
-              Olá, sou o Dr. Renato Silva de Paula e convido você a conhecer meu
-              trabalho focado em prevenção, escuta ativa e educação em saúde renal.
-            </p>
-            <p>
-              Médico nefrologista com atuação clínica e em educação em saúde,
-              levando informação responsável para centenas de milhares de pessoas
-              nas redes sociais — sempre deixando claro que conteúdo não substitui
-              consulta médica.
-            </p>
-            <Link to="/sobre" className="btn btn-secondary">
-              Veja minha trajetória
-            </Link>
+            <span className="eyebrow">Posicionamento</span>
+            <h2>Formação médica clássica. Uma visão ampliada do ser humano.</h2>
+            <p>Minha atuação parte da medicina tradicional: história clínica, raciocínio diagnóstico, interpretação de exames e tratamento baseado em evidências.</p>
+            <p>Mas a experiência me ensinou que uma pessoa não cabe apenas em resultados de laboratório. Rotina, sono, comportamento, relações, emoções, valores e espiritualidade também podem influenciar a forma como ela adoece, reage e muda.</p>
+            <p style={{ fontWeight: 700, color: "var(--text-h)" }}>Isso não significa abandonar medicamentos ou tratamentos convencionais. Significa entender quando são necessários — e reconhecer quando, sozinhos, não são suficientes.</p>
           </div>
         </div>
       </section>
 
-      {/* 3. Três cards resumindo os produtos */}
-      <section className="section section-alt">
-        <div className="container center" style={{ marginBottom: 32 }}>
-          <span className="eyebrow">Acesse o trabalho do Dr. Renato online</span>
-          <h2>Escolha como quer aprender e se cuidar</h2>
-        </div>
-        <div className="container card-grid">
-          <div className="card">
-            <div className="card-icon">📖</div>
-            <h3>E-book</h3>
-            <p>Aprenda lendo, no seu próprio ritmo. Um material objetivo e direto ao ponto.</p>
-            <Link to="/cursos" className="btn-ghost">
-              Saiba mais
-            </Link>
-          </div>
-          <div className="card">
-            <div className="card-icon">🎬</div>
-            <h3>Programa Completo</h3>
-            <p>São 7 aulas gravadas com explicação guiada e o e-book incluso como bônus.</p>
-            <Link to="/cursos" className="btn-ghost">
-              Saiba mais
-            </Link>
-          </div>
-          <div className="card">
-            <div className="card-icon">🩺</div>
-            <h3>Consulta via telemedicina</h3>
-            <p>Atendimento humanizado com foco em prevenção, onde você estiver.</p>
-            <Link to="/consulta" className="btn-ghost">
-              Saiba mais
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* 4. Curso em destaque, com módulos */}
-      <section className="section">
-        <div className="container center" style={{ marginBottom: 32 }}>
-          <span className="eyebrow">Programa 100% online</span>
-          <h2>Menos Dor, Mais Segurança</h2>
-          <p className="lede" style={{ margin: '0 auto' }}>
-            O que vou apresentar a você é prático e direto, fruto de anos de
-            consultório — para que você saiba exatamente o que fazer diante da dor.
-          </p>
-        </div>
-        <div className="container">
-          <div className="card-grid">
-            {MODULOS.map((modulo) => (
-              <div className="card" key={modulo.titulo}>
-                <h3>{modulo.titulo}</h3>
-                <p>{modulo.desc}</p>
-                <ul className="info-list">
-                  {modulo.aulas.map((aula) => (
-                    <li key={aula}>
-                      <span className="info-icon">✓</span>
-                      <span>{aula}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-          <div className="center" style={{ marginTop: 32 }}>
-            <Link to="/cursos" className="btn btn-primary btn-pill">
-              Quero o Programa Completo — R$ 97
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* 5. Atendimento / Telemedicina */}
-      <section className="section section-alt">
-        <div className="container center" style={{ marginBottom: 32 }}>
-          <span className="eyebrow">Atendimento em todo o Brasil</span>
-          <h2>Consulta com foco em prevenção</h2>
-        </div>
-        <div className="container card-grid">
-          <div className="card">
-            <h3>Atendimento exclusivo</h3>
-            <p>
-              A consulta é realizada seguindo todas as recomendações e os
-              preceitos de ética e moral da medicina.
-            </p>
-          </div>
-          <div className="card">
-            <h3>100% humanizado</h3>
-            <p>
-              Escuta ativa do seu histórico antes de qualquer conduta, sempre com
-              tempo para tirar suas dúvidas.
-            </p>
-          </div>
-          <div className="card">
-            <h3>Feito para todos</h3>
-            <p>
-              A distância não é mais um empecilho — agende de onde você estiver,
-              no horário que for melhor pra você.
-            </p>
-          </div>
-        </div>
-        <div className="center" style={{ marginTop: 32 }}>
-          <Link to="/consulta" className="btn btn-primary btn-pill">
-            Agende a sua Consulta
-          </Link>
-        </div>
-      </section>
-
-      {/* 6. Depoimentos */}
-      <section className="section">
-        <div className="container center" style={{ marginBottom: 8 }}>
-          <span className="eyebrow">Origem do conteúdo</span>
-          <h2>"Então, doutor... o que eu faço quando sentir dor?"</h2>
-          <p className="lede" style={{ margin: '0 auto 32px' }}>
-            Foi essa a pergunta mais repetida pelos seguidores depois que o vídeo
-            original do Dr. Renato ultrapassou <strong>850 mil visualizações</strong>.
-          </p>
-        </div>
-        <div className="container card-grid">
-          <div className="testimonial">
-            <p>"Ele me explicou de um jeito que finalmente entendi quando devo me preocupar."</p>
-            <div className="who">— Maria Fernanda</div>
-          </div>
-          <div className="testimonial">
-            <p>"Sempre tomava remédio por conta própria. Depois desse conteúdo, mudei minha visão."</p>
-            <div className="who">— Carlos Andrade</div>
-          </div>
-          <div className="testimonial">
-            <p>"Simples, objetivo, direto e muito seguro. Recomendo isso para todo mundo."</p>
-            <div className="who">— Joana Silva</div>
-          </div>
-        </div>
-      </section>
-
-      {/* 7. E-book em destaque */}
+      {/* 3. Problema / clareza */}
       <section className="section section-alt">
         <div className="container two-col">
           <div>
-            <span className="eyebrow">Material 100% original</span>
-            <h2>E-book: Menos Dor, Mais Segurança</h2>
-            <p className="lede">
-              Escrito pelo próprio Dr. Renato, o e-book traz um conteúdo direto
-              para quem quer entender a dor sem enrolação — no seu próprio ritmo
-              de leitura.
-            </p>
-            <p>
-              Já incluso de graça em quem compra o Programa Completo, ou disponível
-              avulso por um valor mais econômico para quem prefere só ler.
-            </p>
-            <Link to="/cursos" className="btn btn-secondary">
-              Ver opções do e-book
-            </Link>
+            <span className="eyebrow">Por que esse trabalho existe</span>
+            <h2>Entender o que está acontecendo também faz parte do tratamento.</h2>
+            <p>Muitas pessoas acumulam exames, diagnósticos, prescrições e opiniões diferentes, mas continuam sem compreender o próprio quadro.</p>
+            <p>Meu trabalho é organizar esse cenário, explicar prioridades, avaliar riscos e construir um plano por etapas — sem promessas fáceis, tratamentos genéricos ou excesso de intervenções.</p>
+            <p style={{ fontWeight: 700, color: "var(--text-h)" }}>Quanto melhor o paciente compreende sua saúde, maior sua capacidade de participar das decisões e sustentar mudanças.</p>
           </div>
           <div className="hero-media">
-            <img src={heroImg} alt="E-book Menos Dor, Mais Segurança" />
+            <img src={FOTO} alt="Consulta: conversa, escuta e organização do caso" />
           </div>
         </div>
       </section>
 
-      {/* 8. Pacotes / Preços */}
+      {/* 4. Método */}
+      <section className="section">
+        <div className="container center" style={{ marginBottom: 32 }}>
+          <span className="eyebrow">Como eu trabalho</span>
+          <h2>Um olhar clínico, humano e organizado.</h2>
+          <p className="lede" style={{ margin: "0 auto" }}>
+            Nem toda consulta precisa abordar todos os campos. O aprofundamento depende do que é relevante para cada pessoa.
+          </p>
+        </div>
+        <div className="container card-grid">
+          {METODO.map((item) => (
+            <div className="card" key={item.n}>
+              <div className="card-icon">{item.n}</div>
+              <h3>{item.titulo}</h3>
+              <p>{item.texto}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 5. Trajetória */}
+      <section className="section section-alt">
+        <div className="container center" style={{ marginBottom: 32 }}>
+          <span className="eyebrow">Trajetória</span>
+          <h2>A medicina me deu a base. A trajetória ampliou o olhar.</h2>
+          <p className="lede" style={{ margin: "0 auto" }}>
+            A história entra aqui apenas para mostrar como cada etapa transformou sua maneira de cuidar — não como currículo completo.
+          </p>
+        </div>
+        <div className="container card-grid">
+          {TRAJETORIA.map((item) => (
+            <div className="card trajetoria-card" key={item.titulo}>
+              <img src={FOTO} alt={item.titulo} />
+              <h3>{item.titulo}</h3>
+              <p>{item.texto}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 6. Síntese da história */}
       <section className="section center">
-        <div className="container" style={{ marginBottom: 32 }}>
-          <span className="eyebrow">Escolha seu pacote</span>
-          <h2>Opções para suas necessidades e seu bolso</h2>
+        <div className="container" style={{ maxWidth: 720, width: "100%", margin: "0 auto" }}>
+          <span className="eyebrow">Síntese da história</span>
+          <h2>Nada disso substituiu minha formação médica. Transformou minha maneira de escutar.</h2>
+          <p className="lede" style={{ margin: "0 auto 28px" }}>
+            Hoje procuro unir rigor técnico e humanidade no encontro pessoal, respeitando as evidências científicas sem reduzir o paciente ao seu diagnóstico.
+          </p>
+          <Link to="/sobre" className="btn btn-primary btn-pill btn-mobile-full">
+            Conhecer minha trajetória completa
+          </Link>
         </div>
-        <div className="container pricing-grid">
-          <div className="pricing-card featured">
-            <span className="badge">Mais recomendado</span>
-            <div className="pricing-title">Programa Completo</div>
-            <div className="pricing-price">R$ 97</div>
-            <p className="pricing-includes">Inclui:</p>
-            <ul className="pricing-list">
-              <li>7 aulas gravadas</li>
-              <li>Explicação guiada</li>
-              <li>E-book de apoio incluso</li>
-            </ul>
-            <Link to="/cursos" className="btn btn-primary btn-block">
-              Quero o Programa Completo
+      </section>
+
+      {/* 7. Próximos passos */}
+      <section className="section section-alt">
+        <div className="container center" style={{ marginBottom: 32 }}>
+          <span className="eyebrow">Próximos passos</span>
+          <h2>Como posso ajudar você?</h2>
+          <p className="lede" style={{ margin: "0 auto" }}>
+            A Home apresenta as possibilidades. Cada opção abre uma página própria, com detalhes, critérios e agendamento.
+          </p>
+        </div>
+        <div className="container card-grid">
+          <div className="card">
+            <h3>Avaliação clínica</h3>
+            <p>Para organizar sintomas, exames, medicamentos, diagnósticos e prioridades em uma consulta aprofundada.</p>
+            <Link to="/consulta" className="btn-ghost">
+              Conhecer a consulta
             </Link>
           </div>
-          <div className="pricing-card">
-            <div className="pricing-title">E-book</div>
-            <div className="pricing-price">R$ 47</div>
-            <p className="pricing-includes">Inclui:</p>
-            <ul className="pricing-list">
-              <li>Ler no próprio ritmo</li>
-              <li>Opção mais econômica</li>
-            </ul>
-            <Link to="/cursos" className="btn btn-secondary btn-block">
-              Quero só o e-book
+          <div className="card featured">
+            <span className="badge">Principal</span>
+            <h3>Acompanhamento médico</h3>
+            <p>Para quem precisa de continuidade, revisão periódica, ajustes e um plano desenvolvido por etapas.</p>
+            <Link to="/consulta" className="btn btn-primary btn-mobile-full">
+              Conhecer o acompanhamento
+            </Link>
+          </div>
+          <div className="card">
+            <h3>Check-up organizado</h3>
+            <p>Para revisar riscos, histórico, prevenção e exames com um plano claro, sem pedir testes indiscriminadamente.</p>
+            <Link to="/consulta" className="btn-ghost">
+              Conhecer o check-up
             </Link>
           </div>
         </div>
       </section>
 
-      {/* 9. CTA final / Fale conosco */}
-      <section className="section section-alt center">
-        <div className="container">
-          <h2>Ficou com alguma dúvida?</h2>
-          <p className="lede" style={{ margin: '0 auto 28px' }}>
-            Entre em contato para tirar qualquer dúvida sobre o programa, o
-            e-book ou a consulta. Estamos à disposição para te ajudar a escolher
-            a melhor opção.
+      {/* 8. Cursos e materiais */}
+      <section className="section">
+        <div className="container two-col">
+          <div>
+            <span className="eyebrow">Cursos e experiências</span>
+            <h2>Meditação, consciência e mudança possível.</h2>
+            <p>Conteúdos estruturados, com aplicação prática e responsabilidade, para quem deseja aprofundar a relação com a própria mente e rotina.</p>
+            <Link to="/cursos" className="btn btn-secondary btn-mobile-full">
+              Conhecer os cursos
+            </Link>
+
+            <div className="card" style={{ marginTop: 28 }}>
+              <h3>E-books e materiais</h3>
+              <p>Guias acessíveis para compreender temas de saúde e dar o primeiro passo.</p>
+              <Link to="/cursos" className="btn-ghost">
+                Conhecer os materiais
+              </Link>
+            </div>
+          </div>
+          <div className="hero-media">
+            <img src={FOTO} alt="Cursos e experiências — Meditação Raiz" />
+          </div>
+        </div>
+      </section>
+
+      {/* 9. Conteúdos */}
+      <section className="section section-alt">
+        <div className="container conteudos-layout">
+          <div className="conteudos-intro">
+            <span className="eyebrow">Conteúdos</span>
+            <h2>Conhecimento também é uma forma de cuidado.</h2>
+            <p className="lede">Artigos, vídeos e reflexões sobre medicina, saúde, comportamento, espiritualidade e qualidade de vida.</p>
+          </div>
+
+          <div className="conteudos-featured-wrap">
+            <img src={FOTO} alt="Artigo em destaque" className="conteudos-featured-img" />
+          </div>
+
+          <div className="conteudos-artigo">
+            <h3>Escitalopram e meditação: por que não precisam ser caminhos concorrentes.</h3>
+            <p>Título-base a confirmar. O destaque deve mostrar sua capacidade de conectar medicina, comportamento e subjetividade sem falsa oposição.</p>
+            <button type="button" className="btn btn-primary" disabled style={{ opacity: 0.5, cursor: "not-allowed" }}>
+              Ler artigo — em breve
+            </button>
+          </div>
+
+          <div className="conteudos-thumbs">
+            <div className="conteudos-thumb">
+              <img src={FOTO} alt="Tratar sintomas não é o mesmo que compreender o adoecimento" />
+              <p>Tratar sintomas não é o mesmo que compreender o adoecimento</p>
+            </div>
+            <div className="conteudos-thumb">
+              <img src={FOTO} alt="Como organizar exames, diagnósticos e medicamentos" />
+              <p>Como organizar exames, diagnósticos e medicamentos</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 10. CTA final */}
+      <section className="section center">
+        <div className="container" style={{ maxWidth: 720, width: "100%", margin: "0 auto" }}>
+          <h2>Você não precisa escolher entre ciência e profundidade humana.</h2>
+          <p className="lede" style={{ margin: "0 auto 28px" }}>
+            O cuidado pode ser tecnicamente responsável e, ao mesmo tempo, atento à história, à subjetividade e à vida real.
           </p>
-          <Link to="/contato" className="btn btn-primary btn-pill">
-            Fale Conosco
-          </Link>
+          <div className="hero-actions" style={{ justifyContent: "center" }}>
+            <Link to="/consulta" className="btn btn-primary btn-pill btn-mobile-full">
+              Agendar uma consulta
+            </Link>
+            <Link to="/consulta" className="btn btn-secondary btn-mobile-full">
+              Conhecer o acompanhamento
+            </Link>
+          </div>
         </div>
       </section>
     </>
-  )
+  );
 }
 
-export default Home
+export default Home;

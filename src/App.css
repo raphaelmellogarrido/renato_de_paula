@@ -15,6 +15,12 @@
   height: 76px;
 }
 
+/* Evita que o menu fixo cubra o topo de seções alvo de âncora (#link) */
+#posicionamento,
+#cadastro-live {
+  scroll-margin-top: 96px;
+}
+
 .brand {
   font-weight: 800;
   font-size: 19px;
@@ -225,6 +231,82 @@
   justify-content: center;
   font-size: 22px;
   margin-bottom: 16px;
+}
+
+.card.featured {
+  position: relative;
+  border: 2px solid var(--primary);
+}
+
+.trajetoria-card img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+
+/* Conteúdos — grid de 2 colunas x 2 linhas: texto alinhado com as fotos
+   correspondentes em cada linha, independente da altura do texto. */
+.conteudos-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 56px;
+  row-gap: 16px;
+  align-items: start;
+  text-align: left;
+}
+
+.conteudos-intro {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.conteudos-featured-wrap {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.conteudos-artigo {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.conteudos-thumbs {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.conteudos-featured-img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+
+.conteudos-thumbs {
+  display: flex;
+  gap: 16px;
+}
+
+.conteudos-thumb {
+  flex: 1;
+  text-align: left;
+}
+
+.conteudos-thumb img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+.conteudos-thumb p {
+  font-weight: 700;
+  color: var(--text-h);
+  font-size: 14px;
 }
 
 /* Pricing cards */
@@ -657,18 +739,7 @@
   margin-bottom: 18px;
 }
 
-/* Dores — árvore de decisão */
-.dores-intro {
-  background: var(--bg-alt);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 22px 26px;
-  margin: 20px 0 40px;
-  font-size: 15px;
-  color: var(--text);
-  width: 100%;
-}
-
+/* Triagem do Saber — motor de perguntas e respostas */
 .decision-stage {
   display: flex;
   flex-direction: column;
@@ -676,34 +747,231 @@
   width: 100%;
 }
 
-.trail-header {
+.triagem-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   width: 100%;
-  margin-bottom: 8px;
+  margin-bottom: 32px;
   flex-wrap: wrap;
 }
 
-.trail-row {
+.triagem-etapas {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
-  justify-content: flex-start;
+  gap: 8px;
 }
 
-.trail-btn {
-  min-width: 0;
-  padding: 12px 18px;
-  font-size: 14px;
+.triagem-etapa {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 6px 12px;
+  border-radius: 999px;
   background: var(--bg-alt);
+  color: var(--text);
 }
 
-.trail-btn.trail-btn-current {
-  border-color: var(--primary);
+.triagem-etapa.ativa {
+  background: var(--primary);
+  color: #fff;
+}
+
+.triagem-topbar-acoes {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-emergencia {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fdecea;
+  border: 2px solid #d64545;
+  color: #a52a2a;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-weight: 700;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.triagem-ajuda,
+.triagem-educacao {
+  color: var(--text);
+  font-size: 15px;
+  max-width: 560px;
+  margin: 0 auto 24px;
+}
+
+.triagem-educacao {
+  background: var(--bg-alt);
+  border-radius: 10px;
+  padding: 16px 20px;
+}
+
+.saida-box {
+  width: 100%;
+  border-radius: 16px;
+  padding: 36px;
+  text-align: center;
+  border: 2px solid var(--border);
+}
+
+.saida-box h2 {
+  margin-bottom: 14px;
+}
+
+.saida-box p {
+  max-width: 560px;
+  margin: 0 auto 16px;
+}
+
+.saida-justificativa {
+  font-style: italic;
+  font-size: 14px;
+}
+
+.saida-box.saida-critica {
+  background: #fdecea;
+  border-color: #d64545;
+}
+
+.saida-box.saida-urgente {
+  background: #fff2e5;
+  border-color: #d9822b;
+}
+
+.saida-box.saida-atencao {
+  background: #fff9e0;
+  border-color: #d9b32b;
+}
+
+.saida-box.saida-consulta {
   background: var(--primary-light);
-  color: var(--primary-dark);
+  border-color: var(--primary);
+}
+
+.resultado-box {
+  width: 100%;
+  text-align: center;
+}
+
+.resultado-complementares {
+  margin-top: 32px;
+  text-align: left;
+}
+
+.resultado-complementares h4 {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.resultado-card {
+  text-align: left;
+  min-width: 220px;
+}
+
+.resultado-oferta {
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 24px;
+  margin-top: 24px;
+  text-align: center;
+}
+
+.resultado-oferta h4 {
+  margin-bottom: 14px;
+}
+
+/* Meditação — vídeo responsivo */
+.video-embed {
+  position: relative;
+  width: 100%;
+  padding-top: 56.25%;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.video-embed iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.guarded-video-list {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.guarded-video {
+  position: relative;
+  width: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  background: #000;
+}
+
+.guarded-video video {
+  display: block;
+  width: 100%;
+  max-height: 70vh;
+  cursor: pointer;
+}
+
+.guarded-video-label {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  z-index: 2;
+}
+
+.guarded-video-toggle {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    opacity 0.2s ease,
+    background 0.2s ease;
+}
+
+.guarded-video-toggle:hover {
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.guarded-video-toggle.is-playing {
+  opacity: 0;
+}
+
+.guarded-video:hover .guarded-video-toggle.is-playing,
+.guarded-video-toggle.is-playing:focus-visible {
+  opacity: 1;
 }
 
 .btn-restart {
@@ -718,7 +986,10 @@
   font-size: 14px;
   color: var(--text);
   cursor: pointer;
-  transition: border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease;
   white-space: nowrap;
 }
 
@@ -754,18 +1025,16 @@
   font-size: 15px;
   color: var(--text-h);
   cursor: pointer;
-  transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .decision-btn:hover:not(:disabled) {
   border-color: var(--primary);
   transform: translateY(-2px);
   box-shadow: var(--shadow);
-}
-
-.decision-btn.locked-btn {
-  cursor: not-allowed;
-  opacity: 0.5;
 }
 
 .citacao-box {
@@ -791,24 +1060,6 @@
   color: var(--text);
 }
 
-.locked-stage {
-  width: 100%;
-}
-
-.locked-cta {
-  background: var(--bg-alt);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 32px;
-  margin-top: 16px;
-  text-align: center;
-}
-
-.locked-cta p {
-  max-width: 560px;
-  margin: 0 auto 22px;
-}
-
 @media (max-width: 860px) {
   .card-grid {
     grid-template-columns: 1fr;
@@ -818,6 +1069,31 @@
   }
   .pricing-card.featured {
     transform: none;
+  }
+  .btn-mobile-full {
+    width: 100%;
+    justify-content: center;
+  }
+  .conteudos-layout {
+    grid-template-columns: 1fr;
+  }
+  .conteudos-intro,
+  .conteudos-featured-wrap,
+  .conteudos-artigo,
+  .conteudos-thumbs {
+    grid-column: 1;
+  }
+  .conteudos-intro {
+    grid-row: 1;
+  }
+  .conteudos-featured-wrap {
+    grid-row: 2;
+  }
+  .conteudos-artigo {
+    grid-row: 3;
+  }
+  .conteudos-thumbs {
+    grid-row: 4;
   }
   .form-row {
     flex-direction: column;

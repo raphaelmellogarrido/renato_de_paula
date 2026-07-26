@@ -1,0 +1,755 @@
+metadata:
+  projeto: "Triagem do Saber"
+  versao: "0.1"
+  escopo: "MVP sobre dor"
+  idioma: "pt-BR"
+  descricao: >
+    Navegador educacional que identifica alertas de segurança e recomenda
+    conteúdos personalizados. Não fornece diagnóstico.
+
+configuracao:
+  uma_pergunta_por_tela: true
+  maximo_respostas_fluxo_comum: 12
+  permitir_texto_livre: false
+  numero_emergencia: "192"
+  prioridade:
+    - samu_agora
+    - pronto_atendimento_agora
+    - avaliacao_mesmo_dia
+    - consulta_programada
+    - educacao
+  regras:
+    - "Uma prioridade maior nunca pode ser rebaixada."
+    - "Regras de segurança são determinísticas e precedem pontuação."
+    - "A IA não pode gerar diagnóstico nem alterar a urgência."
+    - "Em saída de emergência, não mostrar oferta antes da orientação."
+
+catalogo_conteudos:
+  cap1_alertas:
+    titulo: "Quais dores e sinais exigem atendimento sem demora"
+    descricao: "Reconheça situações em que não é seguro esperar."
+  cap2_sem_comprimido:
+    titulo: "Gelo, calor, movimento e fisioterapia"
+    descricao: "Entenda medidas que podem fazer parte do cuidado, conforme a situação."
+  cap3_topicos:
+    titulo: "Tratamentos tópicos: o que vale a pena saber"
+    descricao: "Géis, cremes, adesivos e outros tratamentos aplicados no local."
+  cap4_analgesicos:
+    titulo: "Analgésicos comuns: benefícios, limites e cuidados"
+    descricao: "Conheça perguntas importantes antes de usar analgésicos."
+  cap5_antiinflamatorios:
+    titulo: "Anti-inflamatórios: quando podem ajudar e por que exigem cautela"
+    descricao: "Riscos, combinações e situações que merecem atenção."
+  cap6_uso_frequente:
+    titulo: "Uso frequente: acompanhamento e exames"
+    descricao: "Entenda por que repetir medicamentos pode exigir avaliação."
+  cap7_outras_opcoes:
+    titulo: "Outras opções existem, mas precisam de avaliação médica"
+    descricao: "Tratamentos usados em situações específicas e sob acompanhamento."
+
+ofertas:
+  ebook_completo:
+    status: "ativo"
+    titulo: "E-book Menos Dor, Mais Segurança"
+    cta: "Quero ter o mapa completo sobre dor"
+    url: "[URL_EBOOK]"
+  curso_completo:
+    status: "futuro"
+    titulo: "Curso Menos Dor, Mais Segurança"
+    cta: "Quero aprender com as aulas em vídeo"
+    url: "[URL_CURSO]"
+  miniaula_antiinflamatorios:
+    status: "futuro"
+    titulo: "Anti-inflamatórios e os riscos para rins, estômago, pressão e coração"
+    cta: "Quero entender esses riscos"
+    url: "[URL_MINIAULA_ANTIINFLAMATORIOS]"
+  miniaula_dor_recorrente:
+    status: "futuro"
+    titulo: "Dor recorrente: o que observar antes da consulta"
+    cta: "Quero me preparar melhor"
+    url: "[URL_MINIAULA_DOR_RECORRENTE]"
+  miniaula_sem_comprimido:
+    status: "futuro"
+    titulo: "O que considerar antes de recorrer a um comprimido"
+    cta: "Quero conhecer outras possibilidades"
+    url: "[URL_MINIAULA_SEM_COMPRIMIDO]"
+
+estado_sessao:
+  campos:
+    modo_resposta: null
+    dor_agora: null
+    prioridade_atual: "educacao"
+    motivos_consulta: []
+    alertas_acionados: []
+    local_dor: null
+    duracao_dor: null
+    impacto_dor: null
+    uso_medicamentos: null
+    pontuacao:
+      cap1_alertas: 0
+      cap2_sem_comprimido: 0
+      cap3_topicos: 0
+      cap4_analgesicos: 0
+      cap5_antiinflamatorios: 0
+      cap6_uso_frequente: 0
+      cap7_outras_opcoes: 0
+
+nos:
+  inicio:
+    tipo: "pergunta"
+    etapa: "Inicio"
+    pergunta: "Para quem você busca orientação sobre dor?"
+    ajuda: "Escolha a opção que melhor representa sua situação."
+    respostas:
+      - texto: "Para mim"
+        acoes:
+          - definir: {modo_resposta: "propria_pessoa"}
+        destino: "dor_agora"
+      - texto: "Para ajudar outra pessoa"
+        acoes:
+          - definir: {modo_resposta: "outra_pessoa"}
+        destino: "dor_agora"
+      - texto: "Quero aprender para me prevenir"
+        acoes:
+          - definir: {modo_resposta: "prevencao"}
+        destino: "objetivo_preventivo"
+
+  dor_agora:
+    tipo: "pergunta"
+    etapa: "Inicio"
+    pergunta: "Existe dor neste momento?"
+    respostas:
+      - texto: "Sim"
+        acoes:
+          - definir: {dor_agora: true}
+        destino: "intro_seguranca"
+      - texto: "Não agora, mas acontece repetidamente"
+        acoes:
+          - definir: {dor_agora: false}
+          - adicionar_motivo_consulta: "a dor acontece repetidamente"
+          - somar: {cap6_uso_frequente: 2, cap7_outras_opcoes: 1}
+        destino: "local_dor"
+      - texto: "Não, foi um episódio que já passou"
+        acoes:
+          - definir: {dor_agora: false}
+        destino: "local_dor"
+
+  objetivo_preventivo:
+    tipo: "pergunta"
+    etapa: "Entender a dor"
+    pergunta: "O que você mais gostaria de aprender?"
+    respostas:
+      - texto: "Reconhecer quando uma dor pode ser perigosa"
+        acoes:
+          - somar: {cap1_alertas: 5}
+        destino: "resultado_educacional"
+      - texto: "Saber o que pode ser considerado antes de um comprimido"
+        acoes:
+          - somar: {cap2_sem_comprimido: 5, cap3_topicos: 2}
+        destino: "resultado_educacional"
+      - texto: "Entender melhor os medicamentos para dor"
+        acoes:
+          - somar: {cap4_analgesicos: 3, cap5_antiinflamatorios: 3, cap6_uso_frequente: 2}
+        destino: "resultado_educacional"
+      - texto: "Quero uma visão completa"
+        acoes:
+          - somar:
+              cap1_alertas: 2
+              cap2_sem_comprimido: 2
+              cap3_topicos: 2
+              cap4_analgesicos: 2
+              cap5_antiinflamatorios: 2
+              cap6_uso_frequente: 2
+              cap7_outras_opcoes: 2
+        destino: "resultado_educacional"
+
+  intro_seguranca:
+    tipo: "mensagem"
+    etapa: "Seguranca"
+    titulo: "Primeiro, vamos verificar sinais de alerta"
+    texto: >
+      Estas perguntas não identificam a causa da dor. Elas ajudam a reconhecer
+      situações em que não é seguro continuar apenas buscando informações na internet.
+    botao: "Continuar"
+    destino: "alerta_consciencia"
+
+  alerta_consciencia:
+    tipo: "pergunta"
+    etapa: "Seguranca"
+    pergunta: "Existe desmaio, dificuldade para acordar, confusão importante ou convulsão?"
+    respostas:
+      - texto: "Sim"
+        acoes:
+          - definir_prioridade: "samu_agora"
+          - adicionar_alerta: "alteração da consciência ou convulsão"
+        destino: "saida_samu"
+      - texto: "Não"
+        destino: "alerta_respiratorio"
+      - texto: "Não sei avaliar"
+        acoes:
+          - definir_prioridade: "samu_agora"
+          - adicionar_alerta: "não foi possível avaliar o estado de consciência"
+        destino: "saida_samu"
+
+  alerta_respiratorio:
+    tipo: "pergunta"
+    etapa: "Seguranca"
+    pergunta: "Existe falta de ar intensa, lábios arroxeados ou dor no peito que começou de repente?"
+    respostas:
+      - texto: "Sim"
+        acoes:
+          - definir_prioridade: "samu_agora"
+          - adicionar_alerta: "problema cardiorrespiratório ou dor no peito súbita"
+        destino: "saida_samu"
+      - texto: "Não"
+        destino: "alerta_neurologico"
+      - texto: "Não sei avaliar"
+        acoes:
+          - definir_prioridade: "pronto_atendimento_agora"
+          - adicionar_alerta: "possível sintoma cardiorrespiratório não esclarecido"
+        destino: "saida_pronto_atendimento"
+
+  alerta_neurologico:
+    tipo: "pergunta"
+    etapa: "Seguranca"
+    pergunta: "Começou de repente dificuldade para falar, sorriso torto ou perda de força em um lado do corpo?"
+    respostas:
+      - texto: "Sim"
+        acoes:
+          - definir_prioridade: "samu_agora"
+          - adicionar_alerta: "possível alteração neurológica súbita"
+        destino: "saida_samu"
+      - texto: "Não"
+        destino: "alerta_trauma"
+      - texto: "Não sei avaliar"
+        acoes:
+          - definir_prioridade: "samu_agora"
+          - adicionar_alerta: "possível alteração neurológica não esclarecida"
+        destino: "saida_samu"
+
+  alerta_trauma:
+    tipo: "pergunta"
+    etapa: "Seguranca"
+    pergunta: >
+      A dor começou após acidente importante, queda com forte impacto, choque elétrico,
+      queimadura grave, ferimento grave ou sangramento que não para?
+    respostas:
+      - texto: "Sim"
+        acoes:
+          - definir_prioridade: "samu_agora"
+          - adicionar_alerta: "trauma ou ferimento potencialmente grave"
+        destino: "saida_samu"
+      - texto: "Não"
+        destino: "alerta_dor_subita"
+      - texto: "Não sei avaliar"
+        acoes:
+          - definir_prioridade: "pronto_atendimento_agora"
+          - adicionar_alerta: "gravidade do trauma não esclarecida"
+        destino: "saida_pronto_atendimento"
+
+  alerta_dor_subita:
+    tipo: "pergunta"
+    etapa: "Seguranca"
+    pergunta: "A dor começou de repente, é muito intensa e é diferente das dores anteriores?"
+    respostas:
+      - texto: "Sim"
+        acoes:
+          - definir_prioridade: "pronto_atendimento_agora"
+          - adicionar_alerta: "dor súbita, muito intensa e diferente do habitual"
+        destino: "saida_pronto_atendimento"
+      - texto: "Não"
+        destino: "alerta_gravidez"
+      - texto: "Não sei"
+        destino: "alerta_gravidez"
+
+  alerta_gravidez:
+    tipo: "pergunta"
+    etapa: "Seguranca"
+    pergunta: >
+      A pessoa está grávida ou teve bebê recentemente e apresenta dor forte na barriga
+      ou na pelve, sangramento ou sensação de desmaio?
+    respostas:
+      - texto: "Sim"
+        acoes:
+          - definir_prioridade: "pronto_atendimento_agora"
+          - adicionar_alerta: "dor ou sangramento durante gestação ou pós-parto recente"
+        destino: "saida_pronto_atendimento"
+      - texto: "Não"
+        destino: "alerta_membro"
+      - texto: "Não se aplica"
+        destino: "alerta_membro"
+
+  alerta_membro:
+    tipo: "pergunta"
+    etapa: "Seguranca"
+    pergunta: >
+      Um braço ou uma perna ficou de repente muito frio, pálido ou arroxeado,
+      dormente ou sem força?
+    respostas:
+      - texto: "Sim"
+        acoes:
+          - definir_prioridade: "pronto_atendimento_agora"
+          - adicionar_alerta: "mudança súbita de cor, temperatura, sensibilidade ou força em um membro"
+        destino: "saida_pronto_atendimento"
+      - texto: "Não"
+        destino: "urgencia_sintomas_associados"
+      - texto: "Não sei avaliar"
+        acoes:
+          - definir_prioridade: "avaliacao_mesmo_dia"
+          - adicionar_alerta: "possível alteração em um braço ou uma perna"
+        destino: "saida_mesmo_dia"
+
+  urgencia_sintomas_associados:
+    tipo: "pergunta"
+    etapa: "Seguranca"
+    pergunta: "Junto com a dor, existe algum destes sinais?"
+    respostas:
+      - texto: "Febre alta ou piora importante do estado geral"
+        acoes:
+          - definir_prioridade: "avaliacao_mesmo_dia"
+          - adicionar_alerta: "febre ou piora importante do estado geral"
+        destino: "saida_mesmo_dia"
+      - texto: "Vômitos repetidos ou dificuldade para beber líquidos"
+        acoes:
+          - definir_prioridade: "avaliacao_mesmo_dia"
+          - adicionar_alerta: "vômitos repetidos ou risco de desidratação"
+        destino: "saida_mesmo_dia"
+      - texto: "Sangue no vômito, nas fezes ou na urina; ou fezes muito escuras"
+        acoes:
+          - definir_prioridade: "pronto_atendimento_agora"
+          - adicionar_alerta: "possível sangramento"
+        destino: "saida_pronto_atendimento"
+      - texto: "Nova perda de força, perda de controle da urina ou das fezes"
+        acoes:
+          - definir_prioridade: "pronto_atendimento_agora"
+          - adicionar_alerta: "nova alteração de força ou controle de urina ou fezes"
+        destino: "saida_pronto_atendimento"
+      - texto: "Nenhum desses"
+        destino: "urgencia_contexto_risco"
+
+  urgencia_contexto_risco:
+    tipo: "pergunta"
+    etapa: "Seguranca"
+    pergunta: "Alguma destas situações está presente?"
+    respostas:
+      - texto: "Câncer, imunidade muito baixa ou uso de anticoagulante"
+        acoes:
+          - definir_prioridade: "avaliacao_mesmo_dia"
+          - adicionar_alerta: "condição que pode aumentar o risco de complicações"
+        destino: "saida_mesmo_dia"
+      - texto: "Doença renal, cardíaca ou hepática importante"
+        acoes:
+          - adicionar_motivo_consulta: "existe uma condição de saúde que pode mudar a segurança dos medicamentos"
+          - somar: {cap5_antiinflamatorios: 3, cap6_uso_frequente: 3}
+        destino: "local_dor"
+      - texto: "Dor após queda, mesmo que pareça leve, em pessoa idosa ou com osteoporose"
+        acoes:
+          - definir_prioridade: "avaliacao_mesmo_dia"
+          - adicionar_alerta: "trauma em pessoa com maior risco de fratura"
+        destino: "saida_mesmo_dia"
+      - texto: "Nenhuma dessas"
+        destino: "local_dor"
+      - texto: "Não sei"
+        destino: "local_dor"
+
+  saida_samu:
+    tipo: "saida"
+    prioridade: "samu_agora"
+    titulo: "Pare aqui e procure ajuda agora"
+    texto: >
+      Uma das respostas pode estar relacionada a uma situação grave ou que exige
+      transporte seguro. Ligue gratuitamente para o SAMU pelo número 192 e siga
+      as orientações do médico regulador. Não dirija.
+    justificativa_dinamica: "Alerta identificado: [alertas_acionados]."
+    acoes:
+      - texto: "Ligar para 192"
+        tipo: "telefone"
+        destino: "tel:192"
+      - texto: "Ver como pedir ajuda"
+        tipo: "conteudo"
+        destino: "orientacao_ligar_samu"
+    bloquear_ofertas: true
+
+  orientacao_ligar_samu:
+    tipo: "mensagem"
+    titulo: "Ao ligar para o SAMU"
+    texto: >
+      Informe o que está acontecendo, o endereço completo, um ponto de referência,
+      a idade aproximada da pessoa e o telefone de quem está ligando. Responda às
+      perguntas e siga as orientações do médico regulador.
+    botao: "Ligar para 192"
+    destino: "tel:192"
+
+  saida_pronto_atendimento:
+    tipo: "saida"
+    prioridade: "pronto_atendimento_agora"
+    titulo: "Procure atendimento agora"
+    texto: >
+      Uma das respostas pode estar associada a situações que precisam de avaliação
+      presencial sem demora. Procure uma UPA, pronto atendimento ou emergência.
+      Vá acompanhado sempre que possível. Se não conseguir se deslocar com segurança,
+      ligue para o SAMU 192.
+    justificativa_dinamica: "Motivo: [alertas_acionados]."
+    acoes:
+      - texto: "Vou procurar atendimento"
+        tipo: "encerrar"
+      - texto: "Não consigo ir com segurança"
+        tipo: "telefone"
+        destino: "tel:192"
+    bloquear_ofertas: true
+
+  saida_mesmo_dia:
+    tipo: "saida_com_continuacao"
+    prioridade: "avaliacao_mesmo_dia"
+    titulo: "Vale ser avaliado ainda hoje"
+    texto: >
+      Suas respostas não permitem avaliar a causa com segurança somente pela internet.
+      Recomendamos uma avaliação médica ainda hoje para examinar você e decidir se
+      algum exame ou tratamento é necessário.
+    justificativa_dinamica: "Motivo: [alertas_acionados]."
+    acoes:
+      - texto: "Quero procurar atendimento"
+        tipo: "encerrar"
+      - texto: "Quero continuar entendendo"
+        tipo: "continuar"
+        destino: "local_dor"
+    permitir_oferta_apos_confirmacao: true
+
+  local_dor:
+    tipo: "pergunta"
+    etapa: "Entender a dor"
+    pergunta: "Onde está a dor que mais incomoda?"
+    respostas:
+      - texto: "Cabeça ou rosto"
+        acoes:
+          - definir: {local_dor: "cabeca_rosto"}
+          - somar: {cap1_alertas: 2, cap4_analgesicos: 1}
+        destino: "duracao_dor"
+      - texto: "Peito"
+        acoes:
+          - definir: {local_dor: "peito"}
+          - somar: {cap1_alertas: 4}
+        destino: "duracao_dor"
+      - texto: "Barriga ou pelve"
+        acoes:
+          - definir: {local_dor: "abdome_pelve"}
+          - somar: {cap1_alertas: 3, cap4_analgesicos: 1}
+        destino: "duracao_dor"
+      - texto: "Costas ou pescoço"
+        acoes:
+          - definir: {local_dor: "costas_pescoco"}
+          - somar: {cap2_sem_comprimido: 3, cap3_topicos: 1}
+        destino: "duracao_dor"
+      - texto: "Músculo, articulação, braço ou perna"
+        acoes:
+          - definir: {local_dor: "musculo_articulacao_membro"}
+          - somar: {cap2_sem_comprimido: 3, cap3_topicos: 2}
+        destino: "duracao_dor"
+      - texto: "Em vários lugares ou no corpo todo"
+        acoes:
+          - definir: {local_dor: "difusa"}
+          - somar: {cap6_uso_frequente: 2, cap7_outras_opcoes: 3}
+          - adicionar_motivo_consulta: "a dor ocorre em vários lugares ou no corpo todo"
+        destino: "duracao_dor"
+      - texto: "Outro lugar ou não sei definir"
+        acoes:
+          - definir: {local_dor: "outro"}
+          - somar: {cap1_alertas: 1}
+        destino: "duracao_dor"
+
+  duracao_dor:
+    tipo: "pergunta_com_educacao"
+    etapa: "Entender a dor"
+    pergunta: "Há quanto tempo essa dor faz parte da sua vida?"
+    educacao: >
+      Dor aguda é, em geral, uma dor recente. Dor crônica é aquela que persiste
+      ou se repete por mais de três meses. O tempo, sozinho, não determina se
+      uma dor é perigosa.
+    respostas:
+      - texto: "Começou nos últimos 7 dias"
+        acoes:
+          - definir: {duracao_dor: "recente"}
+          - somar: {cap1_alertas: 1, cap2_sem_comprimido: 1}
+        destino: "evolucao_dor"
+      - texto: "Dura entre uma semana e três meses"
+        acoes:
+          - definir: {duracao_dor: "subaguda"}
+          - adicionar_motivo_consulta: "a dor não passou após vários dias ou semanas"
+          - somar: {cap2_sem_comprimido: 2, cap6_uso_frequente: 1}
+        destino: "evolucao_dor"
+      - texto: "Persiste ou volta há mais de três meses"
+        acoes:
+          - definir: {duracao_dor: "cronica_ou_recorrente"}
+          - adicionar_motivo_consulta: "a dor persiste ou se repete há mais de três meses"
+          - somar: {cap6_uso_frequente: 3, cap7_outras_opcoes: 3}
+        destino: "evolucao_dor"
+      - texto: "Não sei informar"
+        acoes:
+          - definir: {duracao_dor: "incerta"}
+        destino: "evolucao_dor"
+
+  evolucao_dor:
+    tipo: "pergunta"
+    etapa: "Entender a dor"
+    pergunta: "Como essa dor está evoluindo?"
+    respostas:
+      - texto: "Está melhorando"
+        acoes:
+          - somar: {cap2_sem_comprimido: 2}
+        destino: "impacto_dor"
+      - texto: "Está parecida, sem melhorar"
+        acoes:
+          - adicionar_motivo_consulta: "a dor permanece sem melhora"
+          - somar: {cap6_uso_frequente: 1}
+        destino: "impacto_dor"
+      - texto: "Está piorando"
+        acoes:
+          - definir_prioridade: "consulta_programada"
+          - adicionar_motivo_consulta: "a dor está piorando"
+          - somar: {cap1_alertas: 2, cap6_uso_frequente: 2}
+        destino: "impacto_dor"
+      - texto: "Vai e volta"
+        acoes:
+          - adicionar_motivo_consulta: "a dor vai e volta"
+          - somar: {cap6_uso_frequente: 2, cap7_outras_opcoes: 1}
+        destino: "impacto_dor"
+
+  impacto_dor:
+    tipo: "pergunta"
+    etapa: "Entender a dor"
+    pergunta: "Essa dor atrapalha alguma parte importante da sua rotina?"
+    respostas:
+      - texto: "Não ou muito pouco"
+        acoes:
+          - definir: {impacto_dor: "baixo"}
+        destino: "caracteristica_dor"
+      - texto: "Atrapalha sono, trabalho ou atividades de casa"
+        acoes:
+          - definir: {impacto_dor: "moderado_alto"}
+          - definir_prioridade: "consulta_programada"
+          - adicionar_motivo_consulta: "a dor interfere no sono, trabalho ou atividades habituais"
+          - somar: {cap6_uso_frequente: 2, cap7_outras_opcoes: 2}
+        destino: "caracteristica_dor"
+      - texto: "Dificulta caminhar, comer ou realizar cuidados básicos"
+        acoes:
+          - definir: {impacto_dor: "alto"}
+          - definir_prioridade: "avaliacao_mesmo_dia"
+          - adicionar_alerta: "a dor dificulta atividades básicas"
+        destino: "saida_mesmo_dia"
+
+  caracteristica_dor:
+    tipo: "pergunta"
+    etapa: "Entender a dor"
+    pergunta: "Qual descrição mais se aproxima da dor?"
+    respostas:
+      - texto: "Depois de esforço, movimento ou pequena lesão"
+        acoes:
+          - somar: {cap2_sem_comprimido: 4, cap3_topicos: 2}
+        destino: "uso_medicamentos"
+      - texto: "Queimação, choque, formigamento ou muita sensibilidade ao toque"
+        acoes:
+          - adicionar_motivo_consulta: "a dor tem características que podem exigir avaliação específica"
+          - somar: {cap7_outras_opcoes: 5}
+        destino: "uso_medicamentos"
+      - texto: "Pressão, aperto, peso ou pontada"
+        acoes:
+          - somar: {cap1_alertas: 1, cap4_analgesicos: 1}
+        destino: "uso_medicamentos"
+      - texto: "Não sei descrever"
+        acoes:
+          - somar: {cap1_alertas: 1}
+        destino: "uso_medicamentos"
+
+  uso_medicamentos:
+    tipo: "pergunta"
+    etapa: "Entender a dor"
+    pergunta: "O que você costuma usar quando essa dor aparece?"
+    respostas:
+      - texto: "Ainda não usei medicamento"
+        acoes:
+          - definir: {uso_medicamentos: "nenhum"}
+          - somar: {cap2_sem_comprimido: 3}
+        destino: "objetivo_aprendizado"
+      - texto: "Gel, creme, pomada ou adesivo"
+        acoes:
+          - definir: {uso_medicamentos: "topico"}
+          - somar: {cap3_topicos: 5}
+        destino: "frequencia_medicamentos"
+      - texto: "Analgésico comum"
+        acoes:
+          - definir: {uso_medicamentos: "analgesico"}
+          - somar: {cap4_analgesicos: 5}
+        destino: "frequencia_medicamentos"
+      - texto: "Anti-inflamatório"
+        acoes:
+          - definir: {uso_medicamentos: "antiinflamatorio"}
+          - somar: {cap5_antiinflamatorios: 5, cap6_uso_frequente: 1}
+        destino: "frequencia_medicamentos"
+      - texto: "Mais de um medicamento ou não sei quais são"
+        acoes:
+          - definir: {uso_medicamentos: "multiplos_ou_incerto"}
+          - adicionar_motivo_consulta: "existe uso de mais de um medicamento ou dúvida sobre o que está sendo utilizado"
+          - somar: {cap4_analgesicos: 2, cap5_antiinflamatorios: 3, cap6_uso_frequente: 3}
+        destino: "frequencia_medicamentos"
+      - texto: "Medicamento prescrito para dor persistente ou dos nervos"
+        acoes:
+          - definir: {uso_medicamentos: "prescrito_especifico"}
+          - somar: {cap7_outras_opcoes: 5, cap6_uso_frequente: 2}
+        destino: "frequencia_medicamentos"
+
+  frequencia_medicamentos:
+    tipo: "pergunta"
+    etapa: "Entender a dor"
+    pergunta: "Com que frequência você precisa usar algo para controlar a dor?"
+    respostas:
+      - texto: "Raramente"
+        destino: "objetivo_aprendizado"
+      - texto: "Algumas vezes por mês"
+        acoes:
+          - somar: {cap6_uso_frequente: 1}
+        destino: "objetivo_aprendizado"
+      - texto: "Toda semana ou várias vezes por semana"
+        acoes:
+          - definir_prioridade: "consulta_programada"
+          - adicionar_motivo_consulta: "há necessidade frequente de medicamentos para controlar a dor"
+          - somar: {cap6_uso_frequente: 5}
+        destino: "objetivo_aprendizado"
+      - texto: "Todos ou quase todos os dias"
+        acoes:
+          - definir_prioridade: "consulta_programada"
+          - adicionar_motivo_consulta: "há uso diário ou quase diário de medicamentos para dor"
+          - somar: {cap6_uso_frequente: 6, cap7_outras_opcoes: 2}
+        destino: "objetivo_aprendizado"
+
+  objetivo_aprendizado:
+    tipo: "pergunta"
+    etapa: "Sua rota"
+    pergunta: "O que você mais quer entender agora?"
+    respostas:
+      - texto: "Quando uma dor precisa de atendimento"
+        acoes:
+          - somar: {cap1_alertas: 5}
+        destino: "decidir_saida_final"
+      - texto: "O que pode ser feito antes de um comprimido"
+        acoes:
+          - somar: {cap2_sem_comprimido: 5, cap3_topicos: 2}
+        destino: "decidir_saida_final"
+      - texto: "Como usar medicamentos com mais segurança"
+        acoes:
+          - somar: {cap4_analgesicos: 3, cap5_antiinflamatorios: 3, cap6_uso_frequente: 2}
+        destino: "decidir_saida_final"
+      - texto: "Como lidar com uma dor que sempre volta"
+        acoes:
+          - somar: {cap6_uso_frequente: 4, cap7_outras_opcoes: 4}
+        destino: "decidir_saida_final"
+      - texto: "Quero entender tudo de forma organizada"
+        acoes:
+          - somar:
+              cap1_alertas: 1
+              cap2_sem_comprimido: 1
+              cap3_topicos: 1
+              cap4_analgesicos: 1
+              cap5_antiinflamatorios: 1
+              cap6_uso_frequente: 1
+              cap7_outras_opcoes: 1
+        destino: "decidir_saida_final"
+
+  decidir_saida_final:
+    tipo: "regra"
+    regras:
+      - se: "prioridade_atual == avaliacao_mesmo_dia"
+        destino: "saida_mesmo_dia"
+      - se: "prioridade_atual == consulta_programada OR motivos_consulta.length >= 2"
+        destino: "saida_consulta_programada"
+      - senao:
+        destino: "resultado_educacional"
+
+  saida_consulta_programada:
+    tipo: "saida_com_continuacao"
+    prioridade: "consulta_programada"
+    titulo: "Há bons motivos para marcar uma consulta"
+    texto: >
+      Isso não significa necessariamente que exista algo grave. Uma consulta pode
+      ajudar a compreender a causa, revisar o uso de medicamentos e organizar um plano.
+    justificativa_dinamica: "A recomendação acontece porque você relatou: [motivos_consulta]."
+    acoes:
+      - texto: "Quero marcar uma avaliação"
+        tipo: "link"
+        destino: "[URL_CONSULTA]"
+      - texto: "Quero ver minha rota de conhecimento"
+        tipo: "continuar"
+        destino: "resultado_educacional"
+
+  resultado_educacional:
+    tipo: "resultado_por_pontuacao"
+    prioridade: "educacao"
+    titulo: "Este é o melhor ponto para você começar"
+    algoritmo:
+      principal: "conteudo com maior pontuacao"
+      complementares: "dois conteúdos seguintes, sem repetir o principal"
+      desempate:
+        - "conteúdo diretamente escolhido em objetivo_aprendizado"
+        - "conteúdo associado ao medicamento relatado"
+        - "ordem do catálogo"
+    apresentacao:
+      mostrar:
+        - "titulo do conteúdo principal"
+        - "explicação do motivo com base nas respostas"
+        - "microconteúdo gratuito de 80 a 150 palavras"
+        - "até dois conteúdos complementares"
+        - "oferta específica ativa, se houver"
+        - "ebook completo"
+      cta_principal: "Começar por este conteúdo"
+      cta_ebook: "Quero ter o mapa completo sobre dor"
+    ofertas_permitidas:
+      - ebook_completo
+      - curso_completo
+      - miniaula_antiinflamatorios
+      - miniaula_dor_recorrente
+      - miniaula_sem_comprimido
+
+regras_de_oferta:
+  - condicao: "conteudo_principal == cap5_antiinflamatorios"
+    oferta_preferencial: "miniaula_antiinflamatorios"
+  - condicao: "conteudo_principal == cap6_uso_frequente OR conteudo_principal == cap7_outras_opcoes"
+    oferta_preferencial: "miniaula_dor_recorrente"
+  - condicao: "conteudo_principal == cap2_sem_comprimido OR conteudo_principal == cap3_topicos"
+    oferta_preferencial: "miniaula_sem_comprimido"
+  - condicao: "nenhuma oferta específica está ativa"
+    oferta_preferencial: "ebook_completo"
+
+eventos_analytics:
+  - "triagem_iniciada"
+  - "etapa_seguranca_iniciada"
+  - "saida_samu_exibida"
+  - "saida_pronto_atendimento_exibida"
+  - "saida_mesmo_dia_exibida"
+  - "consulta_programada_recomendada"
+  - "rota_educacional_exibida"
+  - "conteudo_principal_recomendado"
+  - "clique_consulta"
+  - "clique_ebook"
+  - "clique_curso"
+  - "clique_miniaula"
+  - "abandono_por_no"
+
+testes_minimos:
+  - nome: "Dor no peito súbita com falta de ar"
+    esperado: "samu_agora"
+  - nome: "Alteração súbita de fala e força"
+    esperado: "samu_agora"
+  - nome: "Dor súbita muito intensa e diferente"
+    esperado: "pronto_atendimento_agora"
+  - nome: "Dor com sangue nas fezes"
+    esperado: "pronto_atendimento_agora"
+  - nome: "Dor com vômitos repetidos"
+    esperado: "avaliacao_mesmo_dia"
+  - nome: "Dor recorrente com uso diário de analgésico"
+    esperado: "consulta_programada + cap6_uso_frequente"
+  - nome: "Dor muscular recente após esforço, melhorando, sem alertas"
+    esperado: "educacao + cap2_sem_comprimido"
+  - nome: "Uso de anti-inflamatório, sem alerta"
+    esperado: "educacao + cap5_antiinflamatorios"
+  - nome: "Interesse preventivo em sinais de perigo"
+    esperado: "educacao + cap1_alertas"
+
