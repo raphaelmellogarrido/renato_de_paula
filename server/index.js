@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 import express from 'express'
 import cors from 'cors'
 import nodemailer from 'nodemailer'
-import { inserirInscricao, listarEmails, contarInscricoes } from './db.js'
+import { inserirInscricao, listarEmails, listarInscricoes, contarInscricoes } from './db.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const DIST_DIR = path.join(__dirname, '..', 'dist')
@@ -138,16 +138,19 @@ app.post('/api/contact', async (req, res) => {
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 app.post('/api/meditacao/inscrever', async (req, res) => {
-  const { email } = req.body || {}
+  const { email, telefone } = req.body || {}
 
   if (!email || !EMAIL_REGEX.test(email)) {
     return res.status(400).json({ error: 'Informe um email válido.' })
+  }
+  if (!telefone || !telefone.trim()) {
+    return res.status(400).json({ error: 'Informe um telefone válido.' })
   }
 
   const emailNormalizado = email.trim().toLowerCase()
 
   try {
-    await inserirInscricao(emailNormalizado)
+    await inserirInscricao(emailNormalizado, telefone.trim())
     res.json({ ok: true })
   } catch (err) {
     console.error('Erro ao salvar inscrição:', err)
@@ -204,6 +207,24 @@ app.post('/api/meditacao/enviar', async (req, res) => {
   } catch (err) {
     console.error('Erro ao enviar broadcast:', err)
     res.status(500).json({ error: 'Falha ao enviar os emails.' })
+  }
+})
+
+// Rota protegida: lista email + telefone + data de cadastro de todos os inscritos.
+// Uso: POST com { secret } no corpo, secret = ADMIN_SECRET do .env.
+app.post('/api/meditacao/listar', async (req, res) => {
+  const { secret } = req.body || {}
+
+  if (!process.env.ADMIN_SECRET || secret !== process.env.ADMIN_SECRET) {
+    return res.status(401).json({ error: 'Não autorizado.' })
+  }
+
+  try {
+    const inscricoes = await listarInscricoes()
+    res.json({ inscricoes })
+  } catch (err) {
+    console.error('Erro ao listar inscrições:', err)
+    res.status(500).json({ error: 'Falha ao consultar.' })
   }
 })
 

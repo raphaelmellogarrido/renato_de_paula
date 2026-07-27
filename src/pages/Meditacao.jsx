@@ -1,13 +1,23 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import GuardedVideo from "../components/GuardedVideo";
+import { COUNTRIES } from "../config/countries";
 
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:3001" : "");
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const GENERIC_MAX_DIGITS = 14;
+const GENERIC_MIN_DIGITS = 6;
+
+function onlyDigits(value) {
+  return value.replace(/\D/g, "");
+}
 
 function Meditacao() {
   const { hash } = useLocation();
   const [email, setEmail] = useState("");
+  const [pais, setPais] = useState("BR");
+  const [ddd, setDdd] = useState("");
+  const [numero, setNumero] = useState("");
   const [status, setStatus] = useState("idle");
   const [erro, setErro] = useState("");
 
@@ -24,19 +34,37 @@ function Meditacao() {
   }, [hash]);
 
   const emailValido = EMAIL_REGEX.test(email);
+  const country = COUNTRIES.find((c) => c.code === pais);
+  const dddValido = country.hasDDD ? ddd.length === 2 : true;
+  const numeroValido = country.hasDDD
+    ? numero.length === country.phoneDigits
+    : numero.length >= GENERIC_MIN_DIGITS && numero.length <= GENERIC_MAX_DIGITS;
+  const telefoneValido = country.hasDDD ? dddValido && numeroValido : numeroValido;
+  const formValido = emailValido && telefoneValido;
+
+  function handleDddChange(e) {
+    setDdd(onlyDigits(e.target.value).slice(0, 2));
+  }
+
+  function handleNumeroChange(e) {
+    const max = country.hasDDD ? country.phoneDigits : GENERIC_MAX_DIGITS;
+    setNumero(onlyDigits(e.target.value).slice(0, max));
+  }
 
   async function handleCadastrar(e) {
     e.preventDefault();
-    if (!emailValido) return;
+    if (!formValido) return;
 
     setStatus("enviando");
     setErro("");
+
+    const telefone = country.hasDDD ? `${country.dial} (${ddd}) ${numero}` : `${country.dial} ${numero}`;
 
     try {
       const res = await fetch(`${API_URL}/api/meditacao/inscrever`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, telefone }),
       });
 
       if (!res.ok) {
@@ -46,6 +74,8 @@ function Meditacao() {
 
       setStatus("sucesso");
       setEmail("");
+      setDdd("");
+      setNumero("");
       localStorage.setItem("meditacao_inscrito", "true");
       setInscrito(true);
     } catch (err) {
@@ -104,7 +134,55 @@ function Meditacao() {
                   <label htmlFor="email-live">E-mail {emailValido && <span className="valid-check">✓</span>}</label>
                   <input id="email-live" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" />
                 </div>
-                <button type="submit" className="btn btn-primary btn-block" disabled={!emailValido || status === "enviando"}>
+
+                <div className={`field ${telefoneValido ? "valid" : ""}`}>
+                  <label htmlFor="numero-live">Telefone {telefoneValido && <span className="valid-check">✓</span>}</label>
+                  <div className="phone-group">
+                    <select
+                      value={pais}
+                      onChange={(e) => {
+                        setPais(e.target.value);
+                        setDdd("");
+                        setNumero("");
+                      }}
+                      aria-label="País"
+                    >
+                      {COUNTRIES.map((c) => (
+                        <option key={c.code} value={c.code}>
+                          {c.name} ({c.dial})
+                        </option>
+                      ))}
+                    </select>
+                    {country.hasDDD && (
+                      <div className="input-check-wrap ddd-wrap">
+                        <input
+                          className={`ddd-input ${dddValido ? "valid" : ""}`}
+                          type="tel"
+                          inputMode="numeric"
+                          value={ddd}
+                          onChange={handleDddChange}
+                          placeholder="DDD"
+                          aria-label="DDD"
+                        />
+                        {dddValido && <span className="input-check">✓</span>}
+                      </div>
+                    )}
+                    <div className="input-check-wrap numero-wrap">
+                      <input
+                        id="numero-live"
+                        className={`numero-input ${numeroValido ? "valid" : ""}`}
+                        type="tel"
+                        inputMode="numeric"
+                        value={numero}
+                        onChange={handleNumeroChange}
+                        placeholder={country.hasDDD ? "9 dígitos" : "Número"}
+                      />
+                      {numeroValido && <span className="input-check">✓</span>}
+                    </div>
+                  </div>
+                </div>
+
+                <button type="submit" className="btn btn-primary btn-block" disabled={!formValido || status === "enviando"}>
                   {status === "enviando" ? "Cadastrando e liberando video..." : "Cadastrar e liberar vídeos"}
                 </button>
               </form>

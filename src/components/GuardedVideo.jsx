@@ -8,6 +8,8 @@ function GuardedVideo({ src, onEnded, label }) {
   const maxTimeRef = useRef(0)
   const [playing, setPlaying] = useState(false)
   const [erro, setErro] = useState('')
+  const [volume, setVolume] = useState(1)
+  const [muted, setMuted] = useState(false)
 
   function handleTimeUpdate() {
     const v = videoRef.current
@@ -46,6 +48,28 @@ function GuardedVideo({ src, onEnded, label }) {
     setErro('Não foi possível carregar o vídeo. Verifique sua conexão e tente novamente.')
   }
 
+  function toggleMute() {
+    const v = videoRef.current
+    v.muted = !v.muted
+    setMuted(v.muted)
+  }
+
+  function handleVolumeChange(e) {
+    const v = videoRef.current
+    const novoVolume = Number(e.target.value)
+    v.volume = novoVolume
+    v.muted = novoVolume === 0
+    setVolume(novoVolume)
+    setMuted(v.muted)
+  }
+
+  function handleFullscreen() {
+    const v = videoRef.current
+    if (v.requestFullscreen) v.requestFullscreen()
+    else if (v.webkitRequestFullscreen) v.webkitRequestFullscreen()
+    else if (v.webkitEnterFullscreen) v.webkitEnterFullscreen()
+  }
+
   return (
     <div className="guarded-video">
       {label && <span className="guarded-video-label">{label}</span>}
@@ -74,6 +98,23 @@ function GuardedVideo({ src, onEnded, label }) {
       >
         {playing ? '❚❚' : '▶'}
       </button>
+      <div className="guarded-video-controls">
+        <button type="button" onClick={toggleMute} aria-label={muted ? 'Ativar som' : 'Silenciar'}>
+          {muted || volume === 0 ? '🔇' : '🔊'}
+        </button>
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          value={muted ? 0 : volume}
+          onChange={handleVolumeChange}
+          aria-label="Volume"
+        />
+        <button type="button" onClick={handleFullscreen} aria-label="Tela cheia">
+          ⛶
+        </button>
+      </div>
       {erro && <div className="error-box guarded-video-erro">{erro}</div>}
     </div>
   )

@@ -10,6 +10,7 @@ import Sobre from "./pages/Sobre";
 import Contato from "./pages/Contato";
 import Triagem from "./pages/Triagem";
 import Meditacao from "./pages/Meditacao";
+import AdminMeditacao from "./pages/AdminMeditacao";
 import "./App.css";
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
           <Route path="/triagem" element={<Triagem />} />
           <Route path="/meditacao" element={<Meditacao />} />
           <Route path="/lives" element={<Navigate to="/meditacao#cadastro-live" replace />} />
+          <Route path="/admin-meditacao" element={<AdminMeditacao />} />
           <Route path="/sobre" element={<Sobre />} />
           <Route path="/contato" element={<Contato />} />
           <Route path="*" element={<Navigate to="/" replace />} />
