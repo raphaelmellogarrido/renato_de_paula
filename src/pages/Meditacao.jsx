@@ -120,13 +120,13 @@ function Meditacao() {
             <span className="eyebrow">Aulas liberadas</span>
             <h2>Suas aulas de meditação</h2>
             <p className="lede" style={{ margin: "0 auto" }}>
-              Assista na ordem — cada aula libera a próxima ao final.
+              Assista na ordem — cada aula libera a próxima ao final, 3 no total.
             </p>
           </div>
           <div className="container guarded-video-list" style={{ maxWidth: 860, width: "100%", margin: "0 auto" }}>
-            <GuardedVideo src={`${API_URL}/videos/mito1.mp4`} label="Aula 1" onEnded={handleVideo1Ended} />
-            {video1Assistido && <GuardedVideo src={`${API_URL}/videos/mito2.mp4`} label="Aula 2" onEnded={handleVideo2Ended} />}
-            {video2Assistido && <GuardedVideo src={`${API_URL}/videos/mito3.mp4`} label="Aula 3" />}
+            <GuardedVideo src={`${API_URL}/videos/mito1.mp4`} label="Mito 1" onEnded={handleVideo1Ended} />
+            {video1Assistido && <GuardedVideo src={`${API_URL}/videos/mito2.mp4`} label="Mito 2" onEnded={handleVideo2Ended} />}
+            {video2Assistido && <GuardedVideo src={`${API_URL}/videos/mito3.mp4`} label="Mito 3" />}
           </div>
         </section>
       )}
