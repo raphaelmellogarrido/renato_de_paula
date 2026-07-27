@@ -1,17 +1,21 @@
 import { useEffect, useRef, useState } from 'react'
 
-// Player sem barra de progresso: bloqueia tentativas de avançar (seek)
-// além do ponto máximo já assistido. Não é infalível contra alguém
-// mexendo no devtools, mas impede o "pular vídeo" casual.
+// Player com barra de progresso que só permite retroceder (nunca avançar) —
+// bloqueia tentativas de pular pra frente além do ponto já assistido. Não é
+// infalível contra alguém mexendo no devtools, mas impede o "pular vídeo" casual.
 function GuardedVideo({ src, onEnded, label }) {
   const videoRef = useRef(null)
   const wrapperRef = useRef(null)
   const maxTimeRef = useRef(0)
+  const volumeTimeoutRef = useRef(null)
   const [playing, setPlaying] = useState(false)
   const [erro, setErro] = useState('')
   const [volume, setVolume] = useState(1)
   const [muted, setMuted] = useState(false)
+  const [volumeAberto, setVolumeAberto] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
+  const [currentTime, setCurrentTime] = useState(0)
+  const [duration, setDuration] = useState(0)
 
   useEffect(() => {
     function handleFullscreenChange() {
@@ -26,18 +30,46 @@ function GuardedVideo({ src, onEnded, label }) {
     }
   }, [])
 
+  useEffect(() => () => clearTimeout(volumeTimeoutRef.current), [])
+
   function handleTimeUpdate() {
     const v = videoRef.current
+    setCurrentTime(v.currentTime)
     if (v.currentTime > maxTimeRef.current) {
       maxTimeRef.current = v.currentTime
     }
   }
 
+  function handleLoadedMetadata() {
+    setDuration(videoRef.current.duration || 0)
+  }
+
+  // Rede de segurança extra: mesmo com a barra visível só permitindo
+  // retroceder, mantemos esse bloqueio para tentativas de avanço que não
+  // passem pelo onChange da barra (ex: controles de mídia do sistema).
   function handleSeeking() {
     const v = videoRef.current
     if (v.currentTime > maxTimeRef.current + 0.5) {
       v.currentTime = maxTimeRef.current
     }
+  }
+
+  // Barra de progresso: só permite arrastar pra trás (rever algo perdido).
+  // Tentativas de avançar são ignoradas — como o value é controlado pelo
+  // estado currentTime, a barra "volta" sozinha pra posição real.
+  function handleSeekBarChange(e) {
+    const v = videoRef.current
+    const novoTempo = Number(e.target.value)
+    if (novoTempo <= v.currentTime) {
+      v.currentTime = novoTempo
+      setCurrentTime(novoTempo)
+    }
+  }
+
+  function abrirVolumeTemporariamente() {
+    setVolumeAberto(true)
+    clearTimeout(volumeTimeoutRef.current)
+    volumeTimeoutRef.current = setTimeout(() => setVolumeAberto(false), 2500)
   }
 
   function togglePlay() {
@@ -67,6 +99,7 @@ function GuardedVideo({ src, onEnded, label }) {
     const v = videoRef.current
     v.muted = !v.muted
     setMuted(v.muted)
+    abrirVolumeTemporariamente()
   }
 
   function handleVolumeChange(e) {
@@ -76,6 +109,7 @@ function GuardedVideo({ src, onEnded, label }) {
     v.muted = novoVolume === 0
     setVolume(novoVolume)
     setMuted(v.muted)
+    abrirVolumeTemporariamente()
   }
 
   // Deixa a DIV que envolve o vídeo em tela cheia, não o <video> em si.
@@ -109,6 +143,7 @@ function GuardedVideo({ src, onEnded, label }) {
         preload="metadata"
         onContextMenu={(e) => e.preventDefault()}
         onTimeUpdate={handleTimeUpdate}
+        onLoadedMetadata={handleLoadedMetadata}
         onSeeking={handleSeeking}
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
@@ -125,21 +160,37 @@ function GuardedVideo({ src, onEnded, label }) {
         {playing ? '❚❚' : '▶'}
       </button>
       <div className="guarded-video-controls">
-        <button type="button" onClick={toggleMute} aria-label={muted ? 'Ativar som' : 'Silenciar'}>
-          {muted || volume === 0 ? '🔇' : '🔊'}
-        </button>
         <input
           type="range"
+          className="guarded-video-seekbar"
           min="0"
-          max="1"
-          step="0.05"
-          value={muted ? 0 : volume}
-          onChange={handleVolumeChange}
-          aria-label="Volume"
+          max={duration || 0}
+          step="0.1"
+          value={currentTime}
+          onChange={handleSeekBarChange}
+          aria-label="Progresso do vídeo — só é possível retroceder"
         />
-        <button type="button" onClick={handleFullscreen} aria-label={fullscreen ? 'Sair da tela cheia' : 'Tela cheia'}>
-          {fullscreen ? '⤡' : '⛶'}
-        </button>
+        <div className="guarded-video-buttons-row">
+          <div className="guarded-video-volume-group">
+            <button type="button" onClick={toggleMute} aria-label={muted ? 'Ativar som' : 'Silenciar'}>
+              {muted || volume === 0 ? '🔇' : '🔊'}
+            </button>
+            {volumeAberto && (
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={muted ? 0 : volume}
+                onChange={handleVolumeChange}
+                aria-label="Volume"
+              />
+            )}
+          </div>
+          <button type="button" onClick={handleFullscreen} aria-label={fullscreen ? 'Sair da tela cheia' : 'Tela cheia'}>
+            {fullscreen ? '⤡' : '⛶'}
+          </button>
+        </div>
       </div>
       {erro && <div className="error-box guarded-video-erro">{erro}</div>}
     </div>

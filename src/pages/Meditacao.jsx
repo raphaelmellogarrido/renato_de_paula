@@ -39,8 +39,9 @@ function Meditacao() {
   const numeroValido = country.phoneDigits != null
     ? numero.length === country.phoneDigits
     : numero.length >= GENERIC_MIN_DIGITS && numero.length <= GENERIC_MAX_DIGITS;
+  const telefonePreenchido = numero.length > 0;
   const telefoneValido = country.hasDDD ? dddValido && numeroValido : numeroValido;
-  const formValido = emailValido && telefoneValido;
+  const formValido = emailValido;
 
   function handleDddChange(e) {
     setDdd(onlyDigits(e.target.value).slice(0, 2));
@@ -58,7 +59,7 @@ function Meditacao() {
     setStatus("enviando");
     setErro("");
 
-    const telefone = country.hasDDD ? `${country.dial} (${ddd}) ${numero}` : `${country.dial} ${numero}`;
+    const telefone = numero ? (country.hasDDD ? `${country.dial} (${ddd}) ${numero}` : `${country.dial} ${numero}`) : "";
 
     try {
       const res = await fetch(`${API_URL}/api/meditacao/inscrever`, {
@@ -135,8 +136,11 @@ function Meditacao() {
                   <input id="email-live" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" />
                 </div>
 
-                <div className={`field ${telefoneValido ? "valid" : ""}`}>
-                  <label htmlFor="numero-live">Telefone {telefoneValido && <span className="valid-check">✓</span>}</label>
+                <div className={`field ${telefonePreenchido && telefoneValido ? "valid" : ""}`}>
+                  <label htmlFor="numero-live">
+                    Telefone <span style={{ fontWeight: 400, opacity: 0.7 }}>(opcional)</span>{" "}
+                    {telefonePreenchido && telefoneValido && <span className="valid-check">✓</span>}
+                  </label>
                   <div className="phone-group">
                     <select
                       value={pais}

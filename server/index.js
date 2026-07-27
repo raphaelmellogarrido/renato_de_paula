@@ -124,14 +124,11 @@ app.post('/api/meditacao/inscrever', async (req, res) => {
   if (!email || !EMAIL_REGEX.test(email)) {
     return res.status(400).json({ error: 'Informe um email válido.' })
   }
-  if (!telefone || !telefone.trim()) {
-    return res.status(400).json({ error: 'Informe um telefone válido.' })
-  }
 
   const emailNormalizado = email.trim().toLowerCase()
 
   try {
-    await inserirInscricao(emailNormalizado, telefone.trim())
+    await inserirInscricao(emailNormalizado, telefone ? telefone.trim() : null)
     res.json({ ok: true })
   } catch (err) {
     console.error('Erro ao salvar inscrição:', err)

@@ -1007,10 +1007,22 @@
   bottom: 0;
   z-index: 2;
   display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 14px 8px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0));
+}
+
+.guarded-video-buttons-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.guarded-video-volume-group {
+  display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 14px;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0));
 }
 
 .guarded-video-controls button {
@@ -1024,9 +1036,16 @@
 }
 
 .guarded-video-controls input[type='range'] {
-  flex: 0 0 90px;
   accent-color: #fff;
   cursor: pointer;
+}
+
+.guarded-video-volume-group input[type='range'] {
+  width: 90px;
+}
+
+.guarded-video-seekbar {
+  width: 100%;
 }
 
 .btn-restart {
