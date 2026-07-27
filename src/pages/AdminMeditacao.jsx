@@ -26,6 +26,32 @@ async function copiarTelefones(inscricoes) {
   await navigator.clipboard.writeText(telefones);
 }
 
+function escapeHtml(texto) {
+  return String(texto)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function verMensagemCompleta(item) {
+  const html = `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${escapeHtml(item.assunto)}</title>
+</head>
+<body style="font-family: sans-serif; max-width: 700px; margin: 40px auto; padding: 0 20px; line-height: 1.6;">
+  <h2>${escapeHtml(item.assunto)}</h2>
+  <p style="color: #666;">${formatarData(item.criado_em)} — enviado para ${item.enviados} pessoa(s)</p>
+  <hr>
+  <div style="white-space: pre-wrap;">${escapeHtml(item.mensagem)}</div>
+</body>
+</html>`;
+  const blob = new Blob([html], { type: "text/html" });
+  const url = URL.createObjectURL(blob);
+  window.open(url, "_blank");
+}
+
 function AdminMeditacao() {
   const [secret, setSecret] = useState("");
   const [autenticado, setAutenticado] = useState(false);
@@ -37,6 +63,8 @@ function AdminMeditacao() {
   const [pageSize, setPageSize] = useState(10);
   const [page, setPage] = useState(0);
   const [excluindo, setExcluindo] = useState(null);
+  const [historicoPageSize, setHistoricoPageSize] = useState(10);
+  const [historicoPage, setHistoricoPage] = useState(0);
 
   const [assunto, setAssunto] = useState("");
   const [mensagem, setMensagem] = useState("");
@@ -53,6 +81,16 @@ function AdminMeditacao() {
   function handlePageSizeChange(e) {
     setPageSize(Number(e.target.value));
     setPage(0);
+  }
+
+  const historicoTotalPaginas = Math.max(1, Math.ceil(historico.length / historicoPageSize));
+  const historicoPaginaAtual = Math.min(historicoPage, historicoTotalPaginas - 1);
+  const historicoInicio = historicoPaginaAtual * historicoPageSize;
+  const historicoPagina = historico.slice(historicoInicio, historicoInicio + historicoPageSize);
+
+  function handleHistoricoPageSizeChange(e) {
+    setHistoricoPageSize(Number(e.target.value));
+    setHistoricoPage(0);
   }
 
   async function handleCopiarTelefones() {
@@ -299,26 +337,70 @@ function AdminMeditacao() {
           {historico.length === 0 ? (
             <p>Nenhuma mensagem enviada ainda.</p>
           ) : (
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr style={{ textAlign: "left", borderBottom: "2px solid #ddd" }}>
-                    <th style={{ padding: "8px 12px" }}>Data</th>
-                    <th style={{ padding: "8px 12px" }}>Assunto</th>
-                    <th style={{ padding: "8px 12px" }}>Enviados</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {historico.map((h, idx) => (
-                    <tr key={idx} style={{ borderBottom: "1px solid #eee" }}>
-                      <td style={{ padding: "8px 12px" }}>{formatarData(h.criado_em)}</td>
-                      <td style={{ padding: "8px 12px" }}>{h.assunto}</td>
-                      <td style={{ padding: "8px 12px" }}>{h.enviados}</td>
+            <>
+              <div style={{ overflowX: "auto", marginBottom: 16 }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ textAlign: "left", borderBottom: "2px solid #ddd" }}>
+                      <th style={{ padding: "8px 12px" }}>Data</th>
+                      <th style={{ padding: "8px 12px" }}>Assunto</th>
+                      <th style={{ padding: "8px 12px" }}>Enviados</th>
+                      <th style={{ padding: "8px 12px" }}></th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {historicoPagina.map((h, idx) => (
+                      <tr key={idx} style={{ borderBottom: "1px solid #eee" }}>
+                        <td style={{ padding: "8px 12px" }}>{formatarData(h.criado_em)}</td>
+                        <td style={{ padding: "8px 12px" }}>{h.assunto}</td>
+                        <td style={{ padding: "8px 12px" }}>{h.enviados}</td>
+                        <td style={{ padding: "8px 12px" }}>
+                          <button type="button" className="btn btn-secondary" onClick={() => verMensagemCompleta(h)}>
+                            Ver mensagem
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+                <label>
+                  Mostrar{" "}
+                  <select value={historicoPageSize} onChange={handleHistoricoPageSizeChange}>
+                    <option value={10}>10</option>
+                    <option value={25}>25</option>
+                    <option value={50}>50</option>
+                  </select>{" "}
+                  por página
+                </label>
+
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => setHistoricoPage((p) => Math.max(0, p - 1))}
+                    disabled={historicoPaginaAtual === 0}
+                    aria-label="Página anterior do histórico"
+                  >
+                    ‹
+                  </button>
+                  <span>
+                    Página {historicoPaginaAtual + 1} de {historicoTotalPaginas}
+                  </span>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => setHistoricoPage((p) => Math.min(historicoTotalPaginas - 1, p + 1))}
+                    disabled={historicoPaginaAtual >= historicoTotalPaginas - 1}
+                    aria-label="Próxima página do histórico"
+                  >
+                    ›
+                  </button>
+                </div>
+              </div>
+            </>
           )}
         </div>
       </div>
