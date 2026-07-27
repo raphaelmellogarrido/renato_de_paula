@@ -5,7 +5,15 @@ import { fileURLToPath } from 'node:url'
 import express from 'express'
 import cors from 'cors'
 import nodemailer from 'nodemailer'
-import { inserirInscricao, listarEmails, listarInscricoes, contarInscricoes } from './db.js'
+import {
+  inserirInscricao,
+  listarEmails,
+  listarInscricoes,
+  contarInscricoes,
+  excluirInscricao,
+  registrarEnvio,
+  listarHistorico,
+} from './db.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const DIST_DIR = path.join(__dirname, '..', 'dist')
@@ -176,6 +184,8 @@ app.post('/api/meditacao/enviar', async (req, res) => {
       html: String(mensagem).replace(/\n/g, '<br>'),
     })
 
+    await registrarEnvio(assunto, mensagem, emails.length)
+
     res.json({ ok: true, enviados: emails.length })
   } catch (err) {
     console.error('Erro ao enviar broadcast:', err)
@@ -197,6 +207,45 @@ app.post('/api/meditacao/listar', async (req, res) => {
     res.json({ inscricoes })
   } catch (err) {
     console.error('Erro ao listar inscrições:', err)
+    res.status(500).json({ error: 'Falha ao consultar.' })
+  }
+})
+
+// Rota protegida: remove um inscrito (não recebe mais nenhum email).
+// Uso: POST com { secret, email } no corpo, secret = ADMIN_SECRET do .env.
+app.post('/api/meditacao/excluir', async (req, res) => {
+  const { secret, email } = req.body || {}
+
+  if (!process.env.ADMIN_SECRET || secret !== process.env.ADMIN_SECRET) {
+    return res.status(401).json({ error: 'Não autorizado.' })
+  }
+  if (!email) {
+    return res.status(400).json({ error: 'Informe o email a remover.' })
+  }
+
+  try {
+    await excluirInscricao(email)
+    res.json({ ok: true })
+  } catch (err) {
+    console.error('Erro ao excluir inscrição:', err)
+    res.status(500).json({ error: 'Falha ao excluir.' })
+  }
+})
+
+// Rota protegida: histórico de mensagens em massa já enviadas.
+// Uso: POST com { secret } no corpo, secret = ADMIN_SECRET do .env.
+app.post('/api/meditacao/historico', async (req, res) => {
+  const { secret } = req.body || {}
+
+  if (!process.env.ADMIN_SECRET || secret !== process.env.ADMIN_SECRET) {
+    return res.status(401).json({ error: 'Não autorizado.' })
+  }
+
+  try {
+    const historico = await listarHistorico()
+    res.json({ historico })
+  } catch (err) {
+    console.error('Erro ao listar histórico:', err)
     res.status(500).json({ error: 'Falha ao consultar.' })
   }
 })

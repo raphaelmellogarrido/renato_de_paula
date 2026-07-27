@@ -28,6 +28,15 @@ async function garantirTabela() {
   } catch (err) {
     if (err.code !== 'ER_DUP_FIELDNAME') throw err
   }
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS historico_envios (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      assunto VARCHAR(255) NOT NULL,
+      mensagem TEXT NOT NULL,
+      enviados INT NOT NULL,
+      criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `)
   tabelaPronta = true
 }
 
@@ -54,4 +63,23 @@ export async function contarInscricoes() {
   await garantirTabela()
   const [linhas] = await pool.query('SELECT COUNT(*) AS total FROM inscricoes_meditacao')
   return linhas[0].total
+}
+
+export async function excluirInscricao(email) {
+  await garantirTabela()
+  await pool.query('DELETE FROM inscricoes_meditacao WHERE email = ?', [email])
+}
+
+export async function registrarEnvio(assunto, mensagem, enviados) {
+  await garantirTabela()
+  await pool.query(
+    'INSERT INTO historico_envios (assunto, mensagem, enviados) VALUES (?, ?, ?)',
+    [assunto, mensagem, enviados]
+  )
+}
+
+export async function listarHistorico() {
+  await garantirTabela()
+  const [linhas] = await pool.query('SELECT assunto, mensagem, enviados, criado_em FROM historico_envios ORDER BY criado_em DESC')
+  return linhas
 }
