@@ -20,7 +20,13 @@ function GuardedVideo({ src, onEnded, label }) {
   useEffect(() => {
     function handleFullscreenChange() {
       const ativo = document.fullscreenElement || document.webkitFullscreenElement
-      setFullscreen(ativo === wrapperRef.current)
+      const dentro = ativo === wrapperRef.current
+      setFullscreen(dentro)
+      // Ao sair da tela cheia, libera a orientação — senão a página inteira
+      // fica presa em modo paisagem depois que o vídeo fecha.
+      if (!dentro && screen.orientation?.unlock) {
+        screen.orientation.unlock()
+      }
     }
     document.addEventListener('fullscreenchange', handleFullscreenChange)
     document.addEventListener('webkitfullscreenchange', handleFullscreenChange)
@@ -130,6 +136,25 @@ function GuardedVideo({ src, onEnded, label }) {
     else if (wrapper.webkitRequestFullscreen) wrapper.webkitRequestFullscreen()
   }
 
+  // Botão só do mobile: entra em tela cheia e força a orientação paisagem,
+  // mesmo que o bloqueio de rotação do celular esteja ativado no sistema.
+  // iOS Safari não suporta screen.orientation.lock — nesse caso a tela
+  // cheia já ajuda, e a rotação física do aparelho funciona normalmente.
+  async function handleGirarTela() {
+    try {
+      const wrapper = wrapperRef.current
+      if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        if (wrapper.requestFullscreen) await wrapper.requestFullscreen()
+        else if (wrapper.webkitRequestFullscreen) wrapper.webkitRequestFullscreen()
+      }
+      if (screen.orientation?.lock) {
+        await screen.orientation.lock('landscape')
+      }
+    } catch (err) {
+      console.error('Não foi possível girar a tela:', err)
+    }
+  }
+
   return (
     <div className="guarded-video" ref={wrapperRef}>
       {label && <span className="guarded-video-label">{label}</span>}
@@ -160,16 +185,6 @@ function GuardedVideo({ src, onEnded, label }) {
         {playing ? '❚❚' : '▶'}
       </button>
       <div className="guarded-video-controls">
-        <input
-          type="range"
-          className="guarded-video-seekbar"
-          min="0"
-          max={duration || 0}
-          step="0.1"
-          value={currentTime}
-          onChange={handleSeekBarChange}
-          aria-label="Progresso do vídeo — só é possível retroceder"
-        />
         <div className="guarded-video-buttons-row">
           <div className="guarded-video-volume-group">
             <button type="button" onClick={toggleMute} aria-label={muted ? 'Ativar som' : 'Silenciar'}>
@@ -178,6 +193,7 @@ function GuardedVideo({ src, onEnded, label }) {
             {volumeAberto && (
               <input
                 type="range"
+                className="guarded-video-volume-popup"
                 min="0"
                 max="1"
                 step="0.05"
@@ -187,6 +203,24 @@ function GuardedVideo({ src, onEnded, label }) {
               />
             )}
           </div>
+          <input
+            type="range"
+            className="guarded-video-seekbar"
+            min="0"
+            max={duration || 0}
+            step="0.1"
+            value={currentTime}
+            onChange={handleSeekBarChange}
+            aria-label="Progresso do vídeo — só é possível retroceder"
+          />
+          <button
+            type="button"
+            className="guarded-video-rotate"
+            onClick={handleGirarTela}
+            aria-label="Girar tela para assistir na horizontal"
+          >
+            ⟲
+          </button>
           <button type="button" onClick={handleFullscreen} aria-label={fullscreen ? 'Sair da tela cheia' : 'Tela cheia'}>
             {fullscreen ? '⤡' : '⛶'}
           </button>

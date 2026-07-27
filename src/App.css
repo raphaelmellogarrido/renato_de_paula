@@ -1006,23 +1006,20 @@
   right: 0;
   bottom: 0;
   z-index: 2;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 6px 14px 8px;
+  padding: 8px 14px;
   background: linear-gradient(to top, rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0));
 }
 
 .guarded-video-buttons-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 10px;
 }
 
 .guarded-video-volume-group {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
 }
 
 .guarded-video-controls button {
@@ -1033,6 +1030,7 @@
   cursor: pointer;
   padding: 4px;
   line-height: 1;
+  flex-shrink: 0;
 }
 
 .guarded-video-controls input[type='range'] {
@@ -1040,12 +1038,30 @@
   cursor: pointer;
 }
 
-.guarded-video-volume-group input[type='range'] {
+.guarded-video-volume-popup {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
   width: 90px;
+  background: rgba(0, 0, 0, 0.75);
+  padding: 6px 8px;
+  border-radius: 8px;
 }
 
 .guarded-video-seekbar {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
+}
+
+.guarded-video-rotate {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .guarded-video-rotate {
+    display: inline-flex;
+    align-items: center;
+  }
 }
 
 .btn-restart {
