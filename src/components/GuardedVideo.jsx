@@ -5,6 +5,7 @@ import { useRef, useState } from 'react'
 // mexendo no devtools, mas impede o "pular vídeo" casual.
 function GuardedVideo({ src, onEnded, label }) {
   const videoRef = useRef(null)
+  const wrapperRef = useRef(null)
   const maxTimeRef = useRef(0)
   const [playing, setPlaying] = useState(false)
   const [erro, setErro] = useState('')
@@ -63,15 +64,20 @@ function GuardedVideo({ src, onEnded, label }) {
     setMuted(v.muted)
   }
 
+  // Deixa a DIV que envolve o vídeo em tela cheia, não o <video> em si.
+  // Se o próprio elemento <video> entrar em fullscreen, o navegador injeta
+  // controles nativos por cima (incluindo a barra de progresso, que
+  // permite pular o vídeo) — algo que não conseguimos desativar via
+  // atributo. Colocando a div em fullscreen, só os nossos controles
+  // customizados aparecem.
   function handleFullscreen() {
-    const v = videoRef.current
-    if (v.requestFullscreen) v.requestFullscreen()
-    else if (v.webkitRequestFullscreen) v.webkitRequestFullscreen()
-    else if (v.webkitEnterFullscreen) v.webkitEnterFullscreen()
+    const wrapper = wrapperRef.current
+    if (wrapper.requestFullscreen) wrapper.requestFullscreen()
+    else if (wrapper.webkitRequestFullscreen) wrapper.webkitRequestFullscreen()
   }
 
   return (
-    <div className="guarded-video">
+    <div className="guarded-video" ref={wrapperRef}>
       {label && <span className="guarded-video-label">{label}</span>}
       <video
         ref={videoRef}

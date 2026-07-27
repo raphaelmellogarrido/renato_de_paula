@@ -10,6 +10,18 @@ function cleanName(name) {
   return name.replace(/\s*\([^)]*\)\s*$/, '').trim()
 }
 
+// A biblioteca fornece uma máscara tipo "+..-..-....-...." (cada ponto é
+// um dígito). Contamos os pontos depois do código do país para estimar o
+// tamanho real do número nacional — sem isso, países fora do Brasil caem
+// num intervalo genérico (6 a 14) frouxo demais (ex: Portugal aceitava
+// 6 dígitos quando o certo são 9).
+function digitosNacionais(format, dialCode) {
+  if (!format) return null
+  const totalPontos = (format.match(/\./g) || []).length
+  const nacional = totalPontos - dialCode.length
+  return nacional > 0 ? nacional : null
+}
+
 const seen = new Set()
 
 export const COUNTRIES = allCountries
@@ -24,7 +36,7 @@ export const COUNTRIES = allCountries
     dial: `+${c.dialCode}`,
     flag: toFlagEmoji(c.iso2),
     hasDDD: c.iso2 === 'br',
-    phoneDigits: c.iso2 === 'br' ? 9 : null,
+    phoneDigits: c.iso2 === 'br' ? 9 : digitosNacionais(c.format, c.dialCode),
   }))
   .sort((a, b) => a.name.localeCompare(b.name))
 

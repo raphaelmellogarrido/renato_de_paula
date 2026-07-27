@@ -51,7 +51,7 @@ function Contato() {
   const assuntoValid = form.assunto.trim().length >= 3;
   const mensagemValid = form.mensagem.trim().length >= 10;
   const dddValid = country.hasDDD ? form.ddd.length === 2 : true;
-  const numeroValid = country.hasDDD
+  const numeroValid = country.phoneDigits != null
     ? form.numero.length === country.phoneDigits
     : form.numero.length >= GENERIC_MIN_DIGITS && form.numero.length <= GENERIC_MAX_DIGITS;
   const telefoneValid = country.hasDDD ? dddValid && numeroValid : numeroValid;
@@ -156,7 +156,7 @@ function Contato() {
                       inputMode="numeric"
                       value={form.numero}
                       onChange={handleNumeroChange}
-                      placeholder={country.hasDDD ? '9 dígitos' : 'Número'}
+                      placeholder={country.phoneDigits ? `${country.phoneDigits} dígitos` : 'Número'}
                     />
                     {numeroValid && <span className="input-check">✓</span>}
                   </div>

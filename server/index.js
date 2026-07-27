@@ -13,35 +13,8 @@ const DIST_DIR = path.join(__dirname, '..', 'dist')
 // cada `npm run build`). Servidos à parte para sobreviver a novos deploys.
 const VIDEOS_DIR = process.env.VIDEOS_DIR || path.join(__dirname, 'videos')
 
-console.log('--- Diagnóstico VIDEOS_DIR ---')
-console.log('__dirname (onde o Node enxerga o próprio app):', __dirname)
-console.log('process.cwd():', process.cwd())
-console.log('VIDEOS_DIR (env):', JSON.stringify(process.env.VIDEOS_DIR))
-console.log('VIDEOS_DIR (resolvido):', VIDEOS_DIR)
-
-// Testa o que o processo Node realmente enxerga acima da própria pasta do
-// app — se essas pastas "sumirem" daqui mesmo existindo no Gerenciador de
-// Arquivos, o app roda num ambiente isolado que só vê a própria pasta.
-const candidatos = [
-  path.join(__dirname, '..'),
-  path.join(__dirname, '..', '..'),
-  path.join(__dirname, '..', '..', '..'),
-  '/home/u790959747',
-  '/home/u790959747/domains',
-  '/home/u790959747/domains/renatodepaula.com',
-  '/home/u790959747/meditacao-videos',
-]
-for (const dir of candidatos) {
-  try {
-    console.log(`readdir OK "${dir}":`, fs.readdirSync(dir))
-  } catch (err) {
-    console.error(`readdir FALHOU "${dir}":`, err.message)
-  }
-}
-
 try {
-  const arquivos = fs.readdirSync(VIDEOS_DIR)
-  console.log('Conteúdo da pasta VIDEOS_DIR:', arquivos)
+  fs.readdirSync(VIDEOS_DIR)
 } catch (err) {
   console.error('Não foi possível ler VIDEOS_DIR:', err.message)
 }

@@ -36,7 +36,7 @@ function Meditacao() {
   const emailValido = EMAIL_REGEX.test(email);
   const country = COUNTRIES.find((c) => c.code === pais);
   const dddValido = country.hasDDD ? ddd.length === 2 : true;
-  const numeroValido = country.hasDDD
+  const numeroValido = country.phoneDigits != null
     ? numero.length === country.phoneDigits
     : numero.length >= GENERIC_MIN_DIGITS && numero.length <= GENERIC_MAX_DIGITS;
   const telefoneValido = country.hasDDD ? dddValido && numeroValido : numeroValido;
@@ -175,7 +175,7 @@ function Meditacao() {
                         inputMode="numeric"
                         value={numero}
                         onChange={handleNumeroChange}
-                        placeholder={country.hasDDD ? "9 dígitos" : "Número"}
+                        placeholder={country.phoneDigits ? `${country.phoneDigits} dígitos` : "Número"}
                       />
                       {numeroValido && <span className="input-check">✓</span>}
                     </div>
