@@ -1010,6 +1010,15 @@
   background: linear-gradient(to top, rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0));
 }
 
+/* No mobile (fora da tela cheia) a legenda do próprio vídeo fica mais perto
+   do rodapé do quadro — empurra os controles mais pra baixo pra não
+   sobrepor o texto. Tela cheia usa outra regra (:fullscreen) e não muda. */
+@media (max-width: 860px) {
+  .guarded-video:not(:fullscreen):not(:-webkit-full-screen) .guarded-video-controls {
+    padding-bottom: 0;
+  }
+}
+
 .guarded-video-buttons-row {
   display: flex;
   align-items: center;
