@@ -16,16 +16,16 @@ function Footer() {
               <Link to="/">Home</Link>
             </li>
             <li>
-              <Link to="/cursos">Cursos</Link>
-            </li>
-            <li>
-              <Link to="/consulta">Consulta</Link>
+              <Link to="/meditacao">Meditação</Link>
             </li>
             <li>
               <Link to="/sobre">Sobre</Link>
             </li>
             <li>
               <Link to="/contato">Contato</Link>
+            </li>
+            <li>
+              <Link to="/consulta">Agendar Consulta</Link>
             </li>
           </ul>
         </div>
