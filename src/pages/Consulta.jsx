@@ -55,9 +55,9 @@ function Consulta() {
               <a className="btn btn-primary btn-block" href="https://wa.me/+5521976624767" target="_blank" rel="noreferrer">
                 Agendar pelo WhatsApp
               </a>
-              <a className="btn btn-secondary btn-block" href="https://www.doctoralia.com.br/" target="_blank" rel="noreferrer">
+              {/* <a className="btn btn-secondary btn-block" href="https://www.doctoralia.com.br/" target="_blank" rel="noreferrer">
                 Agendar pela Doctoralia
-              </a>
+              </a> */}
             </div>
           </div>
         </div>
