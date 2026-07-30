@@ -1,7 +1,14 @@
 import { Link } from "react-router-dom";
-import fotoPrincipal from "../assets/renato.png";
+import primeiraFoto from "../assets/foto1.jpeg";
+import segundaFoto from "../assets/foto2.jpeg";
+import terceiraFoto from "../assets/foto3.png";
 
-const FOTO = fotoPrincipal;
+// const FOTO = fotoPrincipal;
+// const FOTO2 = primeiraFoto;
+// const FOTO3 = primeiraFoto;
+const foto1 = primeiraFoto;
+const foto2 = segundaFoto;
+const foto3 = terceiraFoto;
 
 const CAMPOS = [
   {
@@ -99,13 +106,7 @@ const PARA_QUEM = [
   "Procura uma avaliação que considere a doença e também sua rotina, valores e realidade.",
 ];
 
-const BENEFICIOS = [
-  "Desenvolver a concentração",
-  "Fortalecer a autorregulação emocional",
-  "Reduzir reações automáticas e impulsivas",
-  "Aumentar a clareza na tomada de decisões",
-  "Melhorar a capacidade de lidar com o estresse",
-];
+const BENEFICIOS = ["Desenvolver a concentração", "Fortalecer a autorregulação emocional", "Reduzir reações automáticas e impulsivas", "Aumentar a clareza na tomada de decisões", "Melhorar a capacidade de lidar com o estresse"];
 
 const AUTORIDADE = [
   {
@@ -176,10 +177,7 @@ function Home() {
           <div className="hero-copy">
             <span className="eyebrow">Médico pela UFRJ</span>
             <h1>Medicina clínica além do remédio.</h1>
-            <p className="lede">
-              Um cuidado baseado em ciência, com um olhar ampliado para tudo o que faz parte de você — seus sintomas, sua história, sua rotina, suas emoções, seus valores e sua realidade — sem
-              reduzir você a um diagnóstico.
-            </p>
+            <p className="lede">Um cuidado baseado em ciência, com um olhar ampliado para tudo o que faz parte de você — seus sintomas, sua história, sua rotina, suas emoções, seus valores e sua realidade — sem reduzir você a um diagnóstico.</p>
             <p style={{ fontWeight: 700, color: "var(--primary)", textTransform: "uppercase", fontSize: 13, letterSpacing: "0.1em", marginTop: 8 }}>Base científica. Visão integral.</p>
             <div className="hero-actions">
               <Link to="/consulta" className="btn btn-primary btn-pill btn-mobile-full">
@@ -198,7 +196,7 @@ function Home() {
             </div>
           </div>
           <div className="hero-media">
-            <img src={FOTO} alt="Dr. Renato Silva de Paula" />
+            <img src={foto1} alt="Dr. Renato Silva de Paula" />
           </div>
         </div>
       </section>
@@ -209,20 +207,16 @@ function Home() {
           <div>
             <span className="eyebrow">Compreender para se cuidar</span>
             <h2>Eu ajudo você a compreender melhor o seu próprio caso.</h2>
-            <p className="plain-highlight">
-              Quando você entende melhor o seu quadro, participa mais ativamente do tratamento, toma decisões com mais segurança e consegue seguir o plano com mais clareza.
-            </p>
+            <p className="plain-highlight">Quando você entende melhor o seu quadro, participa mais ativamente do tratamento, toma decisões com mais segurança e consegue seguir o plano com mais clareza.</p>
           </div>
           <div>
             <p>Muitas pessoas chegam com exames guardados, receitas antigas, laudos, diagnósticos mencionados ao longo do caminho e informações que nunca foram completamente explicadas.</p>
             <p>
-              Antes de propor qualquer conduta, eu procuro entender o que você sente, o que já viveu e como você compreende o próprio quadro. Depois, reunimos essas informações e acrescentamos a
-              análise médica para construir uma visão mais clara do que está acontecendo e do que merece atenção primeiro.
+              Antes de propor qualquer conduta, eu procuro entender o que você sente, o que já viveu e como você compreende o próprio quadro. Depois, reunimos essas informações e acrescentamos a análise médica para construir uma visão mais clara do que está acontecendo e do que merece atenção
+              primeiro.
             </p>
             <p>Faço questão de explicar o que estamos investigando, por que um exame é solicitado, por que um medicamento é escolhido e o que cada resultado muda no plano.</p>
-            <div className="quote-box">
-              Meu trabalho é reunir exames, sintomas, hipóteses e diagnósticos que parecem desconectados, construir com você uma compreensão clara do quadro e transformá-la em um plano possível.
-            </div>
+            <div className="quote-box">Meu trabalho é reunir exames, sintomas, hipóteses e diagnósticos que parecem desconectados, construir com você uma compreensão clara do quadro e transformá-la em um plano possível.</div>
           </div>
         </div>
       </section>
@@ -236,22 +230,13 @@ function Home() {
             <p className="lede" style={{ marginTop: 24 }}>
               Minha atuação parte da medicina tradicional: escuta clínica, raciocínio diagnóstico, interpretação de exames e tratamentos baseados em evidências científicas.
             </p>
-            <p>
-              Mas uma pessoa não cabe apenas em resultados de laboratório. Sono, alimentação, movimento, trabalho, descanso, relações, emoções, valores, espiritualidade e os hábitos que sustentam a
-              vida cotidiana também podem influenciar a saúde, o sofrimento e a capacidade de mudar.
-            </p>
-            <p>
-              Quando necessário, o cuidado também pode incluir estratégias graduais para construir hábitos mais saudáveis e reduzir comportamentos que prejudicam o bem-estar — respeitando a
-              realidade, o tempo e as possibilidades de cada pessoa.
-            </p>
+            <p>Mas uma pessoa não cabe apenas em resultados de laboratório. Sono, alimentação, movimento, trabalho, descanso, relações, emoções, valores, espiritualidade e os hábitos que sustentam a vida cotidiana também podem influenciar a saúde, o sofrimento e a capacidade de mudar.</p>
+            <p>Quando necessário, o cuidado também pode incluir estratégias graduais para construir hábitos mais saudáveis e reduzir comportamentos que prejudicam o bem-estar — respeitando a realidade, o tempo e as possibilidades de cada pessoa.</p>
             <p>Práticas como a meditação também podem ser consideradas quando fizerem sentido para o caso e para a pessoa.</p>
-            <div className="quote-box">
-              Considerar a pessoa por inteiro não significa abandonar medicamentos ou tratamentos convencionais. Significa entender quando eles são necessários — e reconhecer quando, sozinhos, não
-              são suficientes.
-            </div>
+            <div className="quote-box">Considerar a pessoa por inteiro não significa abandonar medicamentos ou tratamentos convencionais. Significa entender quando eles são necessários — e reconhecer quando, sozinhos, não são suficientes.</div>
           </div>
           <div className="hero-media">
-            <img src={FOTO} alt="Dr. Renato em teleconsulta" />
+            <img src={foto2} alt="Dr. Renato em teleconsulta" />
           </div>
         </div>
       </section>
@@ -353,10 +338,7 @@ function Home() {
             <p className="lede" style={{ marginTop: 20 }}>
               <strong>Em muitos casos, essa não precisa ser uma escolha.</strong>
             </p>
-            <p>
-              A meditação faz parte da minha trajetória pessoal e do meu trabalho em educação em saúde. Na minha experiência, ela tem um papel muito importante na minha saúde mental, no meu
-              desempenho profissional e na forma como lido com a vida pessoal e familiar.
-            </p>
+            <p>A meditação faz parte da minha trajetória pessoal e do meu trabalho em educação em saúde. Na minha experiência, ela tem um papel muito importante na minha saúde mental, no meu desempenho profissional e na forma como lido com a vida pessoal e familiar.</p>
             <p>Também acredito que seja uma ferramenta ainda pouco aproveitada no mundo — e especialmente no Brasil.</p>
             <div className="benefits">
               {BENEFICIOS.map((beneficio, i) => (
@@ -373,7 +355,7 @@ function Home() {
             </Link>
           </div>
           <div className="hero-media">
-            <img src={FOTO} alt="Meditação" />
+            <img src={foto3} alt="Meditação" />
           </div>
         </div>
       </section>
@@ -426,12 +408,7 @@ function Home() {
           </span>
           <h2>Deseja conversar sobre o seu caso?</h2>
           <p style={{ margin: "20px auto 28px", color: "#d8ccbc" }}>Envie uma mensagem breve para entender se esta proposta de atendimento faz sentido para o que você procura.</p>
-          <a
-            className="btn btn-light btn-pill btn-mobile-full"
-            href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MENSAGEM_FINAL)}`}
-            target="_blank"
-            rel="noreferrer"
-          >
+          <a className="btn btn-light btn-pill btn-mobile-full" href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MENSAGEM_FINAL)}`} target="_blank" rel="noreferrer">
             Falar pelo WhatsApp
           </a>
         </div>
