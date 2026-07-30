@@ -6,7 +6,7 @@ function Footer() {
       <div className="container">
         <div>
           <h4>Dr. Renato de Paula</h4>
-          <p style={{ maxWidth: 260 }}>Nefrologista dedicado à prevenção, escuta ativa e educação em saúde.</p>
+          <p style={{ maxWidth: 260 }}>Médico dedicado à prevenção, escuta ativa e educação em saúde.</p>
         </div>
 
         <div>
@@ -54,7 +54,7 @@ function Footer() {
           <p style={{ maxWidth: 260 }}>
             CRM-RJ 52.011743-8
             <br />
-            Especialista em Nefrologia
+            Pós-graduado em Nefrologia
           </p>
         </div>
       </div>

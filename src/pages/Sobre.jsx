@@ -17,7 +17,7 @@ function Sobre() {
           </div>
           <div>
             <h2>Uma visão humanizada da medicina</h2>
-            <p>Médico nefrologista, o Dr. Renato construiu sua trajetória com um propósito claro: aproximar a medicina das pessoas. Sua atuação une rigor técnico à escuta atenta, sempre priorizando a prevenção antes da intervenção.</p>
+            <p>Pós-graduado em nefrologia, o Dr. Renato construiu sua trajetória com um propósito claro: aproximar a medicina das pessoas. Sua atuação une rigor técnico à escuta atenta, sempre priorizando a prevenção antes da intervenção.</p>
             <p>Fora do consultório, leva a mesma missão para as redes sociais, criando conteúdo educativo que já alcançou centenas de milhares de pessoas — sempre com responsabilidade, deixando claro que informação não substitui consulta médica.</p>
             <p>
               Ao longo dos anos de prática clínica, percebeu como a falta de informação simples e acessível leva muitos pacientes a tomar decisões precipitadas sobre a própria saúde, como o uso indiscriminado e automático de medicamentos para a dor. Foi a partir de dúvidas reais recebidas
@@ -46,7 +46,7 @@ function Sobre() {
             </div>
             <div className="card">
               <div className="card-icon">🎓</div>
-              <h3>Especialização em Nefrologia</h3>
+              <h3>Pós-graduado em Nefrologia</h3>
               <p>Formação especializada em saúde renal, com foco em prevenção e diagnóstico precoce.</p>
             </div>
             <div className="card">
