@@ -6,7 +6,7 @@ const links = [
   // { to: "/cursos", label: "Cursos" },
   // { to: "/triagem", label: "Triagem do Saber" },
   { to: "/meditacao", label: "Meditação" },
-  { to: "/sobre", label: "Sobre" },
+  // { to: "/sobre", label: "Sobre" },
   { to: "/contato", label: "Contato" },
 ];
 
@@ -38,9 +38,12 @@ function Navbar() {
             </li>
           ))}
           <li>
-            <NavLink to="/consulta" className="btn btn-primary nav-cta" onClick={handleNavClick}>
+            {/* <NavLink href="https://wa.me/+5521976624767" className="btn btn-primary nav-cta" onClick={handleNavClick}>
               Agendar Consulta
-            </NavLink>
+            </NavLink> */}
+            <a href="https://wa.me/5521976624767" target="_blank" rel="noopener noreferrer" className="btn btn-primary nav-cta" onClick={handleNavClick}>
+              Agendar Consulta
+            </a>
           </li>
         </ul>
       </nav>

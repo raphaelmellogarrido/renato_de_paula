@@ -261,7 +261,12 @@ app.use('/videos', express.static(VIDEOS_DIR))
 
 app.use(express.static(DIST_DIR))
 
-app.get('/*splat', (req, res) => {
+// Fallback do SPA: usa app.use sem path (em vez de um padrão coringa tipo
+// '/*splat') porque isso depende da versão exata do path-to-regexp/Express
+// instalada — em produção esse padrão não estava casando com nada e todas
+// as rotas do React (exceto "/") caíam num 404. app.use sem path casa
+// qualquer requisição não tratada antes, sem ambiguidade de sintaxe.
+app.use((req, res) => {
   res.sendFile(path.join(DIST_DIR, 'index.html'))
 })
 
