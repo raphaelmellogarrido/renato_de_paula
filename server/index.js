@@ -27,22 +27,6 @@ try {
   console.error('Não foi possível ler VIDEOS_DIR:', err.message)
 }
 
-console.log('--- Diagnóstico DIST_DIR ---')
-console.log('__dirname:', __dirname)
-console.log('DIST_DIR:', DIST_DIR)
-console.log('DIST_DIR existe?', fs.existsSync(DIST_DIR))
-console.log('DIST_DIR/index.html existe?', fs.existsSync(path.join(DIST_DIR, 'index.html')))
-try {
-  console.log('Conteúdo de DIST_DIR:', fs.readdirSync(DIST_DIR))
-} catch (err) {
-  console.error('Não foi possível ler DIST_DIR:', err.message)
-}
-try {
-  console.log('Conteúdo da pasta pai (__dirname/..):', fs.readdirSync(path.join(__dirname, '..')))
-} catch (err) {
-  console.error('Não foi possível ler a pasta pai:', err.message)
-}
-
 const app = express()
 app.use(cors())
 app.use(express.json())
@@ -71,25 +55,6 @@ const marketingTransporter = nodemailer.createTransport({
     pass: process.env.MARKETING_SMTP_PASS,
   },
 })
-
-// Diagnóstico temporário: usa JSON.stringify para revelar caracteres
-// invisíveis (espaço, quebra de linha, etc.) que não aparecem num log
-// normal. Remover depois que o problema de autenticação for resolvido.
-function inspecionar(valor) {
-  if (!valor) return 'undefined/vazio'
-  const codigos = [...valor].map((c) => c.charCodeAt(0))
-  return `${JSON.stringify(valor)} — tamanho: ${valor.length} — códigos: [${codigos.join(', ')}]`
-}
-
-console.log('--- Diagnóstico SMTP ---')
-console.log('SMTP_HOST:', JSON.stringify(process.env.SMTP_HOST))
-console.log('SMTP_PORT:', JSON.stringify(process.env.SMTP_PORT))
-console.log('SMTP_USER:', JSON.stringify(process.env.SMTP_USER))
-console.log('SMTP_PASS:', inspecionar(process.env.SMTP_PASS))
-console.log('MARKETING_SMTP_PASS:', inspecionar(process.env.MARKETING_SMTP_PASS))
-console.log('SMTP_PASS length:', (process.env.SMTP_PASS || '').length, '(esperado: 10)')
-console.log('MARKETING_SMTP_USER:', JSON.stringify(process.env.MARKETING_SMTP_USER))
-console.log('MARKETING_SMTP_PASS length:', (process.env.MARKETING_SMTP_PASS || '').length, '(esperado: 10)')
 
 transporter.verify((err) => {
   if (err) console.error('Verificação SMTP (contato) falhou:', err.message)
@@ -162,7 +127,7 @@ app.post('/api/meditacao/inscrever', async (req, res) => {
         <p>Olá,</p>
         <p>Fico feliz em saber que você deu esse primeiro passo. Começar a meditar é simples, mas nem sempre fácil — e o fato de você estar aqui já diz muito sobre o cuidado que você tem com a sua própria mente.</p>
         <p>Seu cadastro foi confirmado com sucesso. A partir de agora, é só aguardar: assim que uma nova live de meditação for marcada, você será um dos primeiros a saber, com data, horário e link de acesso direto no seu email.</p>
-        <p>Enquanto isso, as aulas gravadas já estão liberadas para você em <a href="https://renatodepaula.com/meditacao">renatodepaula.com/meditacao</a>.</p>
+        <p>Enquanto isso, as aulas gravadas já estão liberadas para você em <a href="https://renatodepaula.com/mitos">renatodepaula.com/mitos</a>.</p>
         <p>Até breve,<br>Dr. Renato Silva de Paula</p>
       `,
     })

@@ -180,9 +180,12 @@ function Home() {
             <p className="lede">Um cuidado baseado em ciência, com um olhar ampliado para tudo o que faz parte de você — seus sintomas, sua história, sua rotina, suas emoções, seus valores e sua realidade — sem reduzir você a um diagnóstico.</p>
             <p style={{ fontWeight: 700, color: "var(--primary)", textTransform: "uppercase", fontSize: 13, letterSpacing: "0.1em", marginTop: 8 }}>Base científica. Visão integral.</p>
             <div className="hero-actions">
-              <Link to="/consulta" className="btn btn-primary btn-pill btn-mobile-full">
+              <a href="https://wa.me/5521976624767" target="blank" className="btn btn-primary btn-pill btn-mobile-full">
                 Agendar consulta
-              </Link>
+              </a>
+              {/*ahref="https://wa.me/5521976624767" target="_blank" rel="noopener noreferrer" className="btn btn-primary nav-cta" onClick={handleNavClick}>
+                Agendar Consulta
+              </href=> */}
               <a href="#forma-de-cuidar" className="btn btn-secondary btn-mobile-full">
                 Conhecer minha forma de cuidar
               </a>
@@ -323,9 +326,9 @@ function Home() {
           </div>
         </div>
         <div className="container center" style={{ marginTop: 44 }}>
-          <Link to="/consulta" className="btn btn-primary btn-pill btn-mobile-full">
+          <a href="https://wa.me/5521976624767" target="blank" className="btn btn-primary btn-pill btn-mobile-full">
             Agendar consulta
-          </Link>
+          </a>
         </div>
       </section>
 

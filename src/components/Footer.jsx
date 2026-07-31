@@ -18,14 +18,16 @@ function Footer() {
             <li>
               <Link to="/meditacao">Meditação</Link>
             </li>
-            <li>
+            {/* <li>
               <Link to="/sobre">Sobre</Link>
-            </li>
+            </li> */}
             <li>
               <Link to="/contato">Contato</Link>
             </li>
             <li>
-              <Link to="/consulta">Agendar Consulta</Link>
+              <a href="https://wa.me/5521976624767" target="_blank" rel="noreferrer">
+                Agendar consulta
+              </a>
             </li>
           </ul>
         </div>
