@@ -27,6 +27,22 @@ try {
   console.error('Não foi possível ler VIDEOS_DIR:', err.message)
 }
 
+console.log('--- Diagnóstico DIST_DIR ---')
+console.log('__dirname:', __dirname)
+console.log('DIST_DIR:', DIST_DIR)
+console.log('DIST_DIR existe?', fs.existsSync(DIST_DIR))
+console.log('DIST_DIR/index.html existe?', fs.existsSync(path.join(DIST_DIR, 'index.html')))
+try {
+  console.log('Conteúdo de DIST_DIR:', fs.readdirSync(DIST_DIR))
+} catch (err) {
+  console.error('Não foi possível ler DIST_DIR:', err.message)
+}
+try {
+  console.log('Conteúdo da pasta pai (__dirname/..):', fs.readdirSync(path.join(__dirname, '..')))
+} catch (err) {
+  console.error('Não foi possível ler a pasta pai:', err.message)
+}
+
 const app = express()
 app.use(cors())
 app.use(express.json())
