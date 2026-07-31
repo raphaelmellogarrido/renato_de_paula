@@ -282,8 +282,26 @@ app.use(express.static(DIST_DIR))
 // instalada — em produção esse padrão não estava casando com nada e todas
 // as rotas do React (exceto "/") caíam num 404. app.use sem path casa
 // qualquer requisição não tratada antes, sem ambiguidade de sintaxe.
+//
+// Usa fs.readFileSync + res.send em vez de res.sendFile: no ambiente da
+// Hostinger, res.sendFile (biblioteca `send`) lançava "NotFoundError" mesmo
+// com o arquivo existindo (confirmado via fs.existsSync). Lendo o arquivo
+// direto com fs puro evita esse mecanismo problemático.
+const INDEX_HTML_PATH = path.join(DIST_DIR, 'index.html')
+let indexHtml
+try {
+  indexHtml = fs.readFileSync(INDEX_HTML_PATH, 'utf-8')
+  console.log('index.html carregado em memória, tamanho:', indexHtml.length)
+} catch (err) {
+  console.error('Não foi possível ler index.html:', err.message)
+}
+
 app.use((req, res) => {
-  res.sendFile(path.join(DIST_DIR, 'index.html'))
+  if (indexHtml) {
+    res.type('html').send(indexHtml)
+  } else {
+    res.status(500).send('index.html não encontrado no servidor.')
+  }
 })
 
 app.listen(PORT, () => {
