@@ -41,13 +41,21 @@ function BotaoComprarCurso() {
 // mudo na maioria dos navegadores), com um ícone grande pra ativar o som.
 // Ao rolar a página e o vídeo sair da tela, ele "flutua" pequeno no canto
 // inferior direito e continua tocando — sem recarregar, porque é sempre o
-// mesmo elemento <video>, só muda de posição via CSS.
+// mesmo elemento <video>, só muda de posição via CSS. Tem os mesmos controles
+// do player usado nos outros vídeos (play/pause, volume, tela cheia).
 function VideoHeroMeditacao() {
   const videoRef = useRef(null);
+  const wrapperRef = useRef(null);
   const slotRef = useRef(null);
+  const volumeTimeoutRef = useRef(null);
+
   const [mudo, setMudo] = useState(true);
   const [flutuante, setFlutuante] = useState(false);
   const [erro, setErro] = useState("");
+  const [playing, setPlaying] = useState(false);
+  const [volume, setVolume] = useState(1);
+  const [volumeAberto, setVolumeAberto] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
 
   useEffect(() => {
     const el = slotRef.current;
@@ -57,10 +65,76 @@ function VideoHeroMeditacao() {
     return () => observer.disconnect();
   }, []);
 
-  function handleAtivarSom() {
+  useEffect(() => {
+    function handleFullscreenChange() {
+      const ativo = document.fullscreenElement || document.webkitFullscreenElement;
+      const dentro = ativo === wrapperRef.current;
+      setFullscreen(dentro);
+      if (!dentro && screen.orientation?.unlock) screen.orientation.unlock();
+    }
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
+    };
+  }, []);
+
+  useEffect(() => () => clearTimeout(volumeTimeoutRef.current), []);
+
+  function abrirVolumeTemporariamente() {
+    setVolumeAberto(true);
+    clearTimeout(volumeTimeoutRef.current);
+    volumeTimeoutRef.current = setTimeout(() => setVolumeAberto(false), 2500);
+  }
+
+  function togglePlay() {
+    const v = videoRef.current;
+    if (v.paused) {
+      const resultado = v.play();
+      if (resultado?.catch) resultado.catch(() => setErro("Não foi possível reproduzir o vídeo. Toque novamente ou tente com outra conexão."));
+    } else {
+      v.pause();
+    }
+  }
+
+  function handleAtivarSom(e) {
+    e.stopPropagation();
     const v = videoRef.current;
     if (v) v.muted = false;
     setMudo(false);
+    abrirVolumeTemporariamente();
+  }
+
+  function toggleMute() {
+    const v = videoRef.current;
+    v.muted = !v.muted;
+    setMudo(v.muted);
+    abrirVolumeTemporariamente();
+  }
+
+  function handleVolumeChange(e) {
+    const v = videoRef.current;
+    const novoVolume = Number(e.target.value);
+    v.volume = novoVolume;
+    v.muted = novoVolume === 0;
+    setVolume(novoVolume);
+    setMudo(v.muted);
+    abrirVolumeTemporariamente();
+  }
+
+  // Deixa a div em tela cheia, não o <video> em si — evita que o navegador
+  // injete controles nativos por cima dos nossos.
+  function handleFullscreen() {
+    const jaEmFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
+    if (jaEmFullscreen) {
+      if (document.exitFullscreen) document.exitFullscreen();
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+      return;
+    }
+    const wrapper = wrapperRef.current;
+    if (wrapper.requestFullscreen) wrapper.requestFullscreen();
+    else if (wrapper.webkitRequestFullscreen) wrapper.webkitRequestFullscreen();
   }
 
   function handleVideoError() {
@@ -74,13 +148,59 @@ function VideoHeroMeditacao() {
       </div>
       <div className="container">
         <div className="meditacao-hero-video-slot" ref={slotRef}>
-          <div className={`meditacao-hero-video ${flutuante ? "is-floating" : ""}`}>
-            <video ref={videoRef} src={`${API_URL}/videos/aula_gratuita_meditacao.mp4`} autoPlay muted={mudo} loop playsInline onError={handleVideoError} />
+          <div className={`meditacao-hero-video ${flutuante ? "is-floating" : ""}`} ref={wrapperRef}>
+            <video
+              ref={videoRef}
+              src={`${API_URL}/videos/aula_gratuita_meditacao.mp4`}
+              autoPlay
+              muted={mudo}
+              loop
+              playsInline
+              onClick={togglePlay}
+              onPlay={() => setPlaying(true)}
+              onPause={() => setPlaying(false)}
+              onError={handleVideoError}
+            />
+
+            <button
+              type="button"
+              className={`guarded-video-toggle ${playing ? "is-playing" : ""}`}
+              onClick={togglePlay}
+              aria-label={playing ? "Pausar" : "Reproduzir"}
+            >
+              {playing ? "❚❚" : "▶"}
+            </button>
+
             {mudo && (
               <button type="button" className="meditacao-hero-video-mute" onClick={handleAtivarSom} aria-label="Ativar som">
                 🔇
               </button>
             )}
+
+            <div className="guarded-video-controls">
+              <div className="guarded-video-buttons-row" style={{ justifyContent: "space-between" }}>
+                <div className="guarded-video-volume-group">
+                  <button type="button" onClick={toggleMute} aria-label={mudo ? "Ativar som" : "Silenciar"}>
+                    {mudo || volume === 0 ? "🔇" : "🔊"}
+                  </button>
+                  {volumeAberto && (
+                    <input
+                      type="range"
+                      className="guarded-video-volume-popup"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value={mudo ? 0 : volume}
+                      onChange={handleVolumeChange}
+                      aria-label="Volume"
+                    />
+                  )}
+                </div>
+                <button type="button" onClick={handleFullscreen} aria-label={fullscreen ? "Sair da tela cheia" : "Tela cheia"}>
+                  {fullscreen ? "⤡" : "⛶"}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
         {erro && (
