@@ -56,6 +56,8 @@ function VideoHeroMeditacao() {
   const [volume, setVolume] = useState(1);
   const [volumeAberto, setVolumeAberto] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
 
   useEffect(() => {
     const el = slotRef.current;
@@ -141,6 +143,23 @@ function VideoHeroMeditacao() {
     setErro("Não foi possível carregar o vídeo. Verifique sua conexão e tente novamente.");
   }
 
+  function handleTimeUpdate() {
+    setCurrentTime(videoRef.current.currentTime);
+  }
+
+  function handleLoadedMetadata() {
+    setDuration(videoRef.current.duration || 0);
+  }
+
+  // Vídeo promocional, não precisa restringir avanço — diferente do player
+  // dos cursos gated, aqui dá pra arrastar livremente pra frente e pra trás.
+  function handleSeekBarChange(e) {
+    const v = videoRef.current;
+    const novoTempo = Number(e.target.value);
+    v.currentTime = novoTempo;
+    setCurrentTime(novoTempo);
+  }
+
   return (
     <section className="section">
       <div className="container center">
@@ -159,6 +178,8 @@ function VideoHeroMeditacao() {
               onClick={togglePlay}
               onPlay={() => setPlaying(true)}
               onPause={() => setPlaying(false)}
+              onTimeUpdate={handleTimeUpdate}
+              onLoadedMetadata={handleLoadedMetadata}
               onError={handleVideoError}
             />
 
@@ -178,7 +199,7 @@ function VideoHeroMeditacao() {
             )}
 
             <div className="guarded-video-controls">
-              <div className="guarded-video-buttons-row" style={{ justifyContent: "space-between" }}>
+              <div className="guarded-video-buttons-row">
                 <div className="guarded-video-volume-group">
                   <button type="button" onClick={toggleMute} aria-label={mudo ? "Ativar som" : "Silenciar"}>
                     {mudo || volume === 0 ? "🔇" : "🔊"}
@@ -196,6 +217,16 @@ function VideoHeroMeditacao() {
                     />
                   )}
                 </div>
+                <input
+                  type="range"
+                  className="guarded-video-seekbar"
+                  min="0"
+                  max={duration || 0}
+                  step="0.1"
+                  value={currentTime}
+                  onChange={handleSeekBarChange}
+                  aria-label="Progresso do vídeo"
+                />
                 <button type="button" onClick={handleFullscreen} aria-label={fullscreen ? "Sair da tela cheia" : "Tela cheia"}>
                   {fullscreen ? "⤡" : "⛶"}
                 </button>
