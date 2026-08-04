@@ -127,6 +127,18 @@ function VideoHeroMeditacao() {
 
   // Deixa a div em tela cheia, não o <video> em si — evita que o navegador
   // injete controles nativos por cima dos nossos.
+  // function handleFullscreen() {
+  //   const jaEmFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
+  //   if (jaEmFullscreen) {
+  //     if (document.exitFullscreen) document.exitFullscreen();
+  //     else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+  //     return;
+  //   }
+  //   const wrapper = wrapperRef.current;
+  //   if (wrapper.requestFullscreen) wrapper.requestFullscreen();
+  //   else if (wrapper.webkitRequestFullscreen) wrapper.webkitRequestFullscreen();
+  // }
+
   function handleFullscreen() {
     const jaEmFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
     if (jaEmFullscreen) {
@@ -135,8 +147,25 @@ function VideoHeroMeditacao() {
       return;
     }
     const wrapper = wrapperRef.current;
-    if (wrapper.requestFullscreen) wrapper.requestFullscreen();
-    else if (wrapper.webkitRequestFullscreen) wrapper.webkitRequestFullscreen();
+
+    // Função auxiliar para travar a orientação na horizontal
+    const travarHorizontal = () => {
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock("landscape").catch(() => {
+          // Alguns navegadores/dispositivos podem ignorar o bloqueio de orientação
+        });
+      }
+    };
+
+    if (wrapper.requestFullscreen) {
+      wrapper
+        .requestFullscreen()
+        .then(travarHorizontal)
+        .catch(() => {});
+    } else if (wrapper.webkitRequestFullscreen) {
+      wrapper.webkitRequestFullscreen();
+      travarHorizontal();
+    }
   }
 
   function handleVideoError() {
@@ -183,12 +212,7 @@ function VideoHeroMeditacao() {
               onError={handleVideoError}
             />
 
-            <button
-              type="button"
-              className={`guarded-video-toggle ${playing ? "is-playing" : ""}`}
-              onClick={togglePlay}
-              aria-label={playing ? "Pausar" : "Reproduzir"}
-            >
+            <button type="button" className={`guarded-video-toggle ${playing ? "is-playing" : ""}`} onClick={togglePlay} aria-label={playing ? "Pausar" : "Reproduzir"}>
               {playing ? "❚❚" : "▶"}
             </button>
 
@@ -204,29 +228,9 @@ function VideoHeroMeditacao() {
                   <button type="button" onClick={toggleMute} aria-label={mudo ? "Ativar som" : "Silenciar"}>
                     {mudo || volume === 0 ? "🔇" : "🔊"}
                   </button>
-                  {volumeAberto && (
-                    <input
-                      type="range"
-                      className="guarded-video-volume-popup"
-                      min="0"
-                      max="1"
-                      step="0.05"
-                      value={mudo ? 0 : volume}
-                      onChange={handleVolumeChange}
-                      aria-label="Volume"
-                    />
-                  )}
+                  {volumeAberto && <input type="range" className="guarded-video-volume-popup" min="0" max="1" step="0.05" value={mudo ? 0 : volume} onChange={handleVolumeChange} aria-label="Volume" />}
                 </div>
-                <input
-                  type="range"
-                  className="guarded-video-seekbar"
-                  min="0"
-                  max={duration || 0}
-                  step="0.1"
-                  value={currentTime}
-                  onChange={handleSeekBarChange}
-                  aria-label="Progresso do vídeo"
-                />
+                <input type="range" className="guarded-video-seekbar" min="0" max={duration || 0} step="0.1" value={currentTime} onChange={handleSeekBarChange} aria-label="Progresso do vídeo" />
                 <button type="button" onClick={handleFullscreen} aria-label={fullscreen ? "Sair da tela cheia" : "Tela cheia"}>
                   {fullscreen ? "⤡" : "⛶"}
                 </button>
