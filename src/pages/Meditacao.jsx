@@ -1,13 +1,27 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import GuardedVideo from "../components/GuardedVideo";
 import { COUNTRIES } from "../config/countries";
+import depo1 from "../assets/depo1.jpeg";
+import depo2 from "../assets/depo2.jpeg";
+import depo3 from "../assets/depo3.jpeg";
+import depo4 from "../assets/depo4.jpeg";
+import depo5 from "../assets/depo5.jpeg";
 
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:3001" : "");
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const GENERIC_MAX_DIGITS = 14;
 const GENERIC_MIN_DIGITS = 6;
 const HOTMART_LINK = "https://hotmart.com/pt-br";
+
+// Nomes provisórios — trocar pelos nomes reais das pessoas nos depoimentos.
+const DEPOIMENTOS = [
+  { foto: depo1, nome: "Wictor Bernardo" },
+  { foto: depo2, nome: "Allan Sommer" },
+  { foto: depo3, nome: "Diandra" },
+  { foto: depo4, nome: "Vinícius Mendes" },
+  { foto: depo5, nome: "Doce biscuit" },
+];
 
 function onlyDigits(value) {
   return value.replace(/\D/g, "");
@@ -20,6 +34,137 @@ function BotaoComprarCurso() {
         Comprar curso de meditação completo
       </a>
     </div>
+  );
+}
+
+// Vídeo de abertura da /meditacao: começa sozinho, mudo (autoplay só funciona
+// mudo na maioria dos navegadores), com um ícone grande pra ativar o som.
+// Ao rolar a página e o vídeo sair da tela, ele "flutua" pequeno no canto
+// inferior direito e continua tocando — sem recarregar, porque é sempre o
+// mesmo elemento <video>, só muda de posição via CSS.
+function VideoHeroMeditacao() {
+  const videoRef = useRef(null);
+  const slotRef = useRef(null);
+  const [mudo, setMudo] = useState(true);
+  const [flutuante, setFlutuante] = useState(false);
+  const [erro, setErro] = useState("");
+
+  useEffect(() => {
+    const el = slotRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => setFlutuante(!entry.isIntersecting), { threshold: 0 });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  function handleAtivarSom() {
+    const v = videoRef.current;
+    if (v) v.muted = false;
+    setMudo(false);
+  }
+
+  function handleVideoError() {
+    setErro("Não foi possível carregar o vídeo. Verifique sua conexão e tente novamente.");
+  }
+
+  return (
+    <section className="section">
+      <div className="container center">
+        <h1>Introdução a meditação!</h1>
+      </div>
+      <div className="container">
+        <div className="meditacao-hero-video-slot" ref={slotRef}>
+          <div className={`meditacao-hero-video ${flutuante ? "is-floating" : ""}`}>
+            <video ref={videoRef} src={`${API_URL}/videos/aula_gratuita_meditacao.mp4`} autoPlay muted={mudo} loop playsInline onError={handleVideoError} />
+            {mudo && (
+              <button type="button" className="meditacao-hero-video-mute" onClick={handleAtivarSom} aria-label="Ativar som">
+                🔇
+              </button>
+            )}
+          </div>
+        </div>
+        {erro && (
+          <div className="error-box" style={{ marginTop: 12 }}>
+            {erro}
+          </div>
+        )}
+      </div>
+      <BotaoComprarCurso />
+    </section>
+  );
+}
+
+// Hero de depoimentos: 5 fotos padronizadas, com nome embaixo de cada uma.
+// Clicar numa foto abre ela em tamanho grande, num lightbox simples.
+function SecaoDepoimentos() {
+  const [aberto, setAberto] = useState(null);
+
+  function irParaAnterior() {
+    setAberto((i) => (i - 1 + DEPOIMENTOS.length) % DEPOIMENTOS.length);
+  }
+
+  function irParaProximo() {
+    setAberto((i) => (i + 1) % DEPOIMENTOS.length);
+  }
+
+  useEffect(() => {
+    if (aberto === null) return;
+    function handleKey(e) {
+      if (e.key === "Escape") setAberto(null);
+      if (e.key === "ArrowLeft") irParaAnterior();
+      if (e.key === "ArrowRight") irParaProximo();
+    }
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [aberto]);
+
+  return (
+    <section className="section">
+      <div className="container center" style={{ marginBottom: 32 }}>
+        <span className="eyebrow">Depoimentos</span>
+        <h2>Quem já praticou, recomenda</h2>
+      </div>
+      <div className="container depoimentos-grid">
+        {DEPOIMENTOS.map((d, i) => (
+          <button type="button" key={d.nome} className="depoimento-item" onClick={() => setAberto(i)}>
+            <img src={d.foto} alt={`Depoimento de ${d.nome}`} />
+            <span className="depoimento-nome">{d.nome}</span>
+          </button>
+        ))}
+      </div>
+
+      {aberto !== null && (
+        <div className="depoimento-lightbox" onClick={() => setAberto(null)}>
+          <button type="button" className="depoimento-lightbox-close" onClick={() => setAberto(null)} aria-label="Fechar">
+            ✕
+          </button>
+          <button
+            type="button"
+            className="depoimento-lightbox-seta depoimento-lightbox-seta-esquerda"
+            onClick={(e) => {
+              e.stopPropagation();
+              irParaAnterior();
+            }}
+            aria-label="Depoimento anterior"
+          >
+            ‹
+          </button>
+          <img src={DEPOIMENTOS[aberto].foto} alt={`Depoimento de ${DEPOIMENTOS[aberto].nome}`} onClick={(e) => e.stopPropagation()} />
+          <button
+            type="button"
+            className="depoimento-lightbox-seta depoimento-lightbox-seta-direita"
+            onClick={(e) => {
+              e.stopPropagation();
+              irParaProximo();
+            }}
+            aria-label="Próximo depoimento"
+          >
+            ›
+          </button>
+          <span className="depoimento-lightbox-nome">{DEPOIMENTOS[aberto].nome}</span>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -48,9 +193,7 @@ function Meditacao() {
   const emailValido = EMAIL_REGEX.test(email);
   const country = COUNTRIES.find((c) => c.code === pais);
   const dddValido = country.hasDDD ? ddd.length === 2 : true;
-  const numeroValido = country.phoneDigits != null
-    ? numero.length === country.phoneDigits
-    : numero.length >= GENERIC_MIN_DIGITS && numero.length <= GENERIC_MAX_DIGITS;
+  const numeroValido = country.phoneDigits != null ? numero.length === country.phoneDigits : numero.length >= GENERIC_MIN_DIGITS && numero.length <= GENERIC_MAX_DIGITS;
   const telefonePreenchido = numero.length > 0;
   const telefoneValido = country.hasDDD ? dddValido && numeroValido : numeroValido;
   const formValido = emailValido;
@@ -107,28 +250,6 @@ function Meditacao() {
     setVideo2Assistido(true);
   }
 
-  // Variante /curso: só o vídeo gratuito + explicação + botão de compra.
-  if (variante === "curso") {
-    return (
-      <>
-        <section className="hero">
-          <div className="container center">
-            <span className="eyebrow">Meditação</span>
-            <h1>Aula gratuita de meditação</h1>
-            <p className="lede" style={{ margin: "0 auto" }}>
-              A meditação é uma das ferramentas mais simples e eficazes para treinar a atenção, reduzir reações automáticas e trazer mais clareza pro dia a dia. Nessa aula gratuita, você já sai com uma
-              prática que pode aplicar hoje mesmo.
-            </p>
-          </div>
-        </section>
-        <div className="container guarded-video-list" style={{ maxWidth: 860, width: "100%", margin: "32px auto 0" }}>
-          <GuardedVideo src={`${API_URL}/videos/aula_gratuita_meditacao.mp4`} label="Aula gratuita" />
-        </div>
-        <BotaoComprarCurso />
-      </>
-    );
-  }
-
   // Variante /mitos: só o cadastro + os 3 vídeos, sem a introdução.
   if (variante === "mitos") {
     return (
@@ -151,8 +272,7 @@ function Meditacao() {
 
                   <div className={`field ${telefonePreenchido && telefoneValido ? "valid" : ""}`}>
                     <label htmlFor="numero-live">
-                      Telefone <span style={{ fontWeight: 400, opacity: 0.7 }}>(opcional)</span>{" "}
-                      {telefonePreenchido && telefoneValido && <span className="valid-check">✓</span>}
+                      Telefone <span style={{ fontWeight: 400, opacity: 0.7 }}>(opcional)</span> {telefonePreenchido && telefoneValido && <span className="valid-check">✓</span>}
                     </label>
                     <div className="phone-group">
                       <select
@@ -172,28 +292,12 @@ function Meditacao() {
                       </select>
                       {country.hasDDD && (
                         <div className="input-check-wrap ddd-wrap">
-                          <input
-                            className={`ddd-input ${dddValido ? "valid" : ""}`}
-                            type="tel"
-                            inputMode="numeric"
-                            value={ddd}
-                            onChange={handleDddChange}
-                            placeholder="DDD"
-                            aria-label="DDD"
-                          />
+                          <input className={`ddd-input ${dddValido ? "valid" : ""}`} type="tel" inputMode="numeric" value={ddd} onChange={handleDddChange} placeholder="DDD" aria-label="DDD" />
                           {dddValido && <span className="input-check">✓</span>}
                         </div>
                       )}
                       <div className="input-check-wrap numero-wrap">
-                        <input
-                          id="numero-live"
-                          className={`numero-input ${numeroValido ? "valid" : ""}`}
-                          type="tel"
-                          inputMode="numeric"
-                          value={numero}
-                          onChange={handleNumeroChange}
-                          placeholder={country.phoneDigits ? `${country.phoneDigits} dígitos` : "Número"}
-                        />
+                        <input id="numero-live" className={`numero-input ${numeroValido ? "valid" : ""}`} type="tel" inputMode="numeric" value={numero} onChange={handleNumeroChange} placeholder={country.phoneDigits ? `${country.phoneDigits} dígitos` : "Número"} />
                         {numeroValido && <span className="input-check">✓</span>}
                       </div>
                     </div>
@@ -230,9 +334,11 @@ function Meditacao() {
     );
   }
 
-  // Padrão (/meditacao direto): só a introdução, sem cadastro nem vídeos.
+  // Padrão (/meditacao direto): vídeo de abertura + introdução, sem cadastro nem vídeos gated.
   return (
     <>
+      <VideoHeroMeditacao />
+
       {/* Hero 1 — O que é meditação */}
       <section className="hero">
         <div className="container center">
@@ -254,6 +360,8 @@ function Meditacao() {
           </p>
         </div>
       </section>
+
+      <SecaoDepoimentos />
     </>
   );
 }

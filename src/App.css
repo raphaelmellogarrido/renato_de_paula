@@ -1439,3 +1439,212 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* --- Vídeo de abertura da /meditacao (autoplay + modo flutuante) --- */
+
+.meditacao-hero-video-slot {
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+  aspect-ratio: 16 / 9;
+  position: relative;
+}
+
+.meditacao-hero-video {
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #000;
+  box-shadow: var(--shadow);
+  transition: box-shadow 0.2s ease;
+}
+
+.meditacao-hero-video video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.meditacao-hero-video-mute {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  border: none;
+  font-size: 30px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Quando o vídeo sai da tela ao rolar, ele passa a flutuar fixo no canto
+   inferior direito, pequeno, continuando a tocar sem interrupção — o
+   elemento <video> nunca é desmontado, só reposicionado via CSS. */
+.meditacao-hero-video.is-floating {
+  position: fixed;
+  inset: auto 20px 20px auto;
+  width: 260px;
+  height: auto;
+  z-index: 60;
+}
+
+.meditacao-hero-video.is-floating .meditacao-hero-video-mute {
+  width: 40px;
+  height: 40px;
+  font-size: 16px;
+}
+
+@media (max-width: 640px) {
+  .meditacao-hero-video.is-floating {
+    width: 45vw;
+    right: 12px;
+    bottom: 12px;
+  }
+}
+
+/* --- Depoimentos (fotos padronizadas + lightbox) --- */
+
+.depoimentos-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 20px;
+}
+
+.depoimento-item {
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  font: inherit;
+}
+
+.depoimento-item img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  transition: transform 0.15s ease;
+}
+
+.depoimento-item:hover img {
+  transform: translateY(-3px);
+}
+
+.depoimento-nome {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-h);
+}
+
+.depoimento-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px;
+  cursor: zoom-out;
+}
+
+.depoimento-lightbox img {
+  max-width: min(90vw, 520px);
+  max-height: 75vh;
+  object-fit: contain;
+  border-radius: 12px;
+  cursor: default;
+}
+
+.depoimento-lightbox-nome {
+  color: #fff;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.depoimento-lightbox-close {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: #fff;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+@media (max-width: 860px) {
+  .depoimentos-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .depoimentos-grid {
+    grid-template-columns: 1fr;
+    max-width: 360px;
+    margin: 0 auto;
+    gap: 28px;
+  }
+}
+
+.depoimento-lightbox-seta {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: #fff;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  font-size: 30px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.depoimento-lightbox-seta:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.depoimento-lightbox-seta-esquerda {
+  left: 16px;
+}
+
+.depoimento-lightbox-seta-direita {
+  right: 16px;
+}
+
+@media (max-width: 640px) {
+  .depoimento-lightbox-seta {
+    width: 40px;
+    height: 40px;
+    font-size: 24px;
+  }
+  .depoimento-lightbox-seta-esquerda {
+    left: 6px;
+  }
+  .depoimento-lightbox-seta-direita {
+    right: 6px;
+  }
+}
