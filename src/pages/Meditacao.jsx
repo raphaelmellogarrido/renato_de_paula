@@ -100,11 +100,11 @@ function SecaoDepoimentos() {
   const [aberto, setAberto] = useState(null);
 
   function irParaAnterior() {
-    setAberto((i) => (i - 1 + DEPOIMENTOS.length) % DEPOIMENTOS.length);
+    setAberto((i) => (i > 0 ? i - 1 : i));
   }
 
   function irParaProximo() {
-    setAberto((i) => (i + 1) % DEPOIMENTOS.length);
+    setAberto((i) => (i < DEPOIMENTOS.length - 1 ? i + 1 : i));
   }
 
   useEffect(() => {
@@ -141,6 +141,7 @@ function SecaoDepoimentos() {
           <button
             type="button"
             className="depoimento-lightbox-seta depoimento-lightbox-seta-esquerda"
+            disabled={aberto === 0}
             onClick={(e) => {
               e.stopPropagation();
               irParaAnterior();
@@ -153,6 +154,7 @@ function SecaoDepoimentos() {
           <button
             type="button"
             className="depoimento-lightbox-seta depoimento-lightbox-seta-direita"
+            disabled={aberto === DEPOIMENTOS.length - 1}
             onClick={(e) => {
               e.stopPropagation();
               irParaProximo();
