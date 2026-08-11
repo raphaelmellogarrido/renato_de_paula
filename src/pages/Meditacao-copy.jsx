@@ -7,25 +7,12 @@ import depo2 from "../assets/depo2.jpeg";
 import depo3 from "../assets/depo3.jpeg";
 import depo4 from "../assets/depo4.jpeg";
 import depo5 from "../assets/depo5.jpeg";
-import "./meditacao/MeditacaoV9.css";
-import HistoriaSection from "./meditacao/HistoriaSection";
-import CienciaSection from "./meditacao/CienciaSection";
-import PrincipioSection from "./meditacao/PrincipioSection";
-import VidaCotidianaSection from "./meditacao/VidaCotidianaSection";
-import MetodoSection from "./meditacao/MetodoSection";
-import QuinzeDiasSection from "./meditacao/QuinzeDiasSection";
-import EntregaSection from "./meditacao/EntregaSection";
-import OfertaSection from "./meditacao/OfertaSection";
-import GarantiaSection from "./meditacao/GarantiaSection";
-import DuvidasSection from "./meditacao/DuvidasSection";
 
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:3001" : "");
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const GENERIC_MAX_DIGITS = 14;
 const GENERIC_MIN_DIGITS = 6;
-const HOTMART_LINK = "https://go.hotmart.com/I99615540I?dp=1";
-const YOUTUBE_VIDEO_ID = "5zxSxg70psM";
-const WHATSAPP_DUVIDAS_LINK = "https://wa.me/5521976624767?text=" + encodeURIComponent("Olá! Conheci o Meditação Raiz pelo site e gostaria de tirar uma dúvida antes de começar o treinamento.");
+const HOTMART_LINK = "https://hotmart.com/pt-br";
 
 // Nomes provisórios — trocar pelos nomes reais das pessoas nos depoimentos.
 const DEPOIMENTOS = [
@@ -44,54 +31,26 @@ function BotaoComprarCurso() {
   return (
     <div className="container center" style={{ marginTop: 40, marginBottom: 24 }}>
       <a href={HOTMART_LINK} target="_blank" rel="noreferrer" className="btn btn-primary btn-pill btn-mobile-full">
-        Comece a meditar
+        Comprar curso de meditação completo
       </a>
     </div>
   );
 }
 
-// Vídeo de abertura da /meditacao: um vídeo do YouTube pilotado pela IFrame
-// API (pra manter os mesmos controles customizados de antes), começa sozinho,
-// mudo (autoplay só funciona mudo na maioria dos navegadores). Ao rolar a
-// página e o vídeo sair da tela, ele "flutua" pequeno no canto inferior
-// direito e continua tocando — sem recarregar, porque é sempre o mesmo
-// player, só muda de posição via CSS. Tem um botão de fechar quando está
-// flutuando, e os mesmos controles do player usado nos outros vídeos
-// (play/pause, volume, tela cheia).
-function carregarYouTubeApi(aoCarregar) {
-  if (window.YT && window.YT.Player) {
-    aoCarregar();
-    return;
-  }
-  window.__ytCallbacks = window.__ytCallbacks || [];
-  window.__ytCallbacks.push(aoCarregar);
-  if (window.__ytApiLoading) return;
-  window.__ytApiLoading = true;
-  const tagAnterior = document.querySelector('script[src="https://www.youtube.com/iframe_api"]');
-  if (!tagAnterior) {
-    const tag = document.createElement("script");
-    tag.src = "https://www.youtube.com/iframe_api";
-    document.head.appendChild(tag);
-  }
-  const callbackAnterior = window.onYouTubeIframeAPIReady;
-  window.onYouTubeIframeAPIReady = () => {
-    if (typeof callbackAnterior === "function") callbackAnterior();
-    const callbacks = window.__ytCallbacks || [];
-    window.__ytCallbacks = [];
-    callbacks.forEach((cb) => cb());
-  };
-}
-
+// Vídeo de abertura da /meditacao: começa sozinho, mudo (autoplay só funciona
+// mudo na maioria dos navegadores), com um ícone grande pra ativar o som.
+// Ao rolar a página e o vídeo sair da tela, ele "flutua" pequeno no canto
+// inferior direito e continua tocando — sem recarregar, porque é sempre o
+// mesmo elemento <video>, só muda de posição via CSS. Tem os mesmos controles
+// do player usado nos outros vídeos (play/pause, volume, tela cheia).
 function VideoHeroMeditacao() {
-  const playerDivRef = useRef(null);
-  const playerRef = useRef(null);
+  const videoRef = useRef(null);
   const wrapperRef = useRef(null);
   const slotRef = useRef(null);
   const volumeTimeoutRef = useRef(null);
 
   const [mudo, setMudo] = useState(true);
-  const [visivel, setVisivel] = useState(true);
-  const [flutuanteFechado, setFlutuanteFechado] = useState(false);
+  const [flutuante, setFlutuante] = useState(false);
   const [erro, setErro] = useState("");
   const [playing, setPlaying] = useState(false);
   const [volume, setVolume] = useState(1);
@@ -100,79 +59,10 @@ function VideoHeroMeditacao() {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
-  const flutuante = !visivel && !flutuanteFechado;
-
-  useEffect(() => {
-    let destruido = false;
-
-    function criarPlayer() {
-      if (destruido || !playerDivRef.current) return;
-      playerRef.current = new window.YT.Player(playerDivRef.current, {
-        videoId: YOUTUBE_VIDEO_ID,
-        width: "100%",
-        height: "100%",
-        playerVars: {
-          autoplay: 1,
-          mute: 1,
-          controls: 0,
-          rel: 0,
-          modestbranding: 1,
-          playsinline: 1,
-          loop: 1,
-          playlist: YOUTUBE_VIDEO_ID,
-          iv_load_policy: 3,
-          disablekb: 1,
-          origin: window.location.origin,
-        },
-        events: {
-          onReady: (e) => {
-            if (destruido) return;
-            e.target.playVideo();
-            setDuration(e.target.getDuration() || 0);
-          },
-          onStateChange: (e) => {
-            setPlaying(e.data === window.YT.PlayerState.PLAYING);
-          },
-          onError: () => setErro("Não foi possível carregar o vídeo. Verifique sua conexão e tente novamente."),
-        },
-      });
-    }
-
-    carregarYouTubeApi(criarPlayer);
-
-    return () => {
-      destruido = true;
-      try {
-        playerRef.current?.destroy();
-      } catch {
-        // player já pode ter sido destruído
-      }
-    };
-  }, []);
-
-  // Sem evento nativo de timeupdate no player do YouTube — lê a cada 250ms.
-  useEffect(() => {
-    const id = setInterval(() => {
-      const p = playerRef.current;
-      if (p && typeof p.getCurrentTime === "function") {
-        setCurrentTime(p.getCurrentTime() || 0);
-        const d = p.getDuration();
-        if (d) setDuration(d);
-      }
-    }, 250);
-    return () => clearInterval(id);
-  }, []);
-
   useEffect(() => {
     const el = slotRef.current;
     if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setVisivel(entry.isIntersecting);
-        if (entry.isIntersecting) setFlutuanteFechado(false);
-      },
-      { threshold: 0 },
-    );
+    const observer = new IntersectionObserver(([entry]) => setFlutuante(!entry.isIntersecting), { threshold: 0 });
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
@@ -201,49 +91,54 @@ function VideoHeroMeditacao() {
   }
 
   function togglePlay() {
-    const p = playerRef.current;
-    if (!p) return;
-    if (p.getPlayerState() === window.YT.PlayerState.PLAYING) p.pauseVideo();
-    else p.playVideo();
+    const v = videoRef.current;
+    if (v.paused) {
+      const resultado = v.play();
+      if (resultado?.catch) resultado.catch(() => setErro("Não foi possível reproduzir o vídeo. Toque novamente ou tente com outra conexão."));
+    } else {
+      v.pause();
+    }
   }
 
   function handleAtivarSom(e) {
     e.stopPropagation();
-    const p = playerRef.current;
-    p?.unMute();
-    p?.setVolume(volume * 100 || 100);
+    const v = videoRef.current;
+    if (v) v.muted = false;
     setMudo(false);
     abrirVolumeTemporariamente();
   }
 
   function toggleMute() {
-    const p = playerRef.current;
-    if (!p) return;
-    if (mudo) {
-      p.unMute();
-      setMudo(false);
-    } else {
-      p.mute();
-      setMudo(true);
-    }
+    const v = videoRef.current;
+    v.muted = !v.muted;
+    setMudo(v.muted);
     abrirVolumeTemporariamente();
   }
 
   function handleVolumeChange(e) {
+    const v = videoRef.current;
     const novoVolume = Number(e.target.value);
-    const p = playerRef.current;
-    if (p) {
-      p.setVolume(novoVolume * 100);
-      if (novoVolume === 0) p.mute();
-      else p.unMute();
-    }
+    v.volume = novoVolume;
+    v.muted = novoVolume === 0;
     setVolume(novoVolume);
-    setMudo(novoVolume === 0);
+    setMudo(v.muted);
     abrirVolumeTemporariamente();
   }
 
-  // Deixa a div em tela cheia, não o player em si — evita que o navegador
+  // Deixa a div em tela cheia, não o <video> em si — evita que o navegador
   // injete controles nativos por cima dos nossos.
+  // function handleFullscreen() {
+  //   const jaEmFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
+  //   if (jaEmFullscreen) {
+  //     if (document.exitFullscreen) document.exitFullscreen();
+  //     else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+  //     return;
+  //   }
+  //   const wrapper = wrapperRef.current;
+  //   if (wrapper.requestFullscreen) wrapper.requestFullscreen();
+  //   else if (wrapper.webkitRequestFullscreen) wrapper.webkitRequestFullscreen();
+  // }
+
   function handleFullscreen() {
     const jaEmFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
     if (jaEmFullscreen) {
@@ -273,31 +168,49 @@ function VideoHeroMeditacao() {
     }
   }
 
+  function handleVideoError() {
+    setErro("Não foi possível carregar o vídeo. Verifique sua conexão e tente novamente.");
+  }
+
+  function handleTimeUpdate() {
+    setCurrentTime(videoRef.current.currentTime);
+  }
+
+  function handleLoadedMetadata() {
+    setDuration(videoRef.current.duration || 0);
+  }
+
   // Vídeo promocional, não precisa restringir avanço — diferente do player
   // dos cursos gated, aqui dá pra arrastar livremente pra frente e pra trás.
   function handleSeekBarChange(e) {
+    const v = videoRef.current;
     const novoTempo = Number(e.target.value);
-    playerRef.current?.seekTo(novoTempo, true);
+    v.currentTime = novoTempo;
     setCurrentTime(novoTempo);
-  }
-
-  function handleFechar(e) {
-    e.stopPropagation();
-    playerRef.current?.pauseVideo();
-    setFlutuanteFechado(true);
   }
 
   return (
     <section className="section">
       <div className="container center">
-        <img src="/icone.jpeg" className="meditacao-hero-icon" alt="" />
-        <span className="eyebrow">O começo</span>
-        <h2>Do Zero à Meditação: O Primeiro Passo Real</h2>
+        <h1>Introdução a meditação!</h1>
       </div>
       <div className="container">
         <div className="meditacao-hero-video-slot" ref={slotRef}>
           <div className={`meditacao-hero-video ${flutuante ? "is-floating" : ""}`} ref={wrapperRef}>
-            <div ref={playerDivRef} />
+            <video
+              ref={videoRef}
+              src={`${API_URL}/videos/aula_gratuita_meditacao.mp4`}
+              autoPlay
+              muted={mudo}
+              loop
+              playsInline
+              onClick={togglePlay}
+              onPlay={() => setPlaying(true)}
+              onPause={() => setPlaying(false)}
+              onTimeUpdate={handleTimeUpdate}
+              onLoadedMetadata={handleLoadedMetadata}
+              onError={handleVideoError}
+            />
 
             <button type="button" className={`guarded-video-toggle ${playing ? "is-playing" : ""}`} onClick={togglePlay} aria-label={playing ? "Pausar" : "Reproduzir"}>
               {playing ? "❚❚" : "▶"}
@@ -306,12 +219,6 @@ function VideoHeroMeditacao() {
             {mudo && (
               <button type="button" className="meditacao-hero-video-mute" onClick={handleAtivarSom} aria-label="Ativar som">
                 🔇
-              </button>
-            )}
-
-            {flutuante && (
-              <button type="button" className="meditacao-hero-video-close" onClick={handleFechar} aria-label="Fechar vídeo">
-                ✕
               </button>
             )}
 
@@ -337,25 +244,8 @@ function VideoHeroMeditacao() {
           </div>
         )}
       </div>
+      <BotaoComprarCurso />
     </section>
-  );
-}
-
-// Botões fixos no canto inferior esquerdo (Hotmart + WhatsApp), presentes
-// nas duas variantes da página (/meditacao e /mitos).
-function BarraFixaMeditacao() {
-  return (
-    <div className="mr-fixed-bar">
-      <a href={HOTMART_LINK} target="_blank" rel="noreferrer" className="mr-fixed-btn">
-        Comece a meditar
-      </a>
-      <a href={WHATSAPP_DUVIDAS_LINK} target="_blank" rel="noreferrer" className="mr-fixed-btn mr-fixed-btn-whatsapp">
-        <svg viewBox="0 0 32 32" aria-hidden="true">
-          <path d="M16 3a12 12 0 00-10.4 18L4 29l8.2-1.5A12 12 0 1016 3zm6.9 17.3c-.3.8-1.8 1.5-2.5 1.6-.7.1-1.5.2-2.4-.1-.6-.2-1.4-.5-2.4-.9-4.2-1.8-6.9-6-7.1-6.3-.2-.3-1.7-2.2-1.7-4.2 0-2 .9-3 1.3-3.4.4-.4.9-.5 1.2-.5h.9c.3 0 .7-.1 1 .8.4 1 .9 2.5 1 2.7.1.2.2.5 0 .8-.1.3-.2.5-.4.7-.2.2-.5.6-.7.8-.2.2-.5.5-.2 1 .3.5 1.2 2 2.6 3.2 1.8 1.6 3.3 2.1 3.8 2.3.5.2.8.2 1.1-.1.3-.3 1.2-1.4 1.5-1.9.3-.5.6-.4 1-.2.4.1 2.4 1.1 2.8 1.3.4.2.7.3.8.5.1.2.1 1-.2 1.9z" />
-        </svg>
-        Tire suas Dúvidas
-      </a>
-    </div>
   );
 }
 
@@ -597,44 +487,38 @@ function Meditacao() {
         )}
 
         <BotaoComprarCurso />
-        <BarraFixaMeditacao />
       </>
     );
   }
 
-  // Padrão (/meditacao direto): vídeo de abertura + página de vendas completa.
+  // Padrão (/meditacao direto): vídeo de abertura + introdução, sem cadastro nem vídeos gated.
   return (
     <>
-      {/* Hero 1 — vídeo do YouTube */}
       <VideoHeroMeditacao />
 
-      {/* Hero 2 — depoimentos */}
+      {/* Hero 1 — O que é meditação */}
+      <section className="hero">
+        <div className="container center">
+          <span className="eyebrow">Meditação</span>
+          <h1>O que é meditação</h1>
+          <p className="lede" style={{ margin: "0 auto" }}>
+            Meditação é uma prática simples de treinar a atenção e a presença no momento atual. Não exige nenhuma crença específica, nem horas de silêncio absoluto — pode começar com poucos minutos por dia, e ainda assim trazer mais calma, foco e equilíbrio para a rotina.
+          </p>
+        </div>
+      </section>
+
+      {/* Hero 2 — Onde eu aprendi a meditação */}
+      <section className="section section-alt">
+        <div className="container center" style={{ maxWidth: 720, width: "100%", margin: "0 auto" }}>
+          <span className="eyebrow">Minha jornada</span>
+          <h2>Onde eu aprendi a meditação</h2>
+          <p className="lede" style={{ margin: "0 auto" }}>
+            Aprendi as técnicas mais puras de meditação no continente Asiático há 15 anos e passei a última década aplicando essa sabedoria na prática. Hoje, consolidei todo esse aprendizado milenar em um método simples e direto ao ponto para ajudar você a dominar a ansiedade e ter clareza mental.
+          </p>
+        </div>
+      </section>
+
       <SecaoDepoimentos />
-
-      <div className="mr-scope">
-        {/* Hero 3 — história */}
-        <HistoriaSection />
-        {/* Hero 4 — pesquisa científica */}
-        <CienciaSection />
-        {/* Hero 5 — princípio-raiz */}
-        <PrincipioSection />
-        {/* Hero 6 — o treino não termina junto com a sessão */}
-        <VidaCotidianaSection />
-        {/* Hero 7 — a ordem que organiza o treinamento */}
-        <MetodoSection />
-        {/* Hero 8 — progressão estruturada (15 dias) */}
-        <QuinzeDiasSection />
-        {/* Hero 9 — clareza antes de comprar */}
-        <EntregaSection />
-        {/* Hero 10 — comece agora o Meditação Raiz */}
-        <OfertaSection hotmartLink={HOTMART_LINK} />
-        {/* Hero 11 — garantia */}
-        <GarantiaSection />
-        {/* Hero 12 — perguntas frequentes */}
-        <DuvidasSection />
-      </div>
-
-      <BarraFixaMeditacao />
     </>
   );
 }

@@ -1053,7 +1053,7 @@
   flex-shrink: 0;
 }
 
-.guarded-video-controls input[type='range'] {
+.guarded-video-controls input[type="range"] {
   accent-color: #fff;
   cursor: pointer;
 }
@@ -1315,7 +1315,7 @@
 }
 
 .check-list li::before {
-  content: '—';
+  content: "—";
   position: absolute;
   left: 0;
   color: var(--primary);
@@ -1404,7 +1404,7 @@
 }
 
 .faq-wrap summary::after {
-  content: '+';
+  content: "+";
   font-family: var(--title);
   font-size: 28px;
   font-weight: 400;
@@ -1412,7 +1412,7 @@
 }
 
 .faq-wrap details[open] summary::after {
-  content: '–';
+  content: "–";
 }
 
 .faq-wrap details p {
@@ -1460,10 +1460,22 @@
   transition: box-shadow 0.2s ease;
 }
 
-.meditacao-hero-video video {
+.meditacao-hero-video video,
+.meditacao-hero-video iframe,
+.meditacao-hero-video > div:first-child {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
+}
+
+.meditacao-hero-icon {
+  width: 150px;
+  height: 150px;
+  border-radius: 14px;
+  object-fit: cover;
+  box-shadow: var(--shadow);
+  margin: 0 auto 16px;
   display: block;
 }
 
@@ -1506,6 +1518,85 @@
     width: 45vw;
     right: 12px;
     bottom: 12px;
+  }
+}
+
+/* Botão de fechar o vídeo flutuante — só aparece quando o vídeo já saiu da
+   tela e está flutuando no canto; some novamente quando a seção volta a
+   ficar visível (o vídeo continua tocando por trás, só some da tela). */
+.meditacao-hero-video-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  border: none;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+/* --- Botões fixos da /meditacao (Hotmart + WhatsApp) --- */
+
+.mr-fixed-bar {
+  position: fixed;
+  left: 20px;
+  bottom: 20px;
+  z-index: 65;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mr-fixed-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 999px;
+  background: var(--accent, #1f6e4f);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  text-decoration: none;
+  box-shadow: var(--shadow);
+  white-space: nowrap;
+  transition: transform 0.15s ease;
+}
+
+.mr-fixed-btn:hover {
+  transform: translateY(-2px);
+}
+
+.mr-fixed-btn-whatsapp {
+  background: #25d366;
+}
+
+.mr-fixed-btn-whatsapp svg {
+  width: 18px;
+  height: 18px;
+  fill: #fff;
+  flex: none;
+}
+
+@media (max-width: 860px) {
+  .mr-fixed-bar {
+    left: 12px;
+    bottom: 12px;
+    gap: 8px;
+  }
+
+  .mr-fixed-btn {
+    padding: 10px 14px;
+    font-size: 12px;
   }
 }
 

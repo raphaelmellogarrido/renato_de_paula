@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
+
+const HOTMART_LINK = "https://go.hotmart.com/I99615540I?dp=1";
 
 const links = [
   { to: "/", label: "Home" },
@@ -12,6 +14,8 @@ const links = [
 
 function Navbar() {
   const [open, setOpen] = useState(false);
+  const { pathname } = useLocation();
+  const isMeditacao = pathname === "/meditacao";
 
   function handleNavClick() {
     setOpen(false);
@@ -38,11 +42,14 @@ function Navbar() {
             </li>
           ))}
           <li>
-            {/* <NavLink href="https://wa.me/+5521976624767" className="btn btn-primary nav-cta" onClick={handleNavClick}>
-              Agendar Consulta
-            </NavLink> */}
-            <a href="https://wa.me/5521976624767" target="_blank" rel="noopener noreferrer" className="btn btn-primary nav-cta" onClick={handleNavClick}>
-              Agendar Consulta
+            <a
+              href={isMeditacao ? HOTMART_LINK : "https://wa.me/5521976624767"}
+              target={isMeditacao ? "_blank" : undefined}
+              rel={isMeditacao ? "noreferrer" : "noopener noreferrer"}
+              className="btn btn-primary nav-cta"
+              onClick={handleNavClick}
+            >
+              {isMeditacao ? "Comece a meditar" : "Agendar Consulta"}
             </a>
           </li>
         </ul>
