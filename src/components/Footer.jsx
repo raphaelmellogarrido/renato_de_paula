@@ -29,6 +29,11 @@ function Footer() {
                 Agendar consulta
               </a>
             </li>
+            <li>
+              <a href="https://go.hotmart.com/I99615540I?dp=1" target="_blank" rel="noreferrer">
+                Comece a meditar
+              </a>
+            </li>
           </ul>
         </div>
 

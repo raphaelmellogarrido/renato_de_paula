@@ -76,23 +76,13 @@ function VidaCotidianaSection() {
       <div className="container">
         <div className="mr-section-mark" />
         <div className="mr-eyebrow">O treino não termina junto com a sessão</div>
-        <h2>A prática acontece por alguns minutos. Mas é no restante do dia que ela precisa fazer diferença.</h2>
-        <p className="mr-lead">
-          O objetivo não é criar apenas um momento isolado de calma. É treinar capacidades que você possa utilizar no
-          estudo, no trabalho, nos relacionamentos e nas decisões cotidianas.
-        </p>
+        <h2>Benefícios da meditação na vida real.</h2>
+        <p className="mr-lead">O objetivo não é criar apenas um momento isolado de calma. É treinar capacidades que você possa utilizar no estudo, no trabalho, nos relacionamentos e nas decisões cotidianas.</p>
 
         <div className="mr-life-editorial">
           <div className="mr-life-tabs" role="tablist">
             {TABS.map((tab) => (
-              <button
-                key={tab.key}
-                className={`mr-life-tab ${active === tab.key ? "active" : ""}`}
-                aria-selected={active === tab.key}
-                onMouseEnter={() => setActive(tab.key)}
-                onFocus={() => setActive(tab.key)}
-                onClick={() => setActive(tab.key)}
-              >
+              <button key={tab.key} className={`mr-life-tab ${active === tab.key ? "active" : ""}`} aria-selected={active === tab.key} onMouseEnter={() => setActive(tab.key)} onFocus={() => setActive(tab.key)} onClick={() => setActive(tab.key)}>
                 <span className="mr-life-tab-icon">{tab.icon}</span>
                 <span className="mr-life-tab-copy">
                   <strong>{tab.label}</strong>
@@ -117,13 +107,8 @@ function VidaCotidianaSection() {
         </div>
 
         <div className="mr-life-close">
-          <strong>
-            É isso que transforma a meditação em uma ferramenta de autodomínio aplicada à vida cotidiana.
-          </strong>
-          <span>
-            Não porque ela elimine pensamentos, emoções ou dificuldades, mas porque treina sua capacidade de
-            perceber, reduzir respostas automáticas e escolher para onde retornar.
-          </span>
+          <strong>É isso que transforma a meditação em uma ferramenta de autodomínio aplicada à vida cotidiana.</strong>
+          <span>Não porque ela elimine pensamentos, emoções ou dificuldades, mas porque treina sua capacidade de perceber, reduzir respostas automáticas e escolher para onde retornar.</span>
         </div>
         <p className="mr-science-bridge">Nada disso aparece sozinho. Precisa ser treinado — e em uma ordem.</p>
       </div>

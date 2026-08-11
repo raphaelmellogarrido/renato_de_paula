@@ -43,18 +43,8 @@ function PrereqItem({ item }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div
-      className={`mr-prereq-item ${open ? "open" : ""}`}
-      onMouseEnter={() => !isTouchDevice() && setOpen(true)}
-      onMouseLeave={() => !isTouchDevice() && setOpen(false)}
-    >
-      <button
-        className="mr-prereq-button"
-        aria-expanded={open}
-        onFocus={() => !isTouchDevice() && setOpen(true)}
-        onBlur={() => !isTouchDevice() && setOpen(false)}
-        onClick={() => isTouchDevice() && setOpen((o) => !o)}
-      >
+    <div className={`mr-prereq-item ${open ? "open" : ""}`} onMouseEnter={() => !isTouchDevice() && setOpen(true)} onMouseLeave={() => !isTouchDevice() && setOpen(false)}>
+      <button className="mr-prereq-button" aria-expanded={open} onFocus={() => !isTouchDevice() && setOpen(true)} onBlur={() => !isTouchDevice() && setOpen(false)} onClick={() => isTouchDevice() && setOpen((o) => !o)}>
         <span>{item.expectativa}</span>
       </button>
       <div className="mr-prereq-answer">
@@ -73,11 +63,7 @@ function PrincipioSection() {
           <div className="mr-section-mark" />
           <div className="mr-eyebrow">Calma. Vamos separar uma coisa da outra.</div>
           <h2>Você não precisa chegar pronto para começar.</h2>
-          <p className="mr-lead">
-            Muitas pessoas olham para um meditador experiente e acreditam que precisam ser calmas, concentradas e
-            emocionalmente equilibradas antes de começar. Mas essas características não são requisitos de entrada.
-            São parte do que a prática pode ajudar a desenvolver.
-          </p>
+          <p className="mr-lead">Muitas pessoas olham para um meditador experiente e acreditam que precisam ser calmas, concentradas e emocionalmente equilibradas antes de começar. Mas essas características não são requisitos de entrada. São parte do que a prática pode ajudar a desenvolver.</p>
 
           <div className="mr-prereq-guide">
             <span className="mr-prereq-label">O que se pensa que é preciso</span>
@@ -92,9 +78,7 @@ function PrincipioSection() {
 
           <div className="mr-transition-cue mr-transition-cue--annotated">
             <span>Repare que tudo à direita é capacidade treinável — nada ali é pré-requisito.</span>
-            <span className="mr-spoken-note">
-              E o que se treina nesses minutos não fica nesses minutos. ↓
-            </span>
+            <span className="mr-spoken-note">E o que se treina nesses minutos não fica nesses minutos. ↓</span>
           </div>
         </div>
 
@@ -102,10 +86,7 @@ function PrincipioSection() {
           <svg viewBox="0 0 260 300" aria-hidden="true">
             <circle className="mr-figure-orbit" cx="130" cy="150" r="115" />
             <circle className="mr-figure-orbit" cx="130" cy="150" r="80" />
-            <path
-              className="mr-figure-person"
-              d="M130 90a22 22 0 1 0 0 44 22 22 0 0 0 0-44zM95 220c8-32 27-48 35-48s27 16 35 48"
-            />
+            <path className="mr-figure-person" d="M130 90a22 22 0 1 0 0 44 22 22 0 0 0 0-44zM95 220c8-32 27-48 35-48s27 16 35 48" />
             <path className="mr-figure-wave" d="M40 260c20-10 40 10 60 0s40-10 60 0 40 10 60 0" />
             <path className="mr-figure-wave" d="M40 275c20-10 40 10 60 0s40-10 60 0 40 10 60 0" opacity="0.5" />
           </svg>
