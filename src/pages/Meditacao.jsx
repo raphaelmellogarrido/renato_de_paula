@@ -24,6 +24,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const GENERIC_MAX_DIGITS = 14;
 const GENERIC_MIN_DIGITS = 6;
 const HOTMART_LINK = "https://go.hotmart.com/I99615540I?dp=1";
+const YOUTUBE_VIDEO_ID = "zvdum8Ks0yA";
 const WHATSAPP_DUVIDAS_LINK = "https://wa.me/5521976624767?text=" + encodeURIComponent("Olá! Conheci o Meditação Raiz pelo site e gostaria de tirar uma dúvida antes de começar o treinamento.");
 
 // Nomes provisórios — trocar pelos nomes reais das pessoas nos depoimentos.
@@ -49,16 +50,41 @@ function BotaoComprarCurso() {
   );
 }
 
-// Vídeo de abertura da /meditacao: arquivo próprio (servido pelo backend em
-// /videos), sem nenhuma marca de terceiro. Começa sozinho, mudo (autoplay só
-// funciona mudo na maioria dos navegadores). Ao rolar a página e o vídeo sair
-// da tela, ele "flutua" pequeno no canto inferior direito e continua tocando
-// — sem recarregar, porque é sempre o mesmo elemento <video>, só muda de
-// posição via CSS. Tem um botão de fechar quando está flutuando, e os mesmos
-// controles do player usado nos outros vídeos (play/pause, volume, tela
-// cheia).
+// Vídeo de abertura da /meditacao: um vídeo do YouTube pilotado pela IFrame
+// API (pra manter os mesmos controles customizados de antes), começa sozinho,
+// mudo (autoplay só funciona mudo na maioria dos navegadores). Ao rolar a
+// página e o vídeo sair da tela, ele "flutua" pequeno no canto inferior
+// direito e continua tocando — sem recarregar, porque é sempre o mesmo
+// player, só muda de posição via CSS. Tem um botão de fechar quando está
+// flutuando, e os mesmos controles do player usado nos outros vídeos
+// (play/pause, volume, tela cheia).
+function carregarYouTubeApi(aoCarregar) {
+  if (window.YT && window.YT.Player) {
+    aoCarregar();
+    return;
+  }
+  window.__ytCallbacks = window.__ytCallbacks || [];
+  window.__ytCallbacks.push(aoCarregar);
+  if (window.__ytApiLoading) return;
+  window.__ytApiLoading = true;
+  const tagAnterior = document.querySelector('script[src="https://www.youtube.com/iframe_api"]');
+  if (!tagAnterior) {
+    const tag = document.createElement("script");
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(tag);
+  }
+  const callbackAnterior = window.onYouTubeIframeAPIReady;
+  window.onYouTubeIframeAPIReady = () => {
+    if (typeof callbackAnterior === "function") callbackAnterior();
+    const callbacks = window.__ytCallbacks || [];
+    window.__ytCallbacks = [];
+    callbacks.forEach((cb) => cb());
+  };
+}
+
 function VideoHeroMeditacao() {
-  const videoRef = useRef(null);
+  const playerDivRef = useRef(null);
+  const playerRef = useRef(null);
   const wrapperRef = useRef(null);
   const slotRef = useRef(null);
   const volumeTimeoutRef = useRef(null);
@@ -73,6 +99,53 @@ function VideoHeroMeditacao() {
   const [fullscreen, setFullscreen] = useState(false);
 
   const flutuante = !visivel && !flutuanteFechado;
+
+  useEffect(() => {
+    let destruido = false;
+
+    function criarPlayer() {
+      if (destruido || !playerDivRef.current) return;
+      playerRef.current = new window.YT.Player(playerDivRef.current, {
+        videoId: YOUTUBE_VIDEO_ID,
+        width: "100%",
+        height: "100%",
+        playerVars: {
+          autoplay: 1,
+          mute: 1,
+          controls: 0,
+          rel: 0,
+          modestbranding: 1,
+          playsinline: 1,
+          loop: 1,
+          playlist: YOUTUBE_VIDEO_ID,
+          iv_load_policy: 3,
+          disablekb: 1,
+          origin: window.location.origin,
+        },
+        events: {
+          onReady: (e) => {
+            if (destruido) return;
+            e.target.playVideo();
+          },
+          onStateChange: (e) => {
+            setPlaying(e.data === window.YT.PlayerState.PLAYING);
+          },
+          onError: () => setErro("Não foi possível carregar o vídeo. Verifique sua conexão e tente novamente."),
+        },
+      });
+    }
+
+    carregarYouTubeApi(criarPlayer);
+
+    return () => {
+      destruido = true;
+      try {
+        playerRef.current?.destroy();
+      } catch {
+        // player já pode ter sido destruído
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const el = slotRef.current;
@@ -112,38 +185,41 @@ function VideoHeroMeditacao() {
   }
 
   function togglePlay() {
-    const v = videoRef.current;
-    if (!v) return;
-    if (v.paused) {
-      const resultado = v.play();
-      if (resultado?.catch) resultado.catch(() => setErro("Não foi possível reproduzir o vídeo. Toque novamente ou tente com outra conexão."));
-    } else {
-      v.pause();
-    }
+    const p = playerRef.current;
+    if (!p) return;
+    if (p.getPlayerState() === window.YT.PlayerState.PLAYING) p.pauseVideo();
+    else p.playVideo();
   }
 
   function handleAtivarSom(e) {
     e.stopPropagation();
-    const v = videoRef.current;
-    if (v) v.muted = false;
+    const p = playerRef.current;
+    p?.unMute();
+    p?.setVolume(volume * 100 || 100);
     setMudo(false);
     abrirVolumeTemporariamente();
   }
 
   function toggleMute() {
-    const v = videoRef.current;
-    if (!v) return;
-    v.muted = !v.muted;
-    setMudo(v.muted);
+    const p = playerRef.current;
+    if (!p) return;
+    if (mudo) {
+      p.unMute();
+      setMudo(false);
+    } else {
+      p.mute();
+      setMudo(true);
+    }
     abrirVolumeTemporariamente();
   }
 
   function handleVolumeChange(e) {
     const novoVolume = Number(e.target.value);
-    const v = videoRef.current;
-    if (v) {
-      v.volume = novoVolume;
-      v.muted = novoVolume === 0;
+    const p = playerRef.current;
+    if (p) {
+      p.setVolume(novoVolume * 100);
+      if (novoVolume === 0) p.mute();
+      else p.unMute();
     }
     setVolume(novoVolume);
     setMudo(novoVolume === 0);
@@ -183,12 +259,8 @@ function VideoHeroMeditacao() {
 
   function handleFechar(e) {
     e.stopPropagation();
-    videoRef.current?.pause();
+    playerRef.current?.pauseVideo();
     setFlutuanteFechado(true);
-  }
-
-  function handleVideoError() {
-    setErro("Não foi possível carregar o vídeo. Verifique sua conexão e tente novamente.");
   }
 
   return (
@@ -201,18 +273,7 @@ function VideoHeroMeditacao() {
       <div className="container">
         <div className="meditacao-hero-video-slot" ref={slotRef}>
           <div className={`meditacao-hero-video ${flutuante ? "is-floating" : ""}`} ref={wrapperRef}>
-            <video
-              ref={videoRef}
-              src={`${API_URL}/videos/meditacao.mp4`}
-              autoPlay
-              muted={mudo}
-              loop
-              playsInline
-              onClick={togglePlay}
-              onPlay={() => setPlaying(true)}
-              onPause={() => setPlaying(false)}
-              onError={handleVideoError}
-            />
+            <div ref={playerDivRef} />
 
             <button type="button" className={`guarded-video-toggle ${playing ? "is-playing" : ""}`} onClick={togglePlay} aria-label={playing ? "Pausar" : "Reproduzir"}>
               {playing ? "❚❚" : "▶"}
