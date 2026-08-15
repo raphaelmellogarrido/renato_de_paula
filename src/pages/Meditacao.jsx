@@ -2,19 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import GuardedVideo from "../components/GuardedVideo";
 import { COUNTRIES } from "../config/countries";
-import depo1 from "../assets/depo1.jpeg";
-import depo2 from "../assets/depo2.jpeg";
-import depo3 from "../assets/depo3.jpeg";
-import depo4 from "../assets/depo4.jpeg";
-import depo5 from "../assets/depo5.jpeg";
 import "./meditacao/MeditacaoV9.css";
+import DepoimentosDestaqueSection from "./meditacao/DepoimentosDestaqueSection";
 import HistoriaSection from "./meditacao/HistoriaSection";
+import PazInteriorSection from "./meditacao/PazInteriorSection";
 import CienciaSection from "./meditacao/CienciaSection";
 import PrincipioSection from "./meditacao/PrincipioSection";
-import VidaCotidianaSection from "./meditacao/VidaCotidianaSection";
-import MetodoSection from "./meditacao/MetodoSection";
 import QuinzeDiasSection from "./meditacao/QuinzeDiasSection";
-import EntregaSection from "./meditacao/EntregaSection";
 import OfertaSection from "./meditacao/OfertaSection";
 import GarantiaSection from "./meditacao/GarantiaSection";
 import DuvidasSection from "./meditacao/DuvidasSection";
@@ -27,22 +21,13 @@ const HOTMART_LINK = "https://go.hotmart.com/I99615540I?dp=1";
 const YOUTUBE_VIDEO_ID = "zvdum8Ks0yA";
 const WHATSAPP_DUVIDAS_LINK = "https://wa.me/5521976624767?text=" + encodeURIComponent("Olá! Conheci o Meditação Raiz pelo site e gostaria de tirar uma dúvida antes de começar o treinamento.");
 
-// Nomes provisórios — trocar pelos nomes reais das pessoas nos depoimentos.
-const DEPOIMENTOS = [
-  { foto: depo1, nome: "Wictor Bernardo" },
-  { foto: depo2, nome: "Allan Sommer" },
-  { foto: depo3, nome: "Diandra" },
-  { foto: depo4, nome: "Vinícius Mendes" },
-  { foto: depo5, nome: "Doce biscuit" },
-];
-
 function onlyDigits(value) {
   return value.replace(/\D/g, "");
 }
 
 function BotaoComprarCurso() {
   return (
-    <div className="container center" style={{ marginTop: 40, marginBottom: 24 }}>
+    <div className="container center" style={{ marginTop: -20, marginBottom: 50 }}>
       <a href={HOTMART_LINK} target="_blank" rel="noreferrer" className="btn btn-primary btn-pill btn-mobile-full">
         Comece a meditar
       </a>
@@ -267,8 +252,7 @@ function VideoHeroMeditacao() {
     <section className="section">
       <div className="container center">
         <img src="/icone.jpeg" className="meditacao-hero-icon" alt="" />
-        <span className="eyebrow">O começo</span>
-        <h2>Do Zero à Meditação: O Primeiro Passo Real</h2>
+        <h2>Um médico que descobriu na meditação um remédio</h2>
       </div>
       <div className="container">
         <div className="meditacao-hero-video-slot" ref={slotRef}>
@@ -331,82 +315,6 @@ function BarraFixaMeditacao() {
         Tire suas Dúvidas
       </a>
     </div>
-  );
-}
-
-// Hero de depoimentos: 5 fotos padronizadas, com nome embaixo de cada uma.
-// Clicar numa foto abre ela em tamanho grande, num lightbox simples.
-function SecaoDepoimentos() {
-  const [aberto, setAberto] = useState(null);
-
-  function irParaAnterior() {
-    setAberto((i) => (i > 0 ? i - 1 : i));
-  }
-
-  function irParaProximo() {
-    setAberto((i) => (i < DEPOIMENTOS.length - 1 ? i + 1 : i));
-  }
-
-  useEffect(() => {
-    if (aberto === null) return;
-    function handleKey(e) {
-      if (e.key === "Escape") setAberto(null);
-      if (e.key === "ArrowLeft") irParaAnterior();
-      if (e.key === "ArrowRight") irParaProximo();
-    }
-    document.addEventListener("keydown", handleKey);
-    return () => document.removeEventListener("keydown", handleKey);
-  }, [aberto]);
-
-  return (
-    <section className="section">
-      <div className="container center" style={{ marginBottom: 32 }}>
-        <span className="eyebrow">Depoimentos</span>
-        <h2>Quem já praticou, recomenda</h2>
-      </div>
-      <div className="container depoimentos-grid">
-        {DEPOIMENTOS.map((d, i) => (
-          <button type="button" key={d.nome} className="depoimento-item" onClick={() => setAberto(i)}>
-            <img src={d.foto} alt={`Depoimento de ${d.nome}`} />
-            <span className="depoimento-nome">{d.nome}</span>
-          </button>
-        ))}
-      </div>
-
-      {aberto !== null && (
-        <div className="depoimento-lightbox" onClick={() => setAberto(null)}>
-          <button type="button" className="depoimento-lightbox-close" onClick={() => setAberto(null)} aria-label="Fechar">
-            ✕
-          </button>
-          <button
-            type="button"
-            className="depoimento-lightbox-seta depoimento-lightbox-seta-esquerda"
-            disabled={aberto === 0}
-            onClick={(e) => {
-              e.stopPropagation();
-              irParaAnterior();
-            }}
-            aria-label="Depoimento anterior"
-          >
-            ‹
-          </button>
-          <img src={DEPOIMENTOS[aberto].foto} alt={`Depoimento de ${DEPOIMENTOS[aberto].nome}`} onClick={(e) => e.stopPropagation()} />
-          <button
-            type="button"
-            className="depoimento-lightbox-seta depoimento-lightbox-seta-direita"
-            disabled={aberto === DEPOIMENTOS.length - 1}
-            onClick={(e) => {
-              e.stopPropagation();
-              irParaProximo();
-            }}
-            aria-label="Próximo depoimento"
-          >
-            ›
-          </button>
-          <span className="depoimento-lightbox-nome">{DEPOIMENTOS[aberto].nome}</span>
-        </div>
-      )}
-    </section>
   );
 }
 
@@ -582,30 +490,26 @@ function Meditacao() {
     <>
       {/* Hero 1 — vídeo do YouTube */}
       <VideoHeroMeditacao />
-
-      {/* Hero 2 — depoimentos */}
-      <SecaoDepoimentos />
+      <BotaoComprarCurso />
 
       <div className="mr-scope">
+        {/* Hero 2 — depoimentos em destaque */}
+        <DepoimentosDestaqueSection />
         {/* Hero 3 — história */}
         <HistoriaSection />
-        {/* Hero 4 — pesquisa científica */}
-        <CienciaSection />
+        {/* Hero 4 — paz interior se pratica */}
+        <PazInteriorSection />
         {/* Hero 5 — princípio-raiz */}
         <PrincipioSection />
-        {/* Hero 6 — o treino não termina junto com a sessão */}
-        <VidaCotidianaSection />
-        {/* Hero 7 — a ordem que organiza o treinamento */}
-        <MetodoSection />
-        {/* Hero 8 — progressão estruturada (15 dias) */}
+        {/* Hero 6 — pesquisa científica */}
+        <CienciaSection />
+        {/* Hero 7 — progressão estruturada (15 dias) */}
         <QuinzeDiasSection />
-        {/* Hero 9 — clareza antes de comprar */}
-        <EntregaSection />
-        {/* Hero 10 — comece agora o Meditação Raiz */}
+        {/* Hero 8 — comece agora o Meditação Raiz */}
         <OfertaSection hotmartLink={HOTMART_LINK} />
-        {/* Hero 11 — garantia */}
+        {/* Hero 9 — garantia */}
         <GarantiaSection />
-        {/* Hero 12 — perguntas frequentes */}
+        {/* Hero 10 — perguntas frequentes */}
         <DuvidasSection />
       </div>
 

@@ -2,11 +2,9 @@
 // Fotos reais (enviadas para /public). A primeira ocupa a vaga grande da
 // galeria (2 colunas); as demais preenchem os quadrados menores.
 const MEDIA_SLOTS = [
-  { key: "foto-principal", variant: "large", src: "/EA0FF898-BC03-44D4-95F4-0953F9C509CE_1_105_c.jpeg", alt: "Dr. Renato de Paula" },
-  { key: "foto-2", variant: "", src: "/E0B10E85-6911-4C75-AF9D-6F0069C00CF3_1_105_c.jpeg", alt: "Dr. Renato de Paula" },
-  { key: "foto-3", variant: "", src: "/IMG_0969.jpg", alt: "Dr. Renato de Paula" },
-  // { key: "foto-4", variant: "", src: "/IMG_1383.JPG", alt: "Dr. Renato de Paula" },
-  // { key: "foto-5", variant: "", src: "/IMG_6021.jpg", alt: "Dr. Renato de Paula" },
+  { key: "foto-principal", variant: "large", src: "/foto_principal.jpg", alt: "Dr. Renato de Paula" },
+  { key: "foto-2", variant: "", src: "/kanguru.jpeg", alt: "Dr. Renato de Paula na Austrália" },
+  { key: "foto-3", variant: "", src: "/birmania.jpeg", alt: "Dr. Renato de Paula meditando na Birmânia" },
 ];
 
 function HistoriaSection() {

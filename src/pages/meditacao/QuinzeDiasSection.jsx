@@ -18,23 +18,14 @@ function QuinzeDiasSection() {
       <div className="container mr-centered">
         <div className="mr-section-mark" />
         <div className="mr-eyebrow">Progressão estruturada</div>
-        <h2>Comece com 5 minutos. Termine conduzindo uma prática de 25 minutos sem guia.</h2>
-        <p className="mr-lead">
-          O tempo aumenta gradualmente ao longo dos 15 dias. Ao mesmo tempo, a orientação diminui e você aprende a
-          assumir a condução da própria experiência.
-        </p>
+        <h2>Comece com 5 minutos. Termine conduzindo uma prática sem guia.</h2>
+        <p className="mr-lead">O tempo aumenta gradualmente ao longo dos 15 dias. Ao mesmo tempo, a orientação diminui e você aprende a assumir a condução da própria experiência.</p>
 
         <div className="mr-timeline-wrap">
           <div className="mr-timeline-root" />
           <div className="mr-timeline-grid">
             {DIAS.map((dia, i) => (
-              <button
-                key={dia.title}
-                className={`mr-timeline-card ${active === i ? "active" : ""}`}
-                onMouseEnter={() => setActive(i)}
-                onFocus={() => setActive(i)}
-                onClick={() => setActive(i)}
-              >
+              <button key={dia.title} className={`mr-timeline-card ${active === i ? "active" : ""}`} onMouseEnter={() => setActive(i)} onFocus={() => setActive(i)} onClick={() => setActive(i)}>
                 <div className="mr-timeline-dot">{dia.dot}</div>
                 <strong>{dia.label}</strong>
                 <span>{dia.short}</span>
@@ -51,10 +42,7 @@ function QuinzeDiasSection() {
         <p className="mr-micro" style={{ marginTop: 26 }}>
           Cada dia combina uma aula breve de instrução com duas práticas meditativas: uma pela manhã e outra à noite.
         </p>
-        <p className="mr-timeline-phrase">
-          O tempo aumenta porque a compreensão aumenta. A orientação diminui porque a autonomia começa a ocupar o
-          lugar dela.
-        </p>
+        <p className="mr-timeline-phrase">O tempo aumenta porque a compreensão aumenta. A orientação diminui porque a autonomia começa a ocupar o lugar dela.</p>
       </div>
     </section>
   );

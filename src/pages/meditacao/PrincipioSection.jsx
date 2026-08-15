@@ -1,4 +1,7 @@
 import { useState } from "react";
+import DepoimentoDestaque from "./DepoimentoDestaque";
+
+const allan = "/comentário_allan.jpeg";
 
 const PREREQS = [
   {
@@ -82,18 +85,13 @@ function PrincipioSection() {
           </div>
         </div>
 
-        <div className="mr-visual-stage">
-          <svg viewBox="0 0 260 300" aria-hidden="true">
-            <circle className="mr-figure-orbit" cx="130" cy="150" r="115" />
-            <circle className="mr-figure-orbit" cx="130" cy="150" r="80" />
-            <path className="mr-figure-person" d="M130 90a22 22 0 1 0 0 44 22 22 0 0 0 0-44zM95 220c8-32 27-48 35-48s27 16 35 48" />
-            <path className="mr-figure-wave" d="M40 260c20-10 40 10 60 0s40-10 60 0 40 10 60 0" />
-            <path className="mr-figure-wave" d="M40 275c20-10 40 10 60 0s40-10 60 0 40 10 60 0" opacity="0.5" />
-          </svg>
-          <div className="mr-visual-label">
-            <strong>Resultado não é pré-requisito</strong>
-            <span>Calma, concentração e equilíbrio são capacidades treináveis — não condições para começar.</span>
-          </div>
+        <div className="mr-visual-stage mr-visual-stage--quote">
+          <DepoimentoDestaque
+            foto={allan}
+            nome="Allan"
+            citacao="Foi tenso... mas me mantive firme até o despertador tocar."
+            legenda={'Uma prática difícil não precisa significar que a meditação "deu errado".'}
+          />
         </div>
       </div>
     </section>

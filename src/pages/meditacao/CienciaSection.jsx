@@ -1,162 +1,143 @@
-import { useRef, useState } from "react";
+// Revistas científicas reais de onde vêm os estudos citados abaixo — só
+// para dar credibilidade rápida antes de entrar no conteúdo em si.
+const REVISTAS = [
+  { nome: "PNAS" },
+  { nome: "JAMA", sub: "Network" },
+  { nome: "The Lancet" },
+  { nome: "Psychological Science" },
+  { nome: "Psychosomatic Medicine" },
+  { nome: "Journal of Neuroscience" },
+];
 
-const PANELS = [
+const CATEGORIAS = [
   {
     key: "atencao",
     title: "Atenção e cognição",
-    refs: "Tang et al., 2007 · Mrazek et al., 2013 · MacLean et al., 2010.",
     cards: [
       {
         label: "PNAS · 2007",
         title: "Atenção em 5 dias",
-        text: "Um treinamento breve de meditação, com sessões diárias curtas, foi associado a melhoras mensuráveis em testes de atenção em comparação com um grupo de relaxamento.",
+        text: "Estudantes que meditaram 20 minutos por dia, durante 5 dias, foram melhor em testes de atenção e ficaram menos estressados do que um grupo que só relaxou pelo mesmo tempo.",
         meta: ["80 universitários", "5 dias de treino", "20 minutos por dia"],
         link: "https://pubmed.ncbi.nlm.nih.gov/17940025/",
+        reportagem: "https://www.psychologicalscience.org/observer/boosting-brain-power-through-a-mind-body-connection",
       },
       {
         label: "Psychological Science · 2013",
         title: "Menos distração",
-        text: "Um curso de duas semanas envolvendo meditação foi associado a menor divagação mental e melhor desempenho em tarefas de leitura e memória de trabalho.",
-        meta: ["Curso de 2 semanas", "Avaliação cognitiva pré/pós"],
+        text: "Depois de duas semanas de meditação, um grupo de estudantes se distraiu menos e foi melhor em provas de leitura e memória do que um grupo que só recebeu instruções sobre alimentação.",
+        meta: ["Curso de 2 semanas", "Avaliação antes e depois"],
         link: "https://pubmed.ncbi.nlm.nih.gov/23538911/",
+        reportagem: "https://www.sciencedaily.com/releases/2013/03/130326133335.htm",
       },
       {
         label: "Psychological Science · 2010",
         title: "Atenção sustentada",
-        text: "Participantes de um retiro intensivo de meditação apresentaram melhoras na capacidade de manter a atenção de forma estável ao longo do tempo.",
-        meta: ["60 participantes", "3 meses de retiro", "~5h de prática diária"],
+        text: "Pessoas que passaram três meses em um retiro intensivo de meditação conseguiram manter a atenção fixa por mais tempo, sem se distrair, em comparação a antes do retiro.",
+        meta: ["60 participantes", "3 meses de retiro", "~5h de prática por dia"],
         link: "https://pubmed.ncbi.nlm.nih.gov/20483826/",
+        reportagem: "https://www.lionsroar.com/inside-the-shamatha-project/",
       },
     ],
   },
   {
     key: "emocoes",
     title: "Saúde mental e emoções",
-    refs: "Goyal et al., 2014 · Hoge et al., 2023 · Kuyken et al., 2015.",
     cards: [
       {
         label: "JAMA Internal Medicine · 2014",
         title: "Ansiedade, humor e dor",
-        text: "Uma revisão sistemática de dezenas de ensaios clínicos encontrou evidências de melhora moderada em sintomas de ansiedade, depressão e dor com programas de meditação.",
-        meta: ["47 ensaios clínicos", "3.515 participantes"],
+        text: "Juntando os resultados de 47 estudos com mais de 3 mil pessoas, pesquisadores encontraram uma melhora moderada em sintomas de ansiedade, depressão e dor em quem praticava meditação.",
+        meta: ["47 estudos", "3.515 participantes"],
         link: "https://pubmed.ncbi.nlm.nih.gov/24395196/",
+        reportagem: "https://www.sciencedaily.com/releases/2014/01/140106190050.htm",
       },
       {
         label: "JAMA Psychiatry · 2023",
         title: "Ansiedade clínica",
-        text: "Um ensaio clínico randomizado comparou um programa estruturado de meditação a um medicamento de primeira linha para transtorno de ansiedade, com resultados comparáveis entre os grupos.",
-        meta: ["276 adultos", "8 semanas", "MBSR × escitalopram"],
+        text: "Em um estudo com 276 adultos com ansiedade, um curso de meditação de 8 semanas teve resultado parecido ao de um remédio bastante usado para ansiedade — com bem menos efeitos colaterais.",
+        meta: ["276 adultos", "8 semanas", "Meditação × remédio para ansiedade"],
         link: "https://pubmed.ncbi.nlm.nih.gov/36350591/",
+        reportagem: "https://www.npr.org/2022/11/11/1135984116/study-mindfulness-based-stress-reduction-works-as-well-as-a-popular-anxiety-drug",
       },
       {
         label: "The Lancet · 2015",
         title: "Recaída de depressão",
-        text: "Um treinamento baseado em meditação mostrou eficácia comparável ao uso contínuo de antidepressivo na prevenção de recaída depressiva ao longo do acompanhamento.",
+        text: "Um treinamento de meditação teve resultado parecido ao de continuar tomando antidepressivo na prevenção de recaída depressiva, ao longo de 2 anos de acompanhamento.",
         meta: ["424 participantes", "24 meses de acompanhamento"],
         link: "https://pubmed.ncbi.nlm.nih.gov/25907157/",
+        reportagem: "https://medicalxpress.com/news/2015-04-mindfulness-based-therapy-alternative-antidepressants-depression.html",
       },
     ],
   },
   {
     key: "sono",
     title: "Sono e saúde física",
-    refs: "Black et al., 2015 · Hughes et al., 2013 · Zeidan et al., 2015.",
     cards: [
       {
         label: "JAMA Internal Medicine · 2015",
         title: "Qualidade do sono",
-        text: "Um programa de meditação voltado a adultos mais velhos com queixas de sono foi associado a melhora na qualidade do sono relatada, em comparação a um programa educativo.",
-        meta: ["49 idosos", "6 semanas", "2h de prática semanal"],
+        text: "Idosos com dificuldade para dormir que fizeram um curso de meditação relataram sono melhor do que os que participaram de um curso comum sobre hábitos de sono.",
+        meta: ["49 idosos", "6 semanas", "2h de prática por semana"],
         link: "https://pubmed.ncbi.nlm.nih.gov/25686304/",
+        reportagem: "https://www.sciencedaily.com/releases/2015/02/150216131115.htm",
       },
       {
         label: "Psychosomatic Medicine · 2013",
         title: "Pressão arterial",
-        text: "Participantes com pressão arterial pré-hipertensiva que passaram por um programa de meditação apresentaram redução na pressão sistólica ao final do estudo.",
+        text: "Pessoas com pressão um pouco alta (mas ainda sem indicação de remédio) que praticaram meditação apresentaram queda na pressão ao final do estudo.",
         meta: ["56 participantes", "8 semanas"],
         link: "https://pubmed.ncbi.nlm.nih.gov/24127622/",
+        reportagem: "https://www.sciencedaily.com/releases/2013/10/131015094436.htm",
       },
       {
         label: "Journal of Neuroscience · 2015",
         title: "Percepção da dor",
-        text: "Um treinamento breve de meditação foi associado à redução na intensidade e no desconforto da dor percebida, com alterações observadas em exames de imagem cerebral.",
+        text: "Um treinamento breve de meditação ajudou a reduzir a intensidade e o incômodo da dor sentida pelos participantes, com mudanças visíveis em exames do cérebro.",
         meta: ["75 adultos", "4 dias de treino"],
         link: "https://pubmed.ncbi.nlm.nih.gov/26586819/",
+        reportagem: "https://www.psychologytoday.com/us/blog/the-athletes-way/201511/the-neuroscience-mindfulness-meditation-and-pain-relief",
       },
     ],
   },
 ];
 
-function ScienceCarousel({ panel }) {
-  const [index, setIndex] = useState(0);
-  const startXRef = useRef(null);
-  const total = panel.cards.length;
+function EstudoCard({ card }) {
+  return (
+    <div className="mr-science-card">
+      <div>
+        <div className="mr-study-label">{card.label}</div>
+        <h4>{card.title}</h4>
+        <p>{card.text}</p>
+        <div className="mr-science-meta">
+          {card.meta.map((m) => (
+            <span key={m}>{m}</span>
+          ))}
+        </div>
+      </div>
+      <div className="mr-science-links">
+        <a className="mr-science-link" href={card.link} target="_blank" rel="noreferrer">
+          Abrir publicação ↗
+        </a>
+        {card.reportagem && (
+          <a className="mr-science-link mr-science-link--reportagem" href={card.reportagem} target="_blank" rel="noreferrer">
+            Ler reportagem sobre o estudo ↗
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
 
-  function go(delta) {
-    setIndex((i) => (i + delta + total) % total);
-  }
-
-  function handlePointerDown(e) {
-    startXRef.current = e.clientX;
-  }
-
-  function handlePointerUp(e) {
-    if (startXRef.current === null) return;
-    const delta = e.clientX - startXRef.current;
-    if (Math.abs(delta) > 35) {
-      setIndex((i) => (delta < 0 ? Math.min(i + 1, total - 1) : Math.max(i - 1, 0)));
-    }
-    startXRef.current = null;
-  }
-
+function CategoriaBloco({ categoria }) {
   return (
     <div className="mr-science-panel">
-      <div className="mr-science-panel-head">
-        <h3>{panel.title}</h3>
-        <span className="mr-science-counter">
-          {index + 1} de {total}
-        </span>
+      <h3>{categoria.title}</h3>
+      <div className="mr-science-cards">
+        {categoria.cards.map((card) => (
+          <EstudoCard card={card} key={card.title} />
+        ))}
       </div>
-      <div className="mr-science-viewport">
-        <div
-          className="mr-science-track"
-          style={{ transform: `translateX(-${index * 100}%)` }}
-          onPointerDown={handlePointerDown}
-          onPointerUp={handlePointerUp}
-        >
-          {panel.cards.map((card) => (
-            <div className="mr-science-card" key={card.title}>
-              <div>
-                <div className="mr-study-label">{card.label}</div>
-                <h4>{card.title}</h4>
-                <p>{card.text}</p>
-                <div className="mr-science-meta">
-                  {card.meta.map((m) => (
-                    <span key={m}>{m}</span>
-                  ))}
-                </div>
-              </div>
-              <a className="mr-science-link" href={card.link} target="_blank" rel="noreferrer">
-                Ver estudo original ↗
-              </a>
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="mr-carousel-controls">
-        <button className="mr-carousel-arrow" onClick={() => go(-1)} aria-label="Anterior">
-          ←
-        </button>
-        <div className="mr-carousel-dots">
-          {panel.cards.map((card, i) => (
-            <span key={card.title} className={`mr-carousel-dot ${i === index ? "active" : ""}`} />
-          ))}
-        </div>
-        <button className="mr-carousel-arrow" onClick={() => go(1)} aria-label="Próximo">
-          →
-        </button>
-      </div>
-      <div className="mr-science-refs">{panel.refs}</div>
     </div>
   );
 }
@@ -167,18 +148,25 @@ function CienciaSection() {
       <div className="container mr-centered">
         <div className="mr-section-mark" />
         <div className="mr-eyebrow">Pesquisa científica</div>
-        <h2>O que a ciência tem investigado sobre a meditação</h2>
+        <h2>
+          A meditação é assunto de <span className="mr-strike">guru</span> <strong>ciência</strong>.
+        </h2>
         <p className="mr-lead">
-          Diferentes práticas meditativas são investigadas por seus possíveis efeitos sobre a atenção, as emoções, o
-          sono, o estresse e processos físicos.
+          Práticas meditativas são investigadas em áreas como saúde mental, sono, dor, estresse e cognição.
         </p>
-        <p className="mr-micro">
-          Os resultados variam conforme a técnica utilizada, o tempo de prática, a frequência e o grupo estudado.
-        </p>
+
+        <div className="mr-science-badges">
+          {REVISTAS.map((revista) => (
+            <div className="mr-science-badge" key={revista.nome}>
+              <strong>{revista.nome}</strong>
+              {revista.sub && <span>{revista.sub}</span>}
+            </div>
+          ))}
+        </div>
       </div>
-      <div className="container mr-science-grid">
-        {PANELS.map((panel) => (
-          <ScienceCarousel panel={panel} key={panel.key} />
+      <div className="container mr-science-categorias">
+        {CATEGORIAS.map((categoria) => (
+          <CategoriaBloco categoria={categoria} key={categoria.key} />
         ))}
       </div>
       <div className="container">

@@ -1,6 +1,4 @@
-const WHATSAPP_LINK =
-  "https://wa.me/5521976624767?text=" +
-  encodeURIComponent("Olá! Conheci o Meditação Raiz pelo site e gostaria de tirar uma dúvida antes de começar o treinamento.");
+const WHATSAPP_LINK = "https://wa.me/5521976624767?text=" + encodeURIComponent("Olá! Conheci o Meditação Raiz pelo site e gostaria de tirar uma dúvida antes de começar o treinamento.");
 
 function OfertaSection({ hotmartLink }) {
   return (
@@ -10,10 +8,7 @@ function OfertaSection({ hotmartLink }) {
           <div>
             <div className="mr-eyebrow">Comece agora o Meditação Raiz</div>
             <h2>Transforme seu interesse pela meditação em uma prática diária.</h2>
-            <p style={{ marginTop: 22 }}>
-              Você já conheceu os obstáculos que interrompem a prática, o princípio-raiz da meditação e a progressão
-              que leva da orientação inicial à autonomia. Agora, o próximo passo é experimentar esse caminho.
-            </p>
+            <p style={{ marginTop: 22 }}>Você já conheceu os obstáculos que interrompem a prática, o princípio-raiz da meditação e a progressão que leva da orientação inicial à autonomia. Agora, o próximo passo é experimentar esse caminho.</p>
             <div className="mr-offer-list">
               <span>15 aulas breves de instrução</span>
               <span>30 práticas meditativas</span>
@@ -25,10 +20,7 @@ function OfertaSection({ hotmartLink }) {
               <span>Garantia de 7 dias</span>
             </div>
             <p style={{ marginTop: 24 }}>
-              <strong>
-                Comece com orientação. Compreenda o princípio-raiz. Desfaça os mitos. Empreenda a prática meditativa
-                na sua vida.
-              </strong>
+              <strong style={{ color: "white" }}>Comece com orientação. Compreenda o princípio-raiz. Desfaça os mitos. Empreenda a prática meditativa na sua vida.</strong>
             </p>
           </div>
 
@@ -42,13 +34,7 @@ function OfertaSection({ hotmartLink }) {
               Comece a meditar agora
             </a>
             <div className="mr-secure-note">Acesso imediato · Compra processada pela Hotmart · 7 dias de garantia</div>
-            <a
-              className="mr-science-link"
-              style={{ justifyContent: "center", marginTop: 16 }}
-              href={WHATSAPP_LINK}
-              target="_blank"
-              rel="noreferrer"
-            >
+            <a className="mr-science-link" style={{ justifyContent: "center", marginTop: 16 }} href={WHATSAPP_LINK} target="_blank" rel="noreferrer">
               Ainda tem uma dúvida? Fale pelo WhatsApp ↗
             </a>
           </div>
