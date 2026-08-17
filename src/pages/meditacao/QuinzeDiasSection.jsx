@@ -17,9 +17,12 @@ function QuinzeDiasSection() {
     <section className="section section-alt mr-section" id="quinze-dias">
       <div className="container mr-centered">
         <div className="mr-section-mark" />
-        <div className="mr-eyebrow">Progressão estruturada</div>
-        <h2>Comece com 5 minutos. Termine conduzindo uma prática sem guia.</h2>
-        <p className="mr-lead">O tempo aumenta gradualmente ao longo dos 15 dias. Ao mesmo tempo, a orientação diminui e você aprende a assumir a condução da própria experiência.</p>
+        <div className="mr-eyebrow centered">Progressão estruturada</div>
+        <h2 className="centered">Como funciona o curso</h2>
+        <p className="mr-lead">• 15 dias de treinamento contínuo e programado.</p>
+        <p className="mr-lead">• Prática e teoria alternada pra você aplicar no mesmo dia o que aprendeu.</p>
+        <p className="mr-lead">• Comece no dia 1 com meditação de 5 minutos com guia, no dia 15 você consegue meditações mais longas e profundas sem guia.</p>
+        <p className="mr-lead">• Entenda o princípio raíz da meditação sem nenhuma religiosidade ou misticísmo envolvido.</p>
 
         <div className="mr-timeline-wrap">
           <div className="mr-timeline-root" />
@@ -39,7 +42,7 @@ function QuinzeDiasSection() {
           </div>
         </div>
 
-        <p className="mr-micro" style={{ marginTop: 26 }}>
+        <p className="mr-micro centered" style={{ marginTop: 26 }}>
           Cada dia combina uma aula breve de instrução com duas práticas meditativas: uma pela manhã e outra à noite.
         </p>
         <p className="mr-timeline-phrase">O tempo aumenta porque a compreensão aumenta. A orientação diminui porque a autonomia começa a ocupar o lugar dela.</p>

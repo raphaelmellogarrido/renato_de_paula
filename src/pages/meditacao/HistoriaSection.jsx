@@ -1,10 +1,14 @@
 // Seção 3 — "Antes de qualquer técnica, uma história"
-// Fotos reais (enviadas para /public). A primeira ocupa a vaga grande da
-// galeria (2 colunas); as demais preenchem os quadrados menores.
-const MEDIA_SLOTS = [
-  { key: "foto-principal", variant: "large", src: "/foto_principal.jpg", alt: "Dr. Renato de Paula" },
-  { key: "foto-2", variant: "", src: "/kanguru.jpeg", alt: "Dr. Renato de Paula na Austrália" },
-  { key: "foto-3", variant: "", src: "/birmania.jpeg", alt: "Dr. Renato de Paula meditando na Birmânia" },
+// Fotos reais (enviadas para /public). A foto principal ocupa a vaga grande
+// à esquerda; as 4 fotos de viagem/trajetória ficam empilhadas à direita,
+// cada uma com o nome do país e a bandeira correspondente acima.
+const FOTO_PRINCIPAL = { key: "foto-principal", src: "/foto_principal.jpg", alt: "Dr. Renato de Paula" };
+
+const PAISES = [
+  { key: "australia", pais: "Austrália", bandeira: "/australia_flag.svg", src: "/australia.jpeg", alt: "Dr. Renato de Paula na Austrália" },
+  { key: "india", pais: "Índia", bandeira: "/indian_flag.svg", src: "/india.jpeg", alt: "Dr. Renato de Paula na Índia" },
+  { key: "birmania", pais: "Birmânia", bandeira: "/burma_flag.svg", src: "/birmania.jpg", alt: "Dr. Renato de Paula meditando na Birmânia" },
+  { key: "brasil", pais: "Brasil", bandeira: "/brazil_flag.svg", src: "/medico.jpg", alt: "Dr. Renato de Paula, médico no Brasil" },
 ];
 
 function HistoriaSection() {
@@ -13,32 +17,27 @@ function HistoriaSection() {
       <div className="container mr-story-grid">
         <div className="mr-story-copy">
           <div className="mr-section-mark" />
-          <div className="mr-eyebrow">Antes de qualquer técnica, uma história</div>
-          <h2>Comecei a meditar no meio de um dos períodos mais difíceis da minha vida.</h2>
-          <p style={{ marginTop: 22 }}>Eu estava longe de casa, no meio de um intercâmbio durante a minha formação médica na Austrália, quando atravessei um quadro grave de depressão. Foi um período difícil até para pedir ajuda.</p>
-          <p>Foi nesse momento que conheci um treinamento de meditação — e ele se tornou parte importante do meu processo de recuperação e reconstrução pessoal.</p>
-          <p>
-            <strong>Eu sou Renato de Paula, médico pela UFRJ.</strong> Hoje sou professor de meditação e criei o Meditação Raiz.
-          </p>
-          <p>Nos anos seguintes, aprofundei a prática — inclusive em temporadas de imersão dedicadas só a isso — e busquei compreender a meditação tanto pela experiência direta quanto pelo conhecimento médico e científico.</p>
-          <p>
-            Com o tempo, comecei a ensinar outras pessoas e percebi um padrão: quem abandonava a meditação, na maioria das vezes, não abandonava por incapacidade. Abandonava porque não compreendia o exercício, não sabia como progredir ou recebeu a técnica misturada a expectativas e informações
-            contraditórias.
-          </p>
-          <div className="mr-story-quote">A técnica não foi inventada por mim. O método de ensinar, organizar e conduzir essa progressão é o Meditação Raiz.</div>
-          <p>O objetivo foi organizar os princípios essenciais da prática em uma linguagem clara, racional e progressiva — sem exigir adesão religiosa e sem criar dependência permanente de quem está ensinando.</p>
-          <div className="mr-story-pills">
-            <span>Clareza</span>
-            <span>Progressão</span>
-            <span>Independência</span>
-            <span>Prática no mundo real</span>
-          </div>
-          <p className="mr-story-bridge">Essa foi a minha experiência. Mas a meditação não depende só dela — hoje ela também vem sendo estudada de perto pela ciência.</p>
+          <div className="mr-eyebrow">O que essa experiência me mostrou</div>
+          <h2>Eu não conheci a meditação como produtividade ou moda de bem-estar.</h2>
+          <p style={{ marginTop: 22 }}>Eu conheci porque precisava encontrar uma forma de cuidar melhor da minha mente em um período muito difícil.</p>
+          <p>Foi durante um intercâmbio na Austrália, ainda na formação médica, que a prática começou a fazer parte da minha vida. Depois, vieram anos de prática, estudo, imersões e a tentativa de entender o que funcionava fora do ambiente de retiro — dentro da vida real.</p>
+          <p>Com o tempo, percebi que aquilo não era apenas uma experiência pessoal. Era uma prática que podia ser ensinada, organizada e cultivada no cotidiano.</p>
+
+          <div className="mr-story-quote">A meditação foi parte importante da minha reconstrução pessoal. Hoje, eu ensino a base que eu gostaria de ter entendido quando comecei.</div>
         </div>
         <div className="mr-media-gallery">
-          {MEDIA_SLOTS.map((slot) => (
-            <div key={slot.key} className={`mr-media-slot ${slot.variant}`}>
-              <img src={slot.src} alt={slot.alt} />
+          <div className="mr-media-slot large">
+            <img src={FOTO_PRINCIPAL.src} alt={FOTO_PRINCIPAL.alt} />
+          </div>
+          {PAISES.map((p) => (
+            <div key={p.key} className="mr-media-item">
+              <div className="mr-media-label">
+                <span>{p.pais}</span>
+                <img className="mr-media-flag" src={p.bandeira} alt={`Bandeira: ${p.pais}`} />
+              </div>
+              <div className="mr-media-slot">
+                <img src={p.src} alt={p.alt} />
+              </div>
             </div>
           ))}
         </div>

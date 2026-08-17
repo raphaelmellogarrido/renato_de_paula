@@ -65,7 +65,8 @@ function PrincipioSection() {
         <div className="mr-editorial-copy">
           <div className="mr-section-mark" />
           <div className="mr-eyebrow">Calma. Vamos separar uma coisa da outra.</div>
-          <h2>Você não precisa chegar pronto para começar.</h2>
+          <h2>Não confunda resultado com pré-requisito.</h2>
+          <h3>Você não precisa chegar pronto pra começar.</h3>
           <p className="mr-lead">Muitas pessoas olham para um meditador experiente e acreditam que precisam ser calmas, concentradas e emocionalmente equilibradas antes de começar. Mas essas características não são requisitos de entrada. São parte do que a prática pode ajudar a desenvolver.</p>
 
           <div className="mr-prereq-guide">
@@ -86,12 +87,7 @@ function PrincipioSection() {
         </div>
 
         <div className="mr-visual-stage mr-visual-stage--quote">
-          <DepoimentoDestaque
-            foto={allan}
-            nome="Allan"
-            citacao="Foi tenso... mas me mantive firme até o despertador tocar."
-            legenda={'Uma prática difícil não precisa significar que a meditação "deu errado".'}
-          />
+          <DepoimentoDestaque foto={allan} nome="Allan" citacao="Foi tenso... mas me mantive firme até o despertador tocar." legenda={'Uma prática difícil não precisa significar que a meditação "deu errado".'} />
         </div>
       </div>
     </section>

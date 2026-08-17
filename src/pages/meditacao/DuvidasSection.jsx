@@ -7,7 +7,10 @@ const FAQS = [
   { q: "Preciso seguir alguma religião ou filosofia?", a: "Não. O Meditação Raiz apresenta a prática em linguagem racional, sem exigir mudança de religião ou adesão a crenças específicas." },
   { q: "As meditações são guiadas?", a: "No início, existe orientação. Ao longo dos 15 dias, essa condução é progressivamente reduzida até a prática final sem guia." },
   { q: "Quanto tempo preciso reservar por dia?", a: "Há uma aula breve de instrução e duas práticas meditativas, uma pela manhã e outra à noite. As práticas começam com 5 minutos e avançam progressivamente até 25 minutos." },
-  { q: "E se eu sentir inquietação, sono ou ansiedade durante a prática?", a: "Essas experiências podem acontecer. O treinamento ensina a reconhecer dificuldades comuns e progredir sem interpretar automaticamente todo desconforto como fracasso. Sintomas intensos ou persistentes devem ser avaliados por um profissional de saúde." },
+  {
+    q: "E se eu sentir inquietação, sono ou ansiedade durante a prática?",
+    a: "Essas experiências podem acontecer. O treinamento ensina a reconhecer dificuldades comuns e progredir sem interpretar automaticamente todo desconforto como fracasso. Sintomas intensos ou persistentes devem ser avaliados por um profissional de saúde.",
+  },
   { q: "O curso substitui terapia, consulta ou medicamentos?", a: "Não. O Meditação Raiz é um treinamento educativo. Não substitui atendimento médico, psicoterapia ou tratamento indicado pelos profissionais que acompanham você." },
   { q: "Por quanto tempo terei acesso?", a: "O acesso ao treinamento será válido por um ano." },
   { q: "Como funciona o suporte?", a: "Dúvidas relacionadas ao acesso e ao treinamento poderão ser enviadas pelos canais de e-mail e WhatsApp informados após a compra." },
@@ -31,8 +34,8 @@ function DuvidasSection() {
     <section className="section mr-section mr-section--sand" id="duvidas">
       <div className="container mr-centered">
         <div className="mr-section-mark" />
-        <div className="mr-eyebrow">Perguntas frequentes</div>
-        <h2>Tire suas dúvidas antes de começar</h2>
+        <div className="mr-eyebrow centered">Perguntas frequentes</div>
+        <h2 className="centered">Tire suas dúvidas antes de começar</h2>
 
         <div className="mr-faq-wrap">
           {FAQS.map((item, i) => (

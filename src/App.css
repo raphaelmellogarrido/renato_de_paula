@@ -1443,11 +1443,13 @@
 /* --- Vídeo de abertura da /meditacao (autoplay + modo flutuante) --- */
 
 .meditacao-hero-video-slot {
-  width: 100%;
-  max-width: 860px;
+  /* width: 100%; */
+  width: 1120px;
+  max-width: 2260px;
   margin: 0 auto;
   aspect-ratio: 16 / 9;
   position: relative;
+  margin-bottom: 20px;
 }
 
 .meditacao-hero-video {

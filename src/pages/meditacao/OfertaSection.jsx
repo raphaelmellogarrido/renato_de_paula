@@ -31,7 +31,7 @@ function OfertaSection({ hotmartLink }) {
             </div>
             <div className="mr-price-note">À vista ou em até 12 vezes pela Hotmart.</div>
             <a className="mr-btn mr-btn--primary" href={hotmartLink} target="_blank" rel="noreferrer">
-              Comece a meditar agora
+              Quero aprender a meditar
             </a>
             <div className="mr-secure-note">Acesso imediato · Compra processada pela Hotmart · 7 dias de garantia</div>
             <a className="mr-science-link" style={{ justifyContent: "center", marginTop: 16 }} href={WHATSAPP_LINK} target="_blank" rel="noreferrer">

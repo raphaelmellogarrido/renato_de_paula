@@ -1,12 +1,12 @@
 // Revistas científicas reais de onde vêm os estudos citados abaixo — só
 // para dar credibilidade rápida antes de entrar no conteúdo em si.
 const REVISTAS = [
-  { nome: "PNAS" },
-  { nome: "JAMA", sub: "Network" },
-  { nome: "The Lancet" },
-  { nome: "Psychological Science" },
-  { nome: "Psychosomatic Medicine" },
-  { nome: "Journal of Neuroscience" },
+  { nome: "PNAS", estilo: "mr-badge-pnas" },
+  { nome: "JAMA", sub: "Network", estilo: "mr-badge-jama" },
+  { nome: "The Lancet", estilo: "mr-badge-lancet" },
+  { nome: "Psychological Science", estilo: "mr-badge-serif" },
+  { nome: "Psychosomatic Medicine", estilo: "mr-badge-serif" },
+  { nome: "Journal of Neuroscience", estilo: "mr-badge-neuro" },
 ];
 
 const CATEGORIAS = [
@@ -147,18 +147,16 @@ function CienciaSection() {
     <section className="section section-alt mr-section" id="ciencia">
       <div className="container mr-centered">
         <div className="mr-section-mark" />
-        <div className="mr-eyebrow">Pesquisa científica</div>
-        <h2>
-          A meditação é assunto de <span className="mr-strike">guru</span> <strong>ciência</strong>.
+        <div className="mr-eyebrow centered">Pesquisa científica</div>
+        <h2 className="centered">
+          Meditação é papo de <span id="riscado">guru</span> <strong>cientista</strong>.
         </h2>
-        <p className="mr-lead">
-          Práticas meditativas são investigadas em áreas como saúde mental, sono, dor, estresse e cognição.
-        </p>
+        <p className="mr-lead">As revistas científicas mais relevantes do planeta estão investigando associações de meditação com saúde mental, qualidade do sono, controle do estresse, melhora de memória/atenção e até no controle da dor...</p>
 
         <div className="mr-science-badges">
           {REVISTAS.map((revista) => (
             <div className="mr-science-badge" key={revista.nome}>
-              <strong>{revista.nome}</strong>
+              <strong className={revista.estilo}>{revista.nome}</strong>
               {revista.sub && <span>{revista.sub}</span>}
             </div>
           ))}
@@ -170,14 +168,10 @@ function CienciaSection() {
         ))}
       </div>
       <div className="container">
-        <div className="mr-science-disclaimer">
-          Os estudos acima investigaram práticas, durações e populações diferentes. Eles mostram possibilidades
-          estudadas pela ciência — não garantias individuais nem equivalência direta com o Meditação Raiz.
+        <div className="mr-science-disclaimer container center">Os estudos acima investigaram práticas, durações e populações diferentes. Eles mostram possibilidades estudadas pela ciência — não garantias individuais nem equivalência direta com o Meditação Raiz.</div>
+        <div className="container center">
+          <p>A ciência mostra que a meditação tem aplicações importantes. Mas praticar sem orientação e sem entender o que está sendo treinado é justamente o que costuma levar ao abandono.</p>
         </div>
-        <p className="mr-science-closing">
-          A ciência mostra que a meditação tem aplicações importantes. Mas praticar sem orientação e sem entender o
-          que está sendo treinado é justamente o que costuma levar ao abandono.
-        </p>
       </div>
     </section>
   );

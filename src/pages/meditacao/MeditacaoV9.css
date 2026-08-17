@@ -83,8 +83,12 @@
   font-size: 18px;
   line-height: 1.62;
   color: #403a34;
-  max-width: 720px;
+  max-width: 800px;
   margin-top: 18px;
+}
+
+.centered {
+  text-align: center;
 }
 
 .mr-micro {
@@ -93,7 +97,7 @@
 }
 
 .mr-centered {
-  text-align: center;
+  text-align: left;
 }
 
 .mr-centered .mr-section-mark {
@@ -205,7 +209,7 @@
 }
 
 .mr-media-slot {
-  min-height: 200px;
+  min-height: 130px;
   border-radius: 14px 34px 14px 14px;
   border: 1px solid rgba(139, 110, 63, 0.3);
   background: linear-gradient(135deg, rgba(179, 148, 94, 0.14), rgba(22, 60, 49, 0.07)), var(--mr-ivory);
@@ -225,7 +229,37 @@
 
 .mr-media-slot.large {
   grid-column: 1;
-  grid-row: span 2;
+  grid-row: span 4;
+  min-height: 100%;
+  align-self: stretch;
+}
+
+.mr-media-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mr-media-item .mr-media-slot {
+  flex: 1;
+}
+
+.mr-media-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--mr-charcoal);
+}
+
+.mr-media-flag {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
 }
 
 .mr-media-slot.video::before {
@@ -375,6 +409,9 @@
 }
 
 .mr-science-badge {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   padding: 12px 20px;
   border-radius: 12px;
   background: var(--mr-warm-white);
@@ -388,6 +425,41 @@
   font-family: var(--mr-title);
   font-size: 17px;
   color: var(--mr-green);
+}
+
+/* Tipografia aproximando a identidade visual de cada revista — não são os
+   logos oficiais (marca registrada, arriscado usar num site comercial sem
+   licença), só uma referência estilística pra ficar mais lúdico que texto
+   corrido genérico. */
+strong.mr-badge-pnas {
+  font-family: "Manrope", Arial, sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+strong.mr-badge-jama {
+  font-family: var(--mr-title);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+strong.mr-badge-lancet {
+  font-style: italic;
+  font-weight: 600;
+  color: #a9203a;
+}
+
+strong.mr-badge-serif {
+  font-style: italic;
+  font-weight: 500;
+}
+
+strong.mr-badge-neuro {
+  font-family: "Manrope", Arial, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  font-size: 14px;
 }
 
 .mr-science-badge span {
@@ -412,6 +484,7 @@
 .mr-science-panel h3 {
   font-size: 26px;
   margin: 0 0 18px;
+  text-align: center;
 }
 
 .mr-science-cards {
@@ -1680,6 +1753,7 @@ p.mr-timeline-phrase {
   .mr-media-slot.large {
     grid-column: span 1;
     grid-row: span 1;
+    min-height: 260px;
   }
   .mr-transition-cue--annotated {
     grid-template-columns: 1fr;

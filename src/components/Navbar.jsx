@@ -42,14 +42,8 @@ function Navbar() {
             </li>
           ))}
           <li>
-            <a
-              href={isMeditacao ? HOTMART_LINK : "https://wa.me/5521976624767"}
-              target={isMeditacao ? "_blank" : undefined}
-              rel={isMeditacao ? "noreferrer" : "noopener noreferrer"}
-              className="btn btn-primary nav-cta"
-              onClick={handleNavClick}
-            >
-              {isMeditacao ? "Comece a meditar" : "Agendar Consulta"}
+            <a href={isMeditacao ? HOTMART_LINK : "https://wa.me/5521976624767"} target={isMeditacao ? "_blank" : undefined} rel={isMeditacao ? "noreferrer" : "noopener noreferrer"} className="btn btn-primary nav-cta" onClick={handleNavClick}>
+              {isMeditacao ? "Quero aprender a meditar" : "Agendar Consulta"}
             </a>
           </li>
         </ul>

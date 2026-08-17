@@ -9,11 +9,11 @@ function DepoimentosDestaqueSection() {
   return (
     <section className="section mr-section" id="depoimentos">
       <div className="container mr-quote-stack">
-        <div className="container">
-          <h2>Se você pensa que meditação não serve pra você:</h2>
+        <div className="container center">
+          <h2>Se você pensa que meditação não é pra você...</h2>
         </div>
-        <DepoimentoDestaque foto={diandra} nome="Diandra" citacao="Sempre achei que fosse algo meio místico, distante da minha realidade." legenda="O ponto de virada foi perceber que a prática podia ser explicada de forma simples e aplicada no cotidiano." />
-        <DepoimentoDestaque foto={wictor} nome="Wictor" citacao="Tá sendo muito divertido, não tá doendo. Eu sinto que sei o que tô fazendo." legenda="Depois de manter a rotina, a prática deixou de ser desconfortável e passou a fazer sentido." reverse />
+        <DepoimentoDestaque foto={diandra} nome="Diandra" citacao="Sempre achei que fosse algo meio místico, distante da minha realidade." />
+        <DepoimentoDestaque foto={wictor} nome="Wictor" citacao="Tá sendo muito divertido, não tá doendo. Eu sinto que sei o que tô fazendo." reverse />
       </div>
     </section>
   );
