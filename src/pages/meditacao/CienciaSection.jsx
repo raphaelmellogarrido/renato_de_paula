@@ -170,7 +170,7 @@ function CienciaSection() {
       <div className="container">
         <div className="mr-science-disclaimer container center">Os estudos acima investigaram práticas, durações e populações diferentes. Eles mostram possibilidades estudadas pela ciência — não garantias individuais nem equivalência direta com o Meditação Raiz.</div>
         <div className="container center">
-          <p>A ciência mostra que a meditação tem aplicações importantes. Mas praticar sem orientação e sem entender o que está sendo treinado é justamente o que costuma levar ao abandono.</p>
+          <p style={{ marginTop: "20px" }}>A ciência mostra que a meditação tem aplicações importantes. Mas praticar sem orientação e sem entender o que está sendo treinado é justamente o que costuma levar ao abandono.</p>
         </div>
       </div>
     </section>
