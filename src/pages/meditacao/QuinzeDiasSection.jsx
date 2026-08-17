@@ -29,9 +29,17 @@ function QuinzeDiasSection() {
           <div className="mr-timeline-grid">
             {DIAS.map((dia, i) => (
               <button key={dia.title} className={`mr-timeline-card ${active === i ? "active" : ""}`} onMouseEnter={() => setActive(i)} onFocus={() => setActive(i)} onClick={() => setActive(i)}>
-                <div className="mr-timeline-dot">{dia.dot}</div>
-                <strong>{dia.label}</strong>
-                <span>{dia.short}</span>
+                <div className="mr-timeline-card-main">
+                  <div className="mr-timeline-dot">{dia.dot}</div>
+                  <strong>{dia.label}</strong>
+                  <span>{dia.short}</span>
+                </div>
+                {active === i && (
+                  <div className="mr-timeline-detail-inline">
+                    <h3>{dia.title}</h3>
+                    <p>{dia.detail}</p>
+                  </div>
+                )}
               </button>
             ))}
           </div>

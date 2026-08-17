@@ -1307,6 +1307,12 @@ strong.mr-badge-neuro {
   font-size: 13.5px;
 }
 
+/* Só aparece dentro do card ativo, no mobile — no desktop o resumo
+   compartilhado (.mr-timeline-detail) abaixo da fileira já basta. */
+.mr-timeline-detail-inline {
+  display: none;
+}
+
 p.mr-timeline-phrase {
   margin: 34px auto 0;
   max-width: 800px;
@@ -1327,16 +1333,22 @@ p.mr-timeline-phrase {
     gap: 10px;
   }
   .mr-timeline-card {
-    display: grid;
-    grid-template-columns: 44px 1fr;
+    display: flex;
     align-items: center;
-    column-gap: 14px;
+    gap: 14px;
     text-align: left;
     padding: 12px 14px;
     border: 1px solid var(--mr-line);
     border-radius: 14px;
     background: var(--mr-warm-white);
     transition: 0.2s ease;
+  }
+  .mr-timeline-card-main {
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    align-items: center;
+    column-gap: 14px;
+    flex-shrink: 0;
   }
   .mr-timeline-card.active {
     border-color: var(--mr-green);
@@ -1356,11 +1368,27 @@ p.mr-timeline-phrase {
     margin-top: 2px;
   }
   .mr-timeline-detail {
-    padding: 18px 20px;
-    min-height: 0;
+    display: none;
   }
-  .mr-timeline-detail h3 {
-    font-size: 21px;
+  .mr-timeline-detail-inline {
+    display: block;
+    flex: 1;
+    min-width: 0;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: var(--mr-green);
+    color: var(--mr-ivory);
+    text-align: center;
+  }
+  .mr-timeline-detail-inline h3 {
+    font-size: 18px;
+    margin: 0 0 6px;
+    color: var(--mr-ivory);
+  }
+  .mr-timeline-detail-inline p {
+    margin: 0;
+    color: rgba(247, 243, 234, 0.82);
+    font-size: 13px;
   }
   .mr-timeline-phrase {
     font-size: 21px;
