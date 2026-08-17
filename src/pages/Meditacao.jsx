@@ -184,18 +184,7 @@ function VideoHeroMeditacao() {
       <div className="container">
         <div className="meditacao-hero-video-slot" ref={slotRef}>
           <div className={`meditacao-hero-video ${flutuante ? "is-floating" : ""}`} ref={wrapperRef}>
-            <video
-              ref={videoRef}
-              src={`${API_URL}/videos/meditacao.mp4`}
-              autoPlay
-              muted={mudo}
-              loop
-              playsInline
-              onClick={togglePlay}
-              onPlay={() => setPlaying(true)}
-              onPause={() => setPlaying(false)}
-              onError={handleVideoError}
-            />
+            <video ref={videoRef} src={`${API_URL}/videos/meditacao.mp4`} autoPlay muted={mudo} loop playsInline onClick={togglePlay} onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onError={handleVideoError} />
 
             <button type="button" className={`guarded-video-toggle ${playing ? "is-playing" : ""}`} onClick={togglePlay} aria-label={playing ? "Pausar" : "Reproduzir"}>
               {playing ? "❚❚" : "▶"}
@@ -234,7 +223,7 @@ function VideoHeroMeditacao() {
           </div>
         )}
         <div className="container center">
-          <span className="eyebrow">Assiste esse vídeo que talvez haja algo na minha história que se conecte com a sua</span>
+          <span className="eyebrow">Assista esse vídeo que talvez haja algo na minha história que se conecte com a sua</span>
         </div>
       </div>
     </section>

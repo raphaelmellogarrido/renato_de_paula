@@ -15,9 +15,9 @@ function PazInteriorSection() {
             ))}
           </div>
           <p>Força se treina malhando, inteligência se afia estudando e equilíbrio emocional?</p>
-          <p>É comum considerarmos calma, paz interior e equlíbrio como se fossem traços fixos de personalidade.</p>
+          <p>É comum considerarmos calma, paz interior e equilíbrio como se fossem traços fixos de personalidade.</p>
           <p>
-            No <strong>meditação raíz</strong> tratamos tudo isso como <strong>habilidades treináveis.</strong>
+            Na <strong>meditação raíz</strong> tratamos tudo isso como <strong>habilidades treináveis.</strong>
           </p>
         </div>
       </div>

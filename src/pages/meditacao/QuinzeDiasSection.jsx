@@ -20,9 +20,9 @@ function QuinzeDiasSection() {
         <div className="mr-eyebrow centered">Progressão estruturada</div>
         <h2 className="centered">Como funciona o curso</h2>
         <p className="mr-lead">• 15 dias de treinamento contínuo e programado.</p>
-        <p className="mr-lead">• Prática e teoria alternada pra você aplicar no mesmo dia o que aprendeu.</p>
+        <p className="mr-lead">• Prática e teoria alternadas pra você aplicar no mesmo dia o que aprendeu.</p>
         <p className="mr-lead">• Comece no dia 1 com meditação de 5 minutos com guia, no dia 15 você consegue meditações mais longas e profundas sem guia.</p>
-        <p className="mr-lead">• Entenda o princípio raíz da meditação sem nenhuma religiosidade ou misticísmo envolvido.</p>
+        <p className="mr-lead">• Entenda o princípio raiz da meditação sem nenhuma religiosidade ou misticismo envolvido.</p>
 
         <div className="mr-timeline-wrap">
           <div className="mr-timeline-root" />
