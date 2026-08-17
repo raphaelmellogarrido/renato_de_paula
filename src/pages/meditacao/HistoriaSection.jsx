@@ -4,11 +4,14 @@
 // cada uma com o nome do país e a bandeira correspondente acima.
 const FOTO_PRINCIPAL = { key: "foto-principal", src: "/foto_principal.jpg", alt: "Dr. Renato de Paula" };
 
+// Abaixo de 720px, algumas fotos trocam pra uma versão "inteira" (sem corte)
+// via srcMobile — ainda não existe uma versão inteira pra todas, só entram
+// no <picture> as que têm.
 const PAISES = [
-  { key: "australia", pais: "Austrália", bandeira: "/australia_flag.svg", src: "/australia.jpeg", alt: "Dr. Renato de Paula na Austrália" },
-  { key: "india", pais: "Índia", bandeira: "/indian_flag.svg", src: "/india.jpeg", alt: "Dr. Renato de Paula na Índia" },
-  { key: "birmania", pais: "Birmânia", bandeira: "/burma_flag.svg", src: "/birmania.jpg", alt: "Dr. Renato de Paula meditando na Birmânia" },
-  { key: "brasil", pais: "Brasil", bandeira: "/brazil_flag.svg", src: "/medico.jpg", alt: "Dr. Renato de Paula, médico no Brasil" },
+  { key: "australia", pais: "Austrália", bandeira: "/australia_flag.svg", src: "/australia.jpeg", srcMobile: "/australia_inteira.jpeg", alt: "Dr. Renato de Paula na Austrália" },
+  { key: "india", pais: "Índia", bandeira: "/indian_flag.svg", src: "/india.jpeg", srcMobile: "/india_inteira.jpeg", alt: "Dr. Renato de Paula na Índia" },
+  { key: "birmania", pais: "Birmânia", bandeira: "/burma_flag.svg", src: "/birmania.jpg", srcMobile: "/birmania_inteira.jpg", alt: "Dr. Renato de Paula meditando na Birmânia" },
+  { key: "brasil", pais: "Brasil", bandeira: "/brazil_flag.svg", src: "/medico.jpg", srcMobile: "/medico_inteira.jpg", alt: "Dr. Renato de Paula, médico no Brasil" },
 ];
 
 function HistoriaSection() {
@@ -35,8 +38,11 @@ function HistoriaSection() {
                 <span>{p.pais}</span>
                 <img className="mr-media-flag" src={p.bandeira} alt={`Bandeira: ${p.pais}`} />
               </div>
-              <div className="mr-media-slot">
-                <img src={p.src} alt={p.alt} />
+              <div className={`mr-media-slot ${p.srcMobile ? "has-mobile-full" : ""}`}>
+                <picture>
+                  {p.srcMobile && <source media="(max-width: 720px)" srcSet={p.srcMobile} />}
+                  <img src={p.src} alt={p.alt} />
+                </picture>
               </div>
             </div>
           ))}
