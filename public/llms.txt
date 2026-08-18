@@ -1,0 +1,14 @@
+# Dr. Renato de Paula
+
+> Site do Dr. Renato de Paula, médico pela UFRJ (CRM-RJ 52.011743-8, pós-graduado em Nefrologia), com consultas focadas em escuta ativa e cuidado clínico humano, e o treinamento online Meditação Raiz.
+
+## Páginas
+
+- [Home](https://renatodepaula.com/): apresentação do Dr. Renato de Paula, forma de atendimento e como agendar consulta.
+- [Meditação Raiz](https://renatodepaula.com/meditacao): treinamento de meditação de 15 dias criado pelo Dr. Renato, com base científica e sem misticismo.
+- [Contato](https://renatodepaula.com/contato): formulário de contato e canais diretos (WhatsApp, e-mail, Instagram).
+
+## Observações
+
+- Conteúdo do site tem caráter informativo e não substitui uma consulta médica.
+- Agendamento de consulta e dúvidas sobre o treinamento Meditação Raiz são feitos via WhatsApp.

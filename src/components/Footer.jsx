@@ -5,12 +5,12 @@ function Footer() {
     <footer className="footer">
       <div className="container">
         <div>
-          <h4>Dr. Renato de Paula</h4>
+          <h3>Dr. Renato de Paula</h3>
           <p style={{ maxWidth: 260 }}>Médico dedicado à prevenção, escuta ativa e educação em saúde.</p>
         </div>
 
         <div>
-          <h4>Navegação</h4>
+          <h3>Navegação</h3>
           <ul className="footer-links">
             <li>
               <Link to="/">Home</Link>
@@ -38,7 +38,7 @@ function Footer() {
         </div>
 
         <div>
-          <h4>Contato</h4>
+          <h3>Contato</h3>
           <ul className="footer-links">
             <li>
               <a href="https://wa.me/+5521976624767" target="_blank" rel="noreferrer">
@@ -57,7 +57,7 @@ function Footer() {
         </div>
 
         <div>
-          <h4>Credenciais</h4>
+          <h3>Credenciais</h3>
           <p style={{ maxWidth: 260 }}>
             CRM-RJ 52.011743-8
             <br />

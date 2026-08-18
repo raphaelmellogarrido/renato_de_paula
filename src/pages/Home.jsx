@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import primeiraFoto from "../assets/foto1.jpeg";
 import segundaFoto from "../assets/foto2.jpeg";
-import terceiraFoto from "../assets/foto3.png";
+import terceiraFoto from "../assets/foto3.jpeg";
 
 // const FOTO = fotoPrincipal;
 // const FOTO2 = primeiraFoto;

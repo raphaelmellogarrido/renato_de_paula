@@ -240,7 +240,23 @@ app.get('/api/meditacao/contagem', async (req, res) => {
 
 app.use('/videos', express.static(VIDEOS_DIR))
 
-app.use(express.static(DIST_DIR))
+// Assets do build (dist/assets/...) têm hash no nome — mudam de nome quando
+// o conteúdo muda, então podem ser cacheados "para sempre". index.html (e
+// arquivos soltos da pasta public/, como robots.txt) não têm hash e são
+// pequenos, então ficam com cache curto pra sempre pegar a versão atual.
+app.use(
+  express.static(DIST_DIR, {
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('index.html')) {
+        res.setHeader('Cache-Control', 'no-cache')
+      } else if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+      } else {
+        res.setHeader('Cache-Control', 'public, max-age=3600')
+      }
+    },
+  }),
+)
 
 // Fallback do SPA: usa app.use sem path (em vez de um padrão coringa tipo
 // '/*splat') porque isso depende da versão exata do path-to-regexp/Express
