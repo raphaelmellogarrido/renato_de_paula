@@ -521,6 +521,91 @@
   text-align: left;
 }
 
+/* --- Funil /mitos --- */
+
+.navbar--minimal .container {
+  justify-content: center;
+}
+
+.mitos-intro {
+  max-width: 1220px;
+  margin: 0 auto 30px;
+}
+
+.mitos-welcome-back {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--gold-dark);
+  font-weight: 700;
+}
+
+.mitos-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin: 22px 0 14px;
+}
+
+.mitos-progress-dots {
+  display: flex;
+  gap: 8px;
+}
+
+.mitos-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--border);
+}
+
+.mitos-dot.active {
+  background: var(--gold-dark);
+}
+
+.mitos-progress-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+.mitos-video-title {
+  font-family: var(--title);
+  font-size: 24px;
+  font-weight: 500;
+  max-width: 640px;
+  margin: 6px auto 0;
+}
+
+.mitos-lock-hint {
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.mitos-unlocked {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+
+.mitos-lede-small {
+  margin-top: 8px;
+  color: var(--text);
+}
+
+.mitos-form-trust {
+  margin: 16px 0 0;
+  font-size: 12px;
+  color: var(--text);
+  text-align: center;
+}
+
 .form-row {
   display: flex;
   gap: 18px;

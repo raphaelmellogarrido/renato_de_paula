@@ -31,7 +31,7 @@ function App() {
             {/* <Route path="/consulta" element={<Consulta />} /> */}
             {/* <Route path="/triagem" element={<Triagem />} /> */}
             <Route path="/meditacao" element={<Meditacao />} />
-            <Route path="/mitos" element={<Navigate to="/meditacao" replace state={{ variante: "mitos" }} />} />
+            <Route path="/mitos" element={<Meditacao />} />
             <Route path="/admin-meditacao" element={<AdminMeditacao />} />
             {/* <Route path="/sobre" element={<Sobre />} /> */}
             <Route path="/contato" element={<Contato />} />

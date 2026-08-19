@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 // Player com barra de progresso que só permite retroceder (nunca avançar) —
 // bloqueia tentativas de pular pra frente além do ponto já assistido. Não é
 // infalível contra alguém mexendo no devtools, mas impede o "pular vídeo" casual.
-function GuardedVideo({ src, onEnded, label }) {
+function GuardedVideo({ src, onEnded, label, autoPlay = false }) {
   const videoRef = useRef(null)
   const wrapperRef = useRef(null)
   const maxTimeRef = useRef(0)
@@ -11,11 +11,21 @@ function GuardedVideo({ src, onEnded, label }) {
   const [playing, setPlaying] = useState(false)
   const [erro, setErro] = useState('')
   const [volume, setVolume] = useState(1)
-  const [muted, setMuted] = useState(false)
+  // Autoplay só funciona mudo na maioria dos navegadores — começa mudo e
+  // mostra um botão pra ativar o som, em vez de tentar tocar com som e falhar.
+  const [muted, setMuted] = useState(autoPlay)
   const [volumeAberto, setVolumeAberto] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
+
+  useEffect(() => {
+    if (!autoPlay) return
+    const v = videoRef.current
+    const resultado = v?.play()
+    if (resultado?.catch) resultado.catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     function handleFullscreenChange() {
@@ -108,6 +118,14 @@ function GuardedVideo({ src, onEnded, label }) {
     abrirVolumeTemporariamente()
   }
 
+  function handleAtivarSom(e) {
+    e.stopPropagation()
+    const v = videoRef.current
+    v.muted = false
+    setMuted(false)
+    abrirVolumeTemporariamente()
+  }
+
   function handleVolumeChange(e) {
     const v = videoRef.current
     const novoVolume = Number(e.target.value)
@@ -165,6 +183,8 @@ function GuardedVideo({ src, onEnded, label }) {
         controlsList="nodownload noplaybackrate"
         disablePictureInPicture
         playsInline
+        autoPlay={autoPlay}
+        muted={muted}
         preload="metadata"
         onContextMenu={(e) => e.preventDefault()}
         onTimeUpdate={handleTimeUpdate}
@@ -184,6 +204,11 @@ function GuardedVideo({ src, onEnded, label }) {
       >
         {playing ? '❚❚' : '▶'}
       </button>
+      {autoPlay && muted && (
+        <button type="button" className="meditacao-hero-video-mute" onClick={handleAtivarSom} aria-label="Ativar som">
+          🔇
+        </button>
+      )}
       <div className="guarded-video-controls">
         <div className="guarded-video-buttons-row">
           <div className="guarded-video-volume-group">

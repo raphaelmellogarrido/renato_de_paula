@@ -16,10 +16,25 @@ function Navbar() {
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
   const isMeditacao = pathname === "/meditacao";
+  const isMitos = pathname === "/mitos";
 
   function handleNavClick() {
     setOpen(false);
     window.scrollTo(0, 0);
+  }
+
+  // /mitos é uma landing page de funil: quanto menos saídas, melhor —
+  // fica só o nome, sem menu nem CTA disputando atenção com os vídeos.
+  if (isMitos) {
+    return (
+      <header className="navbar navbar--minimal">
+        <nav className="container">
+          <NavLink to="/" className="brand" onClick={handleNavClick}>
+            Dr. Renato <span>de Paula</span>
+          </NavLink>
+        </nav>
+      </header>
+    );
   }
 
   return (

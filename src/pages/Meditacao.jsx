@@ -19,6 +19,26 @@ const GENERIC_MAX_DIGITS = 14;
 const GENERIC_MIN_DIGITS = 6;
 const HOTMART_LINK = "https://go.hotmart.com/I99615540I?dp=1";
 const WHATSAPP_DUVIDAS_LINK = "https://wa.me/5521976624767?text=" + encodeURIComponent("Olá! Conheci o Meditação Raiz pelo site e gostaria de tirar uma dúvida antes de começar o treinamento.");
+const WHATSAPP_METODOLOGIA_LINK = "https://wa.me/5521976624767?text=" + encodeURIComponent("Olá! Assisti aos 3 vídeos sobre os mitos da meditação e gostaria de saber mais sobre a metodologia do curso.");
+
+// Títulos dos 3 mitos — placeholders combinando com a chamada da intro
+// ("esvaziar a mente, ter horas disponíveis, já saber meditar"). Troque
+// pelo mito real de cada vídeo quando souber o conteúdo exato.
+const MITOS_TITULOS = ["Para meditar, você precisa esvaziar a mente", "Você precisa de muito tempo disponível para meditar", "Você precisa já saber meditar (ou ter talento) para começar"];
+
+// Bolinhas "● ● ○" + "VÍDEO X DE 3" — indicador de progresso da série.
+function ProgressoMitos({ passo }) {
+  return (
+    <div className="mitos-progress">
+      <div className="mitos-progress-dots">
+        {[1, 2, 3].map((n) => (
+          <span key={n} className={`mitos-dot ${n <= passo ? "active" : ""}`} />
+        ))}
+      </div>
+      <span className="mitos-progress-label">Vídeo {passo} de 3</span>
+    </div>
+  );
+}
 
 function onlyDigits(value) {
   return value.replace(/\D/g, "");
@@ -249,8 +269,8 @@ function BarraFixaMeditacao() {
 }
 
 function Meditacao() {
-  const { hash, state } = useLocation();
-  const variante = state?.variante;
+  const { hash, pathname } = useLocation();
+  const variante = pathname === "/mitos" ? "mitos" : undefined;
   const [email, setEmail] = useState("");
   const [pais, setPais] = useState("BR");
   const [ddd, setDdd] = useState("");
@@ -261,6 +281,7 @@ function Meditacao() {
   const [inscrito, setInscrito] = useState(() => localStorage.getItem("meditacao_inscrito") === "true");
   const [video1Assistido, setVideo1Assistido] = useState(() => localStorage.getItem("meditacao_video1_assistido") === "true");
   const [video2Assistido, setVideo2Assistido] = useState(() => localStorage.getItem("meditacao_video2_assistido") === "true");
+  const [video3Assistido, setVideo3Assistido] = useState(() => localStorage.getItem("meditacao_video3_assistido") === "true");
 
   useEffect(() => {
     if (!hash) return;
@@ -330,24 +351,58 @@ function Meditacao() {
     setVideo2Assistido(true);
   }
 
-  // Variante /mitos: só o cadastro + os 3 vídeos, sem a introdução.
+  function handleVideo3Ended() {
+    localStorage.setItem("meditacao_video3_assistido", "true");
+    setVideo3Assistido(true);
+  }
+
+  // Variante /mitos: landing page de funil, uma única sequência guiada —
+  // só o estágio atual fica visível por vez (não os 3 players de uma vez).
+  // Vídeo 1 toca sem gate nenhum (clique pra dar play, com som — autoplay
+  // com som é bloqueado pelos navegadores de qualquer forma). Só depois que
+  // ele termina é que o formulário de email aparece, liberando o vídeo 2 —
+  // vídeo 3 libera sozinho ao final do 2, sem gate novo. No final dos 3, os
+  // dois CTAs (curso e metodologia).
   if (variante === "mitos") {
+    const progressoSalvo = video1Assistido || inscrito;
+
     return (
       <>
-        <section id="cadastro-live" className="section">
-          <div className="container" style={{ maxWidth: 560, width: "100%", margin: "0 auto" }}>
-            <div className="form-card center">
-              <h2>Cadastre seu email para liberar as aulas grátis e receber convites para as lives de meditação</h2>
-              <p className="triagem-ajuda">Avisos sobre as próximas lives de meditação, direto no seu email.</p>
+        <section className="section">
+          <div className="container center mitos-intro">
+            <span className="eyebrow">Série gratuita • 3 vídeos</span>
+            <h1>3 mitos sobre meditação que podem estar impedindo você de começar</h1>
+            <p className="lede" style={{ margin: "0 auto" }}>
+              Você não precisa esvaziar a mente, ter horas disponíveis ou já saber meditar. Nesta série rápida, vou mostrar o que realmente importa para começar.
+            </p>
+            {progressoSalvo && !video3Assistido && <p className="mitos-welcome-back">Bem-vindo(a) de volta — continue de onde parou.</p>}
+          </div>
 
-              {status === "sucesso" && <div className="success-box">Cadastro feito com sucesso! Suas aulas foram liberadas abaixo.</div>}
-              {status === "erro" && <div className="error-box">{erro}</div>}
+          {!video1Assistido && (
+            <div className="container guarded-video-list" style={{ maxWidth: 860, width: "100%", margin: "0 auto" }}>
+              <div className="center" style={{ marginBottom: 18 }}>
+                <ProgressoMitos passo={1} />
+                <h3 className="mitos-video-title">Mito #1 — "{MITOS_TITULOS[0]}"</h3>
+              </div>
+              <GuardedVideo src={`${API_URL}/videos/mito1.mp4`} label="Mito 1" onEnded={handleVideo1Ended} />
+              <p className="mitos-lock-hint center">🔒 Assista até o final para liberar o próximo conteúdo</p>
+            </div>
+          )}
+        </section>
 
-              {!inscrito && (
+        {video1Assistido && !inscrito && (
+          <section id="cadastro-live" className="section section-alt">
+            <div className="container" style={{ maxWidth: 560, width: "100%", margin: "0 auto" }}>
+              <div className="form-card center">
+                <h2>Você está a 1 passo do segundo mito</h2>
+                <p className="triagem-ajuda">O primeiro vídeo foi só o começo. Informe seu e-mail para salvar seu acesso e liberar agora o próximo vídeo.</p>
+
+                {status === "erro" && <div className="error-box">{erro}</div>}
+
                 <form onSubmit={handleCadastrar} noValidate>
                   <div className={`field ${emailValido ? "valid" : ""}`}>
                     <label htmlFor="email-live">E-mail {emailValido && <span className="valid-check">✓</span>}</label>
-                    <input id="email-live" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="seu@email.com" />
+                    <input id="email-live" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Digite seu melhor e-mail" />
                   </div>
 
                   <div className={`field ${telefonePreenchido && telefoneValido ? "valid" : ""}`}>
@@ -384,32 +439,58 @@ function Meditacao() {
                   </div>
 
                   <button type="submit" className="btn btn-primary btn-block" disabled={!formValido || status === "enviando"}>
-                    {status === "enviando" ? "Cadastrando e liberando video..." : "Cadastrar e liberar vídeos"}
+                    {status === "enviando" ? "Liberando vídeo..." : "Liberar o vídeo 2"}
                   </button>
                 </form>
-              )}
-            </div>
-          </div>
-        </section>
-
-        {inscrito && (
-          <section className="section section-alt">
-            <div className="container center" style={{ marginBottom: 24 }}>
-              <span className="eyebrow">Aulas liberadas</span>
-              <h2>Suas aulas de meditação</h2>
-              <p className="lede" style={{ margin: "0 auto" }}>
-                Assista na ordem — cada aula libera a próxima ao final, 3 no total.
-              </p>
-            </div>
-            <div className="container guarded-video-list" style={{ maxWidth: 860, width: "100%", margin: "0 auto" }}>
-              <GuardedVideo src={`${API_URL}/videos/mito1.mp4`} label="Mito 1" onEnded={handleVideo1Ended} />
-              {video1Assistido && <GuardedVideo src={`${API_URL}/videos/mito2.mp4`} label="Mito 2" onEnded={handleVideo2Ended} />}
-              {video2Assistido && <GuardedVideo src={`${API_URL}/videos/mito3.mp4`} label="Mito 3" />}
+                <p className="mitos-form-trust">🔒 Sem spam. Você também poderá receber conteúdos do Dr. Renato sobre meditação e bem-estar.</p>
+              </div>
             </div>
           </section>
         )}
 
-        <BotaoComprarCurso />
+        {inscrito && !video2Assistido && (
+          <section className="section">
+            <div className="container center" style={{ marginBottom: 18 }}>
+              <p className="mitos-unlocked">Muito bem. Seu próximo vídeo está liberado.</p>
+              <ProgressoMitos passo={2} />
+              <h3 className="mitos-video-title">Mito #2 — "{MITOS_TITULOS[1]}"</h3>
+            </div>
+            <div className="container guarded-video-list" style={{ maxWidth: 860, width: "100%", margin: "0 auto" }}>
+              <GuardedVideo src={`${API_URL}/videos/mito2.mp4`} label="Mito 2" onEnded={handleVideo2Ended} />
+            </div>
+          </section>
+        )}
+
+        {video2Assistido && !video3Assistido && (
+          <section className="section">
+            <div className="container center" style={{ marginBottom: 18 }}>
+              <ProgressoMitos passo={3} />
+              <h3 className="mitos-video-title">Último mito — "{MITOS_TITULOS[2]}"</h3>
+              <p className="mitos-lede-small">Você chegou ao último vídeo da série.</p>
+            </div>
+            <div className="container guarded-video-list" style={{ maxWidth: 860, width: "100%", margin: "0 auto" }}>
+              <GuardedVideo src={`${API_URL}/videos/mito3.mp4`} label="Mito 3" onEnded={handleVideo3Ended} />
+            </div>
+          </section>
+        )}
+
+        {video3Assistido && (
+          <section className="section center">
+            <div className="container" style={{ maxWidth: 640, margin: "0 auto" }}>
+              <p>Agora você já sabe o que não precisa fazer para meditar. O próximo passo é aprender o que fazer.</p>
+              <p>Se você quer transformar a meditação em uma prática simples, possível e consistente no seu dia a dia, conheça o método que preparei para conduzir você passo a passo.</p>
+              <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", marginTop: 20 }}>
+                <a href={HOTMART_LINK} target="_blank" rel="noreferrer" className="btn btn-primary btn-pill btn-mobile-full">
+                  Quero aprender a meditar →
+                </a>
+                <a href={WHATSAPP_METODOLOGIA_LINK} target="_blank" rel="noreferrer" className="btn btn-pill btn-mobile-full" style={{ border: "2px solid var(--border)" }}>
+                  Conhecer a metodologia do curso
+                </a>
+              </div>
+            </div>
+          </section>
+        )}
+
         <BarraFixaMeditacao />
       </>
     );
