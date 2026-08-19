@@ -378,16 +378,14 @@ function Meditacao() {
             {progressoSalvo && !video3Assistido && <p className="mitos-welcome-back">Bem-vindo(a) de volta — continue de onde parou.</p>}
           </div>
 
-          {!video1Assistido && (
-            <div className="container guarded-video-list" style={{ maxWidth: 860, width: "100%", margin: "0 auto" }}>
-              <div className="center" style={{ marginBottom: 18 }}>
-                <ProgressoMitos passo={1} />
-                <h3 className="mitos-video-title">Mito #1 — "{MITOS_TITULOS[0]}"</h3>
-              </div>
-              <GuardedVideo src={`${API_URL}/videos/mito1.mp4`} label="Mito 1" onEnded={handleVideo1Ended} />
-              <p className="mitos-lock-hint center">🔒 Assista até o final para liberar o próximo conteúdo</p>
+          <div className="container guarded-video-list" style={{ maxWidth: 860, width: "100%", margin: "0 auto" }}>
+            <div className="center" style={{ marginBottom: 18 }}>
+              <ProgressoMitos passo={1} />
+              <h3 className="mitos-video-title">Mito #1 — "{MITOS_TITULOS[0]}"</h3>
             </div>
-          )}
+            <GuardedVideo src={`${API_URL}/videos/mito1.mp4`} label="Mito 1" onEnded={handleVideo1Ended} />
+            {!video1Assistido && <p className="mitos-lock-hint center">🔒 Assista até o final para liberar o próximo conteúdo</p>}
+          </div>
         </section>
 
         {video1Assistido && !inscrito && (
@@ -448,7 +446,7 @@ function Meditacao() {
           </section>
         )}
 
-        {inscrito && !video2Assistido && (
+        {inscrito && (
           <section className="section">
             <div className="container center" style={{ marginBottom: 18 }}>
               <p className="mitos-unlocked">Muito bem. Seu próximo vídeo está liberado.</p>
@@ -461,7 +459,7 @@ function Meditacao() {
           </section>
         )}
 
-        {video2Assistido && !video3Assistido && (
+        {video2Assistido && (
           <section className="section">
             <div className="container center" style={{ marginBottom: 18 }}>
               <ProgressoMitos passo={3} />
@@ -476,7 +474,7 @@ function Meditacao() {
 
         {video3Assistido && (
           <section className="section center">
-            <div className="container" style={{ maxWidth: 640, margin: "0 auto" }}>
+            <div className="container" style={{ maxWidth: 640, width: "100%", margin: "0 auto" }}>
               <p>Agora você já sabe o que não precisa fazer para meditar. O próximo passo é aprender o que fazer.</p>
               <p>Se você quer transformar a meditação em uma prática simples, possível e consistente no seu dia a dia, conheça o método que preparei para conduzir você passo a passo.</p>
               <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", marginTop: 20 }}>

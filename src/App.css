@@ -528,8 +528,13 @@
 }
 
 .mitos-intro {
+  width: 100%;
   max-width: 1220px;
   margin: 0 auto 30px;
+}
+
+.mitos-intro h1 {
+  font-size: clamp(28px, 6vw, 58px);
 }
 
 .mitos-welcome-back {
@@ -683,10 +688,12 @@
 
 .ddd-wrap {
   flex: 0 0 76px;
+  min-width: 0;
 }
 
 .numero-wrap {
   flex: 1;
+  min-width: 0;
 }
 
 .phone-group .ddd-input {
