@@ -1,5 +1,5 @@
 import { Suspense, lazy } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import ScrollToTop from "./components/ScrollToTop";
@@ -16,13 +16,22 @@ import "./App.css";
 const Contato = lazy(() => import("./pages/Contato"));
 const Meditacao = lazy(() => import("./pages/Meditacao"));
 const AdminMeditacao = lazy(() => import("./pages/AdminMeditacao"));
+const ComunidadeLayout = lazy(() => import("./pages/comunidade/ComunidadeLayout"));
+const ComunidadeLogin = lazy(() => import("./pages/comunidade/Login"));
+const ComunidadeDashboard = lazy(() => import("./pages/comunidade/Dashboard"));
+const ComunidadeAula = lazy(() => import("./pages/comunidade/Aula"));
 
 function App() {
+  // /comunidade é um app isolado: tem seu próprio topbar/layout e não
+  // deve receber a Navbar/Footer do site principal.
+  const location = useLocation();
+  const isComunidade = location.pathname.startsWith("/comunidade");
+
   return (
     <>
       <ScrollToTop />
       <MetaPixelTracker />
-      <Navbar />
+      {!isComunidade && <Navbar />}
       <main>
         <Suspense fallback={null}>
           <Routes>
@@ -35,11 +44,16 @@ function App() {
             <Route path="/admin-meditacao" element={<AdminMeditacao />} />
             {/* <Route path="/sobre" element={<Sobre />} /> */}
             <Route path="/contato" element={<Contato />} />
+            <Route path="/comunidade/login" element={<ComunidadeLogin />} />
+            <Route path="/comunidade" element={<ComunidadeLayout />}>
+              <Route index element={<ComunidadeDashboard />} />
+              <Route path="aula/:id" element={<ComunidadeAula />} />
+            </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
       </main>
-      <Footer />
+      {!isComunidade && <Footer />}
     </>
   );
 }

@@ -1,0 +1,1657 @@
+/* Design isolado de /comunidade — não reaproveita as variáveis do site
+   principal (--gold, --charcoal etc). Paleta clara e premium: fundo
+   #FFFEFB, cards bege #F5F1EB, verde sálvia #8A9A8C como cor de destaque.
+   Nunca fundo escuro (diferente do padrão Hotmart Club). */
+
+.comunidade-app {
+  --cm-bg: #fffefb;
+  --cm-beige: #f5f1eb;
+  --cm-beige-soft: #faf8f4;
+  --cm-sage: #8a9a8c;
+  --cm-sage-dark: #6f7d71;
+  --cm-sage-soft: #e4e9e4;
+  --cm-text: #33312c;
+  --cm-text-soft: #7a766e;
+  --cm-border: rgba(51, 49, 44, 0.08);
+  --cm-shadow: 0 14px 34px rgba(51, 49, 44, 0.07), 0 2px 8px rgba(51, 49, 44, 0.04);
+  --cm-radius: 24px;
+
+  font-family:
+    "Inter",
+    -apple-system,
+    sans-serif;
+  background: var(--cm-bg);
+  color: var(--cm-text);
+  min-height: 100vh;
+  line-height: 1.55;
+}
+
+.comunidade-app h1,
+.comunidade-app h2,
+.comunidade-app h3 {
+  font-family: "Playfair Display", Georgia, serif;
+  font-weight: 600;
+  color: var(--cm-text);
+  margin: 0;
+}
+
+.comunidade-app * {
+  box-sizing: border-box;
+}
+
+.comunidade-app button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* Shell: sidebar esquerda fixa + conteúdo */
+.cm-shell {
+  display: flex;
+  align-items: stretch;
+  min-height: 100vh;
+}
+
+.cm-sidebar-left {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--cm-beige-soft);
+  border-right: 1px solid var(--cm-border);
+  display: flex;
+  flex-direction: column;
+  padding: 26px 20px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.cm-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 6px 24px;
+}
+
+.cm-sidebar-brand-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--cm-sage);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cm-sidebar-brand strong {
+  display: block;
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.cm-sidebar-brand span {
+  display: block;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  color: var(--cm-text-soft);
+  margin-top: 2px;
+}
+
+.cm-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.cm-sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 12px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: var(--cm-text-soft);
+  font-size: 0.88rem;
+  font-weight: 500;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+  position: relative;
+}
+
+.cm-sidebar-nav-item:hover {
+  background: var(--cm-beige);
+  color: var(--cm-text);
+}
+
+.cm-sidebar-nav-item.is-ativo {
+  background: var(--cm-text);
+  color: #fff;
+}
+
+.cm-sidebar-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #c76b6b;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.cm-sidebar-footer {
+  margin-top: 12px;
+}
+
+.cm-sidebar-user-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--cm-beige);
+  border-radius: 16px;
+  padding: 10px 12px;
+}
+
+.cm-sidebar-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--cm-sage);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.cm-sidebar-user-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.cm-sidebar-user-info strong {
+  display: block;
+  font-size: 0.84rem;
+}
+
+.cm-badge-membro {
+  display: inline-block;
+  margin-top: 2px;
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--cm-sage-dark);
+  background: var(--cm-sage-soft);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+
+.cm-sidebar-logout {
+  background: transparent;
+  border: none;
+  color: var(--cm-text-soft);
+  padding: 6px;
+  border-radius: 8px;
+  display: flex;
+  flex-shrink: 0;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.cm-sidebar-logout:hover {
+  background: var(--cm-bg);
+  color: var(--cm-text);
+}
+
+.cm-sidebar-copy {
+  text-align: center;
+  font-size: 0.68rem;
+  color: var(--cm-text-soft);
+  margin: 12px 0 0;
+}
+
+.cm-content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Grid principal: col 1 (sidebar esquerda, 240px) já é resolvida pelo flex
+   do .cm-shell — aqui dentro de .cm-content fica o grid de 3 colunas da
+   referência (centro flexível + 2 colunas fixas de 360px cada), usando
+   `grid-template-areas` com nomes em vez de linha/coluna numérica.
+   O pulo do gato contra o "buraco branco": Hero e Biblioteca (coluna 1)
+   fazem `grid-row-end: span 2`, cobrindo as MESMAS duas linhas onde
+   Sequência+Progresso (coluna 2) e Próximo+Desafio (coluna 3) ficam
+   empilhados — assim a altura extra de cada card se distribui pelas duas
+   linhas, em vez de sobrar tudo numa célula só (o que empurrava uma faixa
+   vazia abaixo do card mais curto). O título "Biblioteca de Meditações" e
+   os filtros vivem DENTRO do mesmo bloco da grade de vídeos (não numa
+   linha própria) — por isso não sobra ar entre o título e os cards.
+   Ranking cobre as mesmas 2 linhas da Biblioteca, na coluna 3. */
+.cm-main {
+  padding: 32px;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) 360px 360px;
+  grid-template-rows: auto auto auto auto;
+  grid-template-areas:
+    "topbar     topbar     topbar"
+    "hero       sequencia  proximo"
+    "hero       progresso  desafio"
+    "biblioteca biblioteca ranking";
+  gap: 24px;
+  align-items: stretch;
+  background: #f9f7f2;
+}
+
+.cm-grid-topbar {
+  grid-area: topbar;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.cm-grid-hero {
+  grid-area: hero;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  align-self: stretch;
+  margin-bottom: 0;
+}
+
+.cm-grid-hero > div {
+  flex: 1;
+  height: 100%;
+}
+
+.cm-grid-sequencia {
+  grid-area: sequencia;
+}
+
+.cm-grid-encontro {
+  grid-area: proximo;
+}
+
+.cm-grid-progresso {
+  grid-area: progresso;
+}
+
+.cm-grid-desafio {
+  grid-area: desafio;
+}
+
+.cm-grid-biblioteca-videos {
+  grid-area: biblioteca;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.cm-grid-ranking {
+  grid-area: ranking;
+}
+
+/* View "Comunidade": o feed toma o lugar de hero + biblioteca (coluna 1,
+   linhas 2 a 4) — Sequência/Próximo/Progresso/Desafio/Ranking (colunas 2 e
+   3) continuam visíveis nas duas views. */
+.cm-grid-feed {
+  grid-column: 1;
+  grid-row: 2 / 5;
+}
+
+@media (max-width: 1200px) {
+  .cm-main {
+    grid-template-columns: 1fr 360px;
+    grid-template-areas:
+      "topbar     topbar"
+      "hero       sequencia"
+      "hero       progresso"
+      "biblioteca proximo"
+      "biblioteca desafio"
+      "biblioteca ranking";
+  }
+
+  .cm-grid-feed {
+    grid-column: 1;
+    grid-row: 2 / 7;
+  }
+}
+
+@media (max-width: 960px) {
+  .cm-shell {
+    flex-direction: column;
+  }
+
+  .cm-sidebar-left {
+    width: 100%;
+    height: auto;
+    position: static;
+  }
+
+  .cm-main {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "topbar"
+      "hero"
+      "sequencia"
+      "proximo"
+      "progresso"
+      "desafio"
+      "biblioteca"
+      "ranking";
+  }
+
+  .cm-grid-feed {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
+
+/* Login */
+.cm-login-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.cm-login-card {
+  background: var(--cm-beige);
+  border-radius: var(--cm-radius);
+  padding: 40px;
+  max-width: 380px;
+  width: 100%;
+  box-shadow: var(--cm-shadow);
+  text-align: center;
+}
+
+.cm-login-card h1 {
+  font-size: 1.6rem;
+  margin-bottom: 8px;
+}
+
+.cm-login-sub {
+  color: var(--cm-text-soft);
+  font-size: 0.92rem;
+  margin: 0 0 24px;
+}
+
+.cm-login-card input {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--cm-border);
+  background: var(--cm-bg);
+  font-size: 0.95rem;
+  margin-bottom: 14px;
+}
+
+.cm-login-card button[type="submit"] {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 14px;
+  border: none;
+  background: var(--cm-sage);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: background 0.2s ease;
+}
+
+.cm-login-card button[type="submit"]:hover {
+  background: var(--cm-sage-dark);
+}
+
+.cm-login-erro {
+  color: #a4442f;
+  font-size: 0.85rem;
+  margin: -6px 0 14px;
+}
+
+.cm-login-hint {
+  margin-top: 18px;
+  font-size: 0.78rem;
+  color: var(--cm-text-soft);
+}
+
+/* Hero — "Continue sua jornada": foto real de fundo + overlay + player */
+.cm-hero {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #2f3b32, #1e2620 65%, #171d19);
+  border-radius: var(--cm-radius);
+  padding: 40px;
+  margin-bottom: 28px;
+  box-shadow: var(--cm-shadow);
+  cursor: pointer;
+  border: none;
+}
+
+.cm-hero-foto {
+  background-size: cover;
+  background-position: center;
+}
+
+.cm-hero-foto::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, rgba(15, 20, 16, 0.88), rgba(15, 20, 16, 0.55) 55%, rgba(15, 20, 16, 0.3));
+}
+
+.cm-hero-conteudo {
+  position: relative;
+  z-index: 1;
+  max-width: 560px;
+}
+
+.cm-hero-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.cm-hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #d6dfd6;
+  font-weight: 600;
+}
+
+.cm-hero-duracao {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: #d6dfd6;
+  background: rgba(255, 255, 255, 0.12);
+  padding: 5px 12px;
+  border-radius: 999px;
+}
+
+.cm-hero h1 {
+  color: #fff;
+  font-size: 2.1rem;
+  margin-bottom: 12px;
+}
+
+.cm-hero p {
+  color: rgba(255, 255, 255, 0.72);
+  margin: 0 0 26px;
+  max-width: 480px;
+}
+
+.cm-hero-player {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  padding: 10px 18px;
+  max-width: 460px;
+  cursor: default;
+}
+
+.cm-hero-player-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.75);
+  display: flex;
+  padding: 4px;
+}
+
+.cm-hero-player-play {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #fff;
+  color: #1e2620;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.cm-hero-player-play:hover {
+  transform: scale(1.06);
+}
+
+.cm-hero-player-tempo {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.7);
+  white-space: nowrap;
+}
+
+.cm-hero-player-track {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.cm-hero-player-track .cm-progress-fill {
+  background: #fff;
+}
+
+.cm-hero-player-vol {
+  color: rgba(255, 255, 255, 0.6);
+  flex-shrink: 0;
+}
+
+.cm-hero-progress {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 22px;
+  max-width: 420px;
+}
+
+.cm-hero-progress span {
+  font-size: 0.82rem;
+  color: var(--cm-text-soft);
+  white-space: nowrap;
+}
+
+.cm-btn-primary {
+  display: inline-block;
+  background: var(--cm-sage);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 13px 28px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+
+.cm-btn-primary:hover {
+  background: var(--cm-sage-dark);
+}
+
+/* Progress bar */
+.cm-progress-track {
+  flex: 1;
+  height: 8px;
+  background: rgba(51, 49, 44, 0.1);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.cm-progress-fill {
+  height: 100%;
+  background: var(--cm-sage);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+/* Biblioteca */
+.cm-section-title {
+  font-size: 1.2rem;
+  margin-bottom: 16px;
+}
+
+/* Cards de vídeo/aula — estilo "com imagem" (gradiente + ícone + tag) */
+.cm-card-aula {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.15s ease;
+}
+
+.cm-card-aula:hover {
+  transform: translateY(-2px);
+}
+
+.cm-card-aula-capa {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(150deg, var(--cover-a, var(--cm-sage)), var(--cover-b, var(--cm-sage-dark)));
+}
+
+.cm-card-aula:hover .cm-card-aula-capa {
+  box-shadow: var(--cm-shadow);
+}
+
+.cm-card-aula-icone-fundo {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.cm-card-aula-tag {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.28);
+  color: #fff;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.cm-card-aula-duracao {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.4);
+  color: #fff;
+  font-size: 0.68rem;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+.cm-card-aula-play {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--cm-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.85);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+
+.cm-card-aula:hover .cm-card-aula-play {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.cm-card-aula-titulo {
+  font-size: 0.86rem;
+  font-weight: 500;
+  padding: 0 2px;
+}
+
+.cm-tag-dourado .cm-card-aula-capa {
+  --cover-a: #d9b673;
+  --cover-b: #a9803f;
+}
+
+.cm-tag-terracota .cm-card-aula-capa {
+  --cover-a: #c78a6b;
+  --cover-b: #a4573a;
+}
+
+.cm-tag-azul .cm-card-aula-capa {
+  --cover-a: #7fa3ad;
+  --cover-b: #4f7982;
+}
+
+.cm-tag-sage .cm-card-aula-capa {
+  --cover-a: var(--cm-sage);
+  --cover-b: var(--cm-sage-dark);
+}
+
+/* Sidebar direita */
+.cm-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.cm-widget {
+  background: #fff;
+  border: 1px solid var(--cm-border);
+  border-radius: 22px;
+  padding: 22px;
+}
+
+.cm-widget h3 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 1.02rem;
+  margin-bottom: 14px;
+}
+
+.cm-evento {
+  padding: 10px 0;
+  border-top: 1px solid var(--cm-border);
+}
+
+.cm-evento:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.cm-evento strong {
+  display: block;
+  font-size: 0.9rem;
+  margin-bottom: 3px;
+}
+
+.cm-evento span {
+  font-size: 0.8rem;
+  color: var(--cm-text-soft);
+}
+
+/* Widget Sequência — bolinhas de presença estilo lúdico */
+.cm-widget-sequencia .cm-widget-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.cm-widget-sequencia h3 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 0;
+}
+
+.cm-icone-badge {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cm-icone-fogo {
+  background: #fff1e0;
+  color: #e67e22;
+}
+
+.cm-pill-suave {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--cm-sage-dark);
+  background: var(--cm-sage-soft);
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.cm-sequencia-numero {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--cm-text);
+  margin: 10px 0 14px;
+}
+
+.cm-sequencia-numero span {
+  font-family: "Inter", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--cm-text-soft);
+  margin-left: 6px;
+}
+
+.cm-sequencia-dias {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.cm-sequencia-dia {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.cm-sequencia-bolinha {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--cm-bg);
+  border: 1px solid var(--cm-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+}
+
+.cm-sequencia-bolinha.is-concluido {
+  background: var(--cm-text);
+  border-color: var(--cm-text);
+  color: #fff;
+}
+
+.cm-sequencia-label {
+  font-size: 0.64rem;
+  color: var(--cm-text-soft);
+  text-transform: uppercase;
+}
+
+.cm-sequencia-badge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.78rem;
+  color: var(--cm-sage-dark);
+  background: var(--cm-sage-soft);
+  border-radius: 12px;
+  padding: 9px 12px;
+}
+
+/* Widget Meu Progresso — verde sálvia sólido, igual referência */
+.cm-widget-progresso {
+  background: var(--cm-sage);
+  border-color: var(--cm-sage);
+  color: #fff;
+}
+
+.cm-widget-progresso-eyebrow {
+  display: block;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 10px;
+}
+
+.cm-widget-progresso p {
+  font-size: 0.92rem;
+  margin: 0 0 16px;
+  color: #fff;
+}
+
+.cm-progress-track-escuro {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.cm-progress-fill-claro {
+  background: #fff;
+}
+
+.cm-widget-progresso-meta {
+  display: block;
+  margin-top: 10px;
+  font-size: 0.76rem;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+/* Desafio da semana — checklist */
+.cm-desafio-titulo {
+  font-size: 0.88rem;
+  font-weight: 600;
+  margin: 0 0 12px;
+}
+
+.cm-desafio-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+.cm-desafio-item div {
+  display: flex;
+  flex-direction: column;
+}
+
+.cm-desafio-item strong {
+  font-size: 0.84rem;
+}
+
+.cm-desafio-item span {
+  font-size: 0.76rem;
+  color: var(--cm-text-soft);
+}
+
+.cm-desafio-check {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--cm-bg);
+  border: 1px solid var(--cm-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.cm-desafio-check.is-concluido {
+  background: var(--cm-sage);
+  border-color: var(--cm-sage);
+  color: #fff;
+}
+
+.cm-desafio-participantes {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--cm-sage-dark);
+  font-weight: 600;
+  margin-top: 10px;
+}
+
+.cm-ranking-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  margin-top: 6px;
+  font-size: 0.88rem;
+  border-radius: 999px;
+}
+
+.cm-ranking-item:first-of-type {
+  margin-top: 0;
+}
+
+.cm-ranking-item.is-voce {
+  font-weight: 600;
+}
+
+.cm-ranking-esquerda {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cm-ranking-pos {
+  min-width: 16px;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.cm-ranking-nome {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.cm-ranking-dias {
+  font-size: 0.8rem;
+}
+
+/* Página da aula */
+.cm-aula-page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 32px;
+}
+
+.cm-aula-voltar {
+  display: inline-block;
+  color: var(--cm-text-soft);
+  text-decoration: none;
+  font-size: 0.88rem;
+  margin-bottom: 18px;
+}
+
+.cm-aula-voltar:hover {
+  color: var(--cm-text);
+}
+
+.cm-aula-layout {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 28px;
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .cm-aula-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cm-aula-header {
+  margin-bottom: 20px;
+}
+
+.cm-aula-header h1 {
+  font-size: 1.6rem;
+  margin-bottom: 6px;
+}
+
+.cm-player-wrap {
+  background: var(--cm-beige);
+  border-radius: var(--cm-radius);
+  padding: 14px;
+  margin-bottom: 20px;
+}
+
+.cm-player-wrap .guarded-video {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.cm-aula-videos-do-dia {
+  background: var(--cm-beige);
+  border-radius: var(--cm-radius);
+  padding: 20px;
+  margin-bottom: 28px;
+}
+
+.cm-aula-videos-do-dia h2 {
+  font-size: 1.05rem;
+  margin-bottom: 14px;
+}
+
+.cm-video-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  color: inherit;
+  font-size: 0.9rem;
+}
+
+.cm-video-item.is-ativo {
+  background: var(--cm-bg);
+  font-weight: 600;
+}
+
+.cm-video-item:hover {
+  background: var(--cm-bg);
+}
+
+.cm-video-item-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cm-sage);
+  flex-shrink: 0;
+}
+
+.cm-video-item-duracao {
+  margin-left: auto;
+  color: var(--cm-text-soft);
+  font-size: 0.8rem;
+}
+
+/* Navegação sequencial de dias */
+.cm-dias-nav {
+  background: var(--cm-beige);
+  border-radius: var(--cm-radius);
+  padding: 18px;
+}
+
+.cm-dias-nav h3 {
+  font-size: 0.95rem;
+  margin-bottom: 12px;
+}
+
+.cm-dias-nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.cm-dias-nav-item {
+  display: block;
+  padding: 9px 12px;
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--cm-text);
+  font-size: 0.86rem;
+}
+
+.cm-dias-nav-item.is-ativo {
+  background: var(--cm-sage);
+  color: #fff;
+  font-weight: 600;
+}
+
+.cm-dias-nav-item:hover:not(.is-ativo) {
+  background: var(--cm-bg);
+}
+
+/* Comentários */
+.cm-comentarios {
+  background: var(--cm-beige);
+  border-radius: var(--cm-radius);
+  padding: 24px;
+}
+
+.cm-comentarios h2 {
+  font-size: 1.1rem;
+  margin-bottom: 18px;
+}
+
+.cm-comentario-form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.cm-comentario-form input {
+  flex: 1;
+  padding: 11px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--cm-border);
+  background: var(--cm-bg);
+  font-size: 0.9rem;
+}
+
+.cm-comentario-form button {
+  background: var(--cm-sage);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 0 22px;
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+.cm-comentario-form button:hover {
+  background: var(--cm-sage-dark);
+}
+
+.cm-comentario {
+  display: flex;
+  gap: 12px;
+  padding: 14px 0;
+  border-top: 1px solid var(--cm-border);
+}
+
+.cm-comentario:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.cm-comentario-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--cm-sage-soft);
+  color: var(--cm-sage-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.82rem;
+  flex-shrink: 0;
+}
+
+.cm-comentario-corpo strong {
+  font-size: 0.9rem;
+}
+
+.cm-comentario-quando {
+  color: var(--cm-text-soft);
+  font-size: 0.76rem;
+  margin-left: 8px;
+  font-weight: 400;
+}
+
+.cm-comentario-texto {
+  margin: 4px 0 0;
+  font-size: 0.88rem;
+  color: var(--cm-text);
+}
+
+/* Reestiliza o GuardedVideo (componente compartilhado) para combinar com
+   o visual claro de /comunidade, sem alterar o componente em si. */
+.comunidade-app .guarded-video-toggle {
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--cm-sage-dark);
+}
+
+.comunidade-app .guarded-video-controls {
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.55));
+}
+
+/* Topbar do Dashboard: busca + switch Curso/Comunidade + botão preto */
+.cm-topbar-nova {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.cm-busca-input {
+  justify-self: start;
+  width: 100%;
+  max-width: 340px;
+  background: #fff;
+  border: 1px solid var(--cm-border);
+  border-radius: 999px;
+  padding: 11px 18px;
+  font-size: 0.88rem;
+  color: var(--cm-text);
+}
+
+.cm-busca-input::placeholder {
+  color: var(--cm-text-soft);
+}
+
+.cm-topbar-nova .cm-switch {
+  justify-self: center;
+}
+
+.cm-btn-preto {
+  justify-self: end;
+  background: var(--cm-text);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 11px 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background 0.15s ease;
+}
+
+.cm-btn-preto:hover {
+  background: #000;
+}
+
+.cm-switch {
+  display: flex;
+  background: var(--cm-beige);
+  border-radius: 999px;
+  padding: 4px;
+}
+
+.cm-switch-btn {
+  background: transparent;
+  border: none;
+  border-radius: 999px;
+  padding: 9px 18px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--cm-text-soft);
+  white-space: nowrap;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.cm-switch-btn.is-ativo {
+  background: var(--cm-text);
+  color: #fff;
+}
+
+/* Biblioteca de Meditações — título + filtros + grid de vídeos vivem juntos
+   num único bloco (`.cm-biblioteca-bloco`, que recebe `cm-grid-biblioteca-
+   -videos` no Dashboard e ocupa a área "biblioteca" do grid principal, ver
+   topo do arquivo). Título/filtros ficarem DENTRO do bloco — em vez de numa
+   linha de grid própria — é o que evita sobrar ar entre eles e os cards. */
+.cm-biblioteca-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.cm-biblioteca-header .cm-section-title {
+  margin-bottom: 0;
+}
+
+.cm-biblioteca-filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cm-filtro-chip {
+  background: var(--cm-beige);
+  border: none;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--cm-text-soft);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.cm-filtro-chip.is-ativo {
+  background: var(--cm-text);
+  color: #fff;
+}
+
+.cm-grid-biblioteca {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+@media (max-width: 960px) {
+  .cm-grid-biblioteca {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .cm-grid-biblioteca {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cm-biblioteca-vazio {
+  color: var(--cm-text-soft);
+  font-size: 0.88rem;
+}
+
+.cm-card-biblioteca {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid var(--cm-border);
+  border-radius: 20px;
+  overflow: hidden;
+  padding: 0;
+  text-align: left;
+  color: inherit;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.cm-card-biblioteca:hover {
+  border-color: rgba(51, 49, 44, 0.18);
+  box-shadow: var(--cm-shadow);
+}
+
+.cm-card-biblioteca-capa {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background-size: cover;
+  background-position: center;
+}
+
+.cm-card-biblioteca-capa::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.35));
+}
+
+.cm-card-biblioteca .cm-card-aula-tag,
+.cm-card-biblioteca .cm-card-aula-duracao,
+.cm-card-biblioteca .cm-card-aula-play {
+  z-index: 1;
+}
+
+.cm-card-biblioteca-titulo {
+  font-size: 0.94rem;
+  font-family: "Playfair Display", Georgia, serif;
+  font-weight: 600;
+  padding-left: 5px;
+}
+
+.cm-card-biblioteca-rodape-area {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 2px 2px;
+}
+
+.cm-card-biblioteca-rodape {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cm-card-biblioteca-nivel {
+  font-size: 0.7rem;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--cm-beige);
+  border: 1px solid var(--cm-border);
+  color: var(--cm-text-soft);
+  margin-left: 5px;
+  margin-bottom: 5px;
+}
+
+.cm-card-biblioteca-praticas {
+  font-size: 0.72rem;
+  color: var(--cm-text-soft);
+}
+
+/* Sidebar: Próximo encontro ao vivo — bolinha pulsante + caixa com
+   anfitrião, igual referência. */
+.cm-encontro-vivo h3 {
+  gap: 9px;
+}
+
+.cm-dot-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--cm-sage);
+  animation: cm-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes cm-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.cm-encontro-caixa {
+  background: var(--cm-beige);
+  border: 1px solid var(--cm-border);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 14px;
+}
+
+.cm-encontro-vivo .cm-encontro-titulo {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.cm-encontro-quando {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--cm-text-soft);
+}
+
+.cm-encontro-anfitriao {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.cm-encontro-anfitriao img {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.cm-encontro-anfitriao span {
+  font-size: 0.78rem;
+  color: var(--cm-text-soft);
+}
+
+.cm-encontro-btn {
+  width: 100%;
+  padding: 10px;
+  font-size: 0.84rem;
+  text-align: center;
+  /* Referência usa botão preto sólido aqui (não o sage do cm-btn-primary
+     padrão) — sobrescreve só neste CTA específico. */
+  background: var(--cm-text);
+}
+
+.cm-encontro-btn:hover {
+  background: #000;
+}
+
+/* Desafio — barra de progresso agregada dos itens concluídos */
+.cm-desafio-progress {
+  margin-top: 16px;
+  height: 6px;
+  background: var(--cm-beige);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.cm-desafio-progress-fill {
+  height: 100%;
+  background: var(--cm-sage);
+  border-radius: 999px;
+}
+
+/* Sidebar: variante escura (Ranking de Presença, "fundo preto" do print) */
+.cm-widget-escuro {
+  background: var(--cm-text);
+  border-color: var(--cm-text);
+  color: #fff;
+}
+
+.cm-widget-escuro h3 {
+  color: #fff;
+}
+
+.cm-widget-escuro .cm-ranking-item {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.cm-widget-escuro .cm-ranking-nome {
+  color: #fff;
+}
+
+.cm-widget-escuro .cm-ranking-pos {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.cm-widget-escuro .cm-ranking-dias {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.cm-widget-escuro .cm-ranking-item.is-voce {
+  background: #fff;
+}
+
+.cm-widget-escuro .cm-ranking-item.is-voce .cm-ranking-nome,
+.cm-widget-escuro .cm-ranking-item.is-voce .cm-ranking-dias {
+  color: var(--cm-text);
+}
+
+.cm-widget-escuro .cm-ranking-item.is-voce .cm-ranking-pos {
+  color: var(--cm-text-soft);
+}
+
+/* Feed da comunidade */
+.cm-feed-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cm-feed-post {
+  display: flex;
+  gap: 12px;
+  padding: 16px 0;
+  border-top: 1px solid var(--cm-border);
+}
+
+.cm-feed-post:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.cm-feed-post-texto {
+  margin: 4px 0 6px;
+  font-size: 0.9rem;
+  color: var(--cm-text);
+}
+
+.cm-feed-post-curtidas {
+  font-size: 0.78rem;
+  color: var(--cm-text-soft);
+}
+
+.cm-banner-fundador {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(120deg, #d9b673, #a9803f);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.86rem;
+  padding: 12px 18px;
+  border-radius: 14px;
+  margin-bottom: 20px;
+}
+
+.cm-feed-bloqueado {
+  position: relative;
+  min-height: 320px;
+}
+
+.cm-feed-blur {
+  filter: blur(6px);
+  opacity: 0.6;
+  pointer-events: none;
+  user-select: none;
+}
+
+.cm-feed-overlay-construcao {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
+  padding: 32px;
+  background: rgba(255, 254, 251, 0.65);
+  border-radius: var(--cm-radius);
+}
+
+.cm-feed-overlay-construcao h3 {
+  font-size: 1.2rem;
+}
+
+.cm-feed-overlay-construcao p {
+  max-width: 360px;
+  color: var(--cm-text-soft);
+  font-size: 0.88rem;
+  margin: 0 0 6px;
+}
