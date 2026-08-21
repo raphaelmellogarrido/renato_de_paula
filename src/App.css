@@ -1165,6 +1165,15 @@
   min-width: 0;
 }
 
+/* Botões -10s/+10s — só aparecem quando permitirAvancar (49 aulas da
+   Jornada). Fonte menor que os demais ícones do rodapé (18px) porque aqui é
+   texto, não glifo. */
+.guarded-video-skip {
+  font-size: 12px !important;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .guarded-video-rotate {
   display: none;
 }

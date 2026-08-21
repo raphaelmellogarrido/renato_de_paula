@@ -1,86 +1,254 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Check, Eye, EyeOff, ShieldCheck } from "lucide-react";
+import { avisarSessaoMudou } from "./components/usuarioStorage";
+import { checarRequisitosSenha } from "./components/senhaForte";
+import "./Login.css";
+
+// Só letras (com acentos pt-BR) e espaço, mínimo 2 caracteres — é esse nome
+// que aparece no Ranking de Presença, então não deixa passar e-mail/número.
+const REGEX_NOME = /^[A-Za-zÀ-ÖØ-öø-ÿ' ]{2,}$/;
+const REGEX_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function nomeValido(nome) {
+  return REGEX_NOME.test(nome.trim());
+}
+
+function emailValido(email) {
+  return REGEX_EMAIL.test(email.trim());
+}
 
 export default function ComunidadeLogin() {
+  const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
+  const [confirmarSenha, setConfirmarSenha] = useState("");
   const [modo, setModo] = useState("login");
   const [msg, setMsg] = useState("");
   const [erro, setErro] = useState("");
   const [loading, setLoading] = useState(false);
+  const [mostrarSenha, setMostrarSenha] = useState(false);
+  const [mostrarConfirmar, setMostrarConfirmar] = useState(false);
   const navigate = useNavigate();
+
+  const requisitosSenha = checarRequisitosSenha(senha);
+  const senhaForte = Object.values(requisitosSenha).every(Boolean);
+  const nomeOk = nomeValido(nome);
+  const emailOk = emailValido(email);
+  const senhasIguais = confirmarSenha.length > 0 && senha === confirmarSenha;
+  const podeCriar = nomeOk && emailOk && senhaForte && senhasIguais;
+
+  function salvarSessao(dados) {
+    const nomeFinal = dados.nome || nome.trim() || "";
+    localStorage.setItem("user_email", dados.email);
+    localStorage.setItem("userName", nomeFinal);
+    localStorage.setItem("comunidade_session", JSON.stringify({ email: dados.email, nome: nomeFinal }));
+    console.log("[Clube Presença] login → sessão trocada para usuário:", dados.email);
+    avisarSessaoMudou();
+    navigate("/comunidade");
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
     setErro("");
     setMsg("");
+
+    if (modo === "criar" && !podeCriar) return;
+
     setLoading(true);
-
-    const url = modo === "criar" ? "/api/hotmart/register.php" : "/api/hotmart/login.php";
-
     try {
-      const res = await fetch(url, {
+      if (modo === "criar") {
+        const res = await fetch("/api/hotmart/register.php", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          // Manda "nome" pra bater com o mesmo campo que Login.jsx já lê na
+          // resposta do login (data.nome) e que vira comunidade_session.nome
+          // — é ele que aparece no Ranking de Presença, não o e-mail.
+          body: JSON.stringify({ email, senha, nome: nome.trim() }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.erro || "Erro ao criar conta");
+
+        // Conta criada: já loga em seguida (sem pedir senha de novo). Se
+        // register.php já devolver email/sessão prontos, usa direto; senão
+        // completa com um login.php normal logo depois.
+        if (data.email) {
+          salvarSessao(data);
+          return;
+        }
+
+        const resLogin = await fetch("/api/hotmart/login.php", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, senha }),
+        });
+        const dataLogin = await resLogin.json();
+        if (!resLogin.ok) {
+          // Conta foi criada, só o auto-login que falhou — manda pro login
+          // manual em vez de travar numa mensagem de erro confusa.
+          setMsg("Conta criada com sucesso! Agora faça login.");
+          setModo("login");
+          setSenha("");
+          setConfirmarSenha("");
+          setLoading(false);
+          return;
+        }
+        salvarSessao(dataLogin);
+        return;
+      }
+
+      const res = await fetch("/api/hotmart/login.php", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, senha }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.erro || "Erro ao processar");
-
-      if (modo === "criar") {
-        setMsg("Senha criada com sucesso! Agora faca login.");
-        setModo("login");
-        setSenha("");
-        setLoading(false);
-        return;
-      }
-
-      localStorage.setItem("user_email", data.email);
-      localStorage.setItem("comunidade_session", JSON.stringify({ email: data.email, nome: data.nome }));
-      navigate("/comunidade");
+      salvarSessao(data);
     } catch (err) {
       setErro(err.message);
-    } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 24, background: "#f7f5f2" }}>
-      <div style={{ width: "100%", maxWidth: 440, background: "white", padding: 32, borderRadius: 20, boxShadow: "0 10px 30px rgba(0,0,0,0.08)" }}>
-        <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 6, color: "#1a1a1a" }}>{modo === "criar" ? "Crie sua senha do Clube" : "Entrar no Clube Presenca"}</h1>
-        <p style={{ fontSize: 14, color: "#6b7280", marginBottom: 24 }}>{modo === "criar" ? "Detectamos sua compra na Hotmart. Crie uma senha so pro Clube." : "Use o email da sua compra na Hotmart."}</p>
+    <div className="cm-login-page">
+      <div className="cm-login-card">
+        <h1 className="cm-login-title">{modo === "criar" ? "Crie sua senha do Clube" : "Entrar no Clube Presença"}</h1>
+        <p className="cm-login-subtitle">{modo === "criar" ? "Detectamos sua compra na Hotmart. Crie uma senha só pro Clube." : "Use o email da sua compra na Hotmart."}</p>
 
-        {erro && <div style={{ background: "#fef2f2", color: "#b91c1c", padding: 12, borderRadius: 10, marginBottom: 16, fontSize: 14 }}>{erro}</div>}
-        {msg && <div style={{ background: "#f0fdf4", color: "#15803d", padding: 12, borderRadius: 10, marginBottom: 16, fontSize: 14 }}>{msg}</div>}
+        {erro && <div className="cm-login-alert cm-login-alert-erro">{erro}</div>}
+        {msg && <div className="cm-login-alert cm-login-alert-msg">{msg}</div>}
 
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <input type="email" required placeholder="Email da compra" value={email} onChange={(e) => setEmail(e.target.value)} style={{ width: "100%", border: "1px solid #e5e7eb", padding: "12px 14px", borderRadius: 12, fontSize: 15, outline: "none" }} />
-          <input
-            type="password"
-            required
-            placeholder={modo === "criar" ? "Crie uma senha (min 6)" : "Sua senha do Clube"}
-            value={senha}
-            onChange={(e) => setSenha(e.target.value)}
-            style={{ width: "100%", border: "1px solid #e5e7eb", padding: "12px 14px", borderRadius: 12, fontSize: 15, outline: "none" }}
-          />
-          <button type="submit" disabled={loading} style={{ width: "100%", background: "black", color: "white", padding: 13, borderRadius: 12, fontWeight: 600, cursor: "pointer", opacity: loading ? 0.6 : 1 }}>
-            {loading ? "Carregando..." : modo === "criar" ? "Criar senha e entrar" : "Entrar"}
+        <form onSubmit={handleSubmit} className="cm-login-form">
+          {modo === "criar" && (
+            <div className="cm-login-field">
+              <label htmlFor="cm-login-nome">Nome completo</label>
+              <div className="cm-login-input-wrap">
+                <input
+                  id="cm-login-nome"
+                  type="text"
+                  required
+                  placeholder="Como você quer ser chamado no Ranking"
+                  value={nome}
+                  onChange={(e) => setNome(e.target.value)}
+                  className={`cm-login-input ${nome ? (nomeOk ? "is-valid" : "is-invalid") : ""}`}
+                />
+                {nome && nomeOk && (
+                  <span className="cm-login-icon-right" aria-hidden="true">
+                    <span className="cm-login-icon-valid">
+                      <Check size={18} strokeWidth={3} />
+                    </span>
+                  </span>
+                )}
+              </div>
+              {nome && !nomeOk && <span className="cm-login-error">Use apenas letras e espaço (mínimo 2 caracteres)</span>}
+            </div>
+          )}
+
+          <div className="cm-login-field">
+            <label htmlFor="cm-login-email">Email</label>
+            <input id="cm-login-email" type="email" required placeholder="Email da compra" value={email} onChange={(e) => setEmail(e.target.value)} className="cm-login-input" />
+          </div>
+
+          <div className="cm-login-field">
+            <label htmlFor="cm-login-senha">{modo === "criar" ? "Crie uma senha forte" : "Sua senha do Clube"}</label>
+            <div className="cm-login-input-wrap">
+              <input
+                id="cm-login-senha"
+                type={mostrarSenha ? "text" : "password"}
+                required
+                minLength={modo === "criar" ? 8 : undefined}
+                placeholder={modo === "criar" ? "Crie uma senha forte" : "Sua senha do Clube"}
+                value={senha}
+                onChange={(e) => setSenha(e.target.value)}
+                className={`cm-login-input cm-login-input-senha ${modo === "criar" && senha ? (senhaForte ? "is-strong" : "is-weak") : ""}`}
+              />
+              <span className="cm-login-icon-right cm-login-icon-group">
+                {modo === "criar" && senhaForte && (
+                  <span className="cm-login-icon-valid" aria-hidden="true">
+                    <ShieldCheck size={18} strokeWidth={2.5} />
+                  </span>
+                )}
+                <button type="button" className="cm-login-eye-btn" onClick={() => setMostrarSenha((v) => !v)} aria-label={mostrarSenha ? "Esconder senha" : "Mostrar senha"}>
+                  {mostrarSenha ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </span>
+            </div>
+            {modo === "criar" && senha && (
+              <ul className="cm-login-checklist">
+                <ChecklistItem ok={requisitosSenha.comprimento} texto="Mínimo 8 caracteres" />
+                <ChecklistItem ok={requisitosSenha.maiuscula} texto="1 letra maiúscula" />
+                <ChecklistItem ok={requisitosSenha.minuscula} texto="1 letra minúscula" />
+                <ChecklistItem ok={requisitosSenha.numero} texto="1 número" />
+                <ChecklistItem ok={requisitosSenha.especial} texto="1 caractere especial (!@#$%)" />
+              </ul>
+            )}
+          </div>
+
+          {modo === "criar" && (
+            <div className="cm-login-field">
+              <label htmlFor="cm-login-confirmar">Confirme sua senha</label>
+              <div className="cm-login-input-wrap">
+                <input
+                  id="cm-login-confirmar"
+                  type={mostrarConfirmar ? "text" : "password"}
+                  required
+                  placeholder="Repita a senha"
+                  value={confirmarSenha}
+                  onChange={(e) => setConfirmarSenha(e.target.value)}
+                  className={`cm-login-input cm-login-input-confirmar ${confirmarSenha ? (senhasIguais ? "is-valid" : "is-invalid") : ""}`}
+                />
+                <span className="cm-login-icon-right cm-login-icon-group">
+                  {senhasIguais && (
+                    <span className="cm-login-icon-valid" aria-hidden="true">
+                      <Check size={18} strokeWidth={3} />
+                    </span>
+                  )}
+                  <button type="button" className="cm-login-eye-btn" onClick={() => setMostrarConfirmar((v) => !v)} aria-label={mostrarConfirmar ? "Esconder senha" : "Mostrar senha"}>
+                    {mostrarConfirmar ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </span>
+              </div>
+              {confirmarSenha && senhasIguais && (
+                <span className="cm-login-success">
+                  <Check size={12} strokeWidth={3} /> Senhas coincidem
+                </span>
+              )}
+              {confirmarSenha && !senhasIguais && <span className="cm-login-error">Senhas não coincidem</span>}
+            </div>
+          )}
+
+          <button type="submit" disabled={loading || (modo === "criar" && !podeCriar)} className={`cm-login-submit ${modo === "login" || podeCriar ? "is-ready" : ""}`}>
+            {loading ? "Carregando..." : modo === "criar" ? "Criar conta e começar" : "Entrar"}
           </button>
         </form>
 
-        <div style={{ marginTop: 18, textAlign: "center", fontSize: 14 }}>
+        <div className="cm-login-toggle">
           {modo === "login" ? (
-            <button onClick={() => setModo("criar")} style={{ textDecoration: "underline", background: "none", border: "none", cursor: "pointer" }}>
+            <button type="button" onClick={() => setModo("criar")}>
               Primeiro acesso? Criar senha
             </button>
           ) : (
-            <button onClick={() => setModo("login")} style={{ textDecoration: "underline", background: "none", border: "none", cursor: "pointer" }}>
-              Ja tenho senha
+            <button type="button" onClick={() => setModo("login")}>
+              Já tenho senha
             </button>
           )}
         </div>
       </div>
     </div>
+  );
+}
+
+// Item do checklist de força da senha: bolinha cinza vazia -> bolinha verde
+// com check quando o requisito é cumprido, com transição suave.
+function ChecklistItem({ ok, texto }) {
+  return (
+    <li className={`cm-login-check-item ${ok ? "is-ok" : ""}`}>
+      <span className="cm-login-check-dot" aria-hidden="true">
+        {ok && <Check size={11} strokeWidth={3} />}
+      </span>
+      {texto}
+    </li>
   );
 }

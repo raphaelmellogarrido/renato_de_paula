@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { Home, Library, CalendarDays, Video, Users, BarChart3, Settings, Leaf, LogOut } from "lucide-react";
+import { Home, Library, Users, Settings, Leaf, LogOut } from "lucide-react";
 
 function iniciais(nome) {
   return nome
@@ -12,12 +12,12 @@ function iniciais(nome) {
 
 const NAV_ITEMS = [
   { label: "Início", icon: Home, to: "/comunidade", end: true },
-  { label: "Aulas meditação raiz", icon: Library, to: "/comunidade/aulas-raiz" },
-  { label: "Meditações da Semana", icon: CalendarDays, to: "/comunidade/meditacoes-semana" },
-  { label: "Ao Vivo", icon: Video, to: "/comunidade/ao-vivo", comBolinha: true },
+  { label: "Aulas", icon: Library, to: "/comunidade/aulas-raiz" },
+  // { label: "Meditações da Semana", icon: CalendarDays, to: "/comunidade/meditacoes-semana" },
+  // { label: "Ao Vivo", icon: Video, to: "/comunidade/ao-vivo", comBolinha: true },
   { label: "Comunidade", icon: Users, to: "/comunidade/comunidade" },
-  { label: "Meu Progresso", icon: BarChart3, to: "/comunidade/progresso" },
-  { label: "Configurações", icon: Settings, to: "/comunidade/config" },
+  // { label: "Meu Progresso", icon: BarChart3, to: "/comunidade/progresso" },
+  { label: "Configurações", icon: Settings, to: "/comunidade/configuracoes" },
 ];
 
 function ComunidadeSidebar({ session, onSair }) {

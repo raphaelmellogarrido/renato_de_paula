@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useEmailSessao, chaveUsuario, logSalvandoParaUsuario } from "./usuarioStorage";
 
 // Mesma fonte de verdade de AulasMeditacaoRaiz.jsx (localStorage + PHP
 // externo aulas.php), só que em modo leitura: usado por widgets fora da
@@ -6,38 +7,43 @@ import { useEffect, useState } from "react";
 // progresso, sem marcar/desmarcar nada. Não duplica a lógica de
 // marcar/desmarcar — essa continua vivendo só em AulasMeditacaoRaiz.jsx.
 const HOTMART_AULAS_URL = "https://renatodepaula.com/api/hotmart/aulas.php";
-
-function chaveLocalStorage(email) {
-  return `comunidade_progresso_aulas_raiz_${email}`;
-}
+// Mesma base de chave usada em AulasMeditacaoRaiz.jsx — precisa continuar
+// igual nos dois arquivos, senão um não vê o progresso salvo pelo outro.
+const CHAVE_BASE = "comunidade_progresso_aulas_raiz";
 
 function carregarProgressoLocal(email) {
   try {
-    return JSON.parse(localStorage.getItem(chaveLocalStorage(email)) || "{}");
+    return JSON.parse(localStorage.getItem(chaveUsuario(CHAVE_BASE, email)) || "{}");
   } catch {
     return {};
   }
 }
 
 function salvarProgressoLocal(email, progresso) {
+  logSalvandoParaUsuario("ProgressoAulasRaiz (widget)", email);
   try {
-    localStorage.setItem(chaveLocalStorage(email), JSON.stringify(progresso));
+    localStorage.setItem(chaveUsuario(CHAVE_BASE, email), JSON.stringify(progresso));
   } catch {
     // localStorage indisponível — ignora, o PHP externo continua sendo a
     // fonte de verdade nessa sessão.
   }
 }
 
-function lerEmailSessao() {
-  const sess = JSON.parse(localStorage.getItem("comunidade_session") || "{}");
-  return sess.email || localStorage.getItem("user_email") || "";
-}
-
 export function useProgressoAulasRaiz() {
-  const [email] = useState(lerEmailSessao);
+  const email = useEmailSessao();
   const [progressoPorArquivo, setProgressoPorArquivo] = useState(() =>
     email ? carregarProgressoLocal(email) : {},
   );
+  const [emailAnterior, setEmailAnterior] = useState(email);
+
+  // Troca de conta / logout+login: recarrega do zero pra chave do NOVO
+  // usuário (mostra a Jornada zerada se for conta nova). Ajusta o estado
+  // direto no render (não em efeito) seguindo o padrão recomendado pelo
+  // React pra "resetar estado quando uma prop/valor externo muda".
+  if (email !== emailAnterior) {
+    setEmailAnterior(email);
+    setProgressoPorArquivo(email ? carregarProgressoLocal(email) : {});
+  }
 
   useEffect(() => {
     if (!email) return;

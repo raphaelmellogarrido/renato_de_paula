@@ -1,0 +1,285 @@
+/* Tela de login/cadastro do Clube Presença — fica fora do wrapper
+   .comunidade-app (rota separada, ComunidadeLayout não entra aqui), então
+   repete a mesma paleta bege/sálvia de ComunidadeApp.css em vez de herdar
+   dela, mais os tons de validação (verde/vermelho) usados só nesta tela. */
+
+.cm-login-page {
+  --cm-bg: #fffefb;
+  --cm-beige: #f5f1eb;
+  --cm-beige-soft: #faf8f4;
+  --cm-sage: #8a9a8c;
+  --cm-sage-dark: #6f7d71;
+  --cm-text: #33312c;
+  --cm-text-soft: #7a766e;
+  --cm-border: rgba(51, 49, 44, 0.14);
+  --cm-shadow: 0 14px 34px rgba(51, 49, 44, 0.07), 0 2px 8px rgba(51, 49, 44, 0.04);
+  --cm-radius: 24px;
+  --cm-green: #22c55e;
+  --cm-green-soft: rgba(34, 197, 94, 0.08);
+  --cm-red: #ef4444;
+  --cm-red-soft: rgba(239, 68, 68, 0.06);
+
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--cm-beige-soft);
+  font-family: "Inter", -apple-system, sans-serif;
+  color: var(--cm-text);
+}
+
+.cm-login-card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--cm-bg);
+  padding: 32px;
+  border-radius: var(--cm-radius);
+  box-shadow: var(--cm-shadow);
+  border: 1px solid var(--cm-border);
+}
+
+.cm-login-title {
+  font-size: 26px;
+  font-weight: 800;
+  margin: 0 0 6px;
+  color: var(--cm-text);
+}
+
+.cm-login-subtitle {
+  font-size: 14px;
+  color: var(--cm-text-soft);
+  margin: 0 0 24px;
+}
+
+.cm-login-alert {
+  padding: 12px 14px;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.cm-login-alert-erro {
+  background: var(--cm-red-soft);
+  color: #b91c1c;
+}
+
+.cm-login-alert-msg {
+  background: var(--cm-green-soft);
+  color: #15803d;
+}
+
+.cm-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cm-login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cm-login-field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cm-text);
+}
+
+.cm-login-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.cm-login-input {
+  width: 100%;
+  height: 48px;
+  border: 1.5px solid var(--cm-border);
+  background: var(--cm-bg);
+  border-radius: 12px;
+  padding: 0 14px;
+  font-size: 15px;
+  color: var(--cm-text);
+  outline: none;
+  transition:
+    border-color 200ms ease,
+    background-color 200ms ease;
+}
+
+.cm-login-input:focus {
+  border-color: var(--cm-sage);
+}
+
+.cm-login-input.is-valid,
+.cm-login-input.is-strong {
+  border-color: var(--cm-green);
+  padding-right: 42px;
+}
+
+.cm-login-input.is-strong {
+  background: var(--cm-green-soft);
+}
+
+.cm-login-input.is-invalid {
+  border-color: var(--cm-red);
+  padding-right: 42px;
+}
+
+.cm-login-input.is-weak {
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.cm-login-input-senha,
+.cm-login-input-confirmar {
+  padding-right: 42px;
+}
+
+.cm-login-icon-right {
+  position: absolute;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.cm-login-icon-group {
+  pointer-events: auto;
+}
+
+.cm-login-icon-valid {
+  color: var(--cm-green);
+  display: inline-flex;
+  animation: cm-login-pop 200ms ease;
+}
+
+.cm-login-eye-btn {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: var(--cm-text-soft);
+  border-radius: 6px;
+  transition: color 200ms ease;
+}
+
+.cm-login-eye-btn:hover {
+  color: var(--cm-text);
+}
+
+@keyframes cm-login-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.cm-login-error {
+  font-size: 12px;
+  color: var(--cm-red);
+}
+
+.cm-login-success {
+  font-size: 12px;
+  color: var(--cm-green);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cm-login-checklist {
+  list-style: none;
+  margin: 2px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.cm-login-check-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--cm-text-soft);
+  transition: color 200ms ease;
+}
+
+.cm-login-check-item.is-ok {
+  color: var(--cm-green);
+}
+
+.cm-login-check-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid var(--cm-border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cm-bg);
+  flex-shrink: 0;
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease;
+}
+
+.cm-login-check-item.is-ok .cm-login-check-dot {
+  background: var(--cm-green);
+  border-color: var(--cm-green);
+}
+
+.cm-login-submit {
+  width: 100%;
+  height: 48px;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  margin-top: 4px;
+  background: var(--cm-border);
+  color: var(--cm-text-soft);
+  cursor: not-allowed;
+  transition:
+    background-color 200ms ease,
+    color 200ms ease,
+    opacity 200ms ease;
+}
+
+.cm-login-submit.is-ready {
+  background: #000;
+  color: #fff;
+  cursor: pointer;
+}
+
+.cm-login-submit.is-ready:hover {
+  background: #1a1a1a;
+}
+
+.cm-login-submit:disabled {
+  opacity: 0.7;
+}
+
+.cm-login-toggle {
+  margin-top: 18px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.cm-login-toggle button {
+  text-decoration: underline;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--cm-text);
+  font-size: 14px;
+}

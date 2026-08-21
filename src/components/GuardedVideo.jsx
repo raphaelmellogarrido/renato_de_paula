@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 
-// Player com barra de progresso que só permite retroceder (nunca avançar) —
-// bloqueia tentativas de pular pra frente além do ponto já assistido. Não é
-// infalível contra alguém mexendo no devtools, mas impede o "pular vídeo" casual.
-function GuardedVideo({ src, onEnded, label, autoPlay = false, onTimeUpdate }) {
+// Player com barra de progresso que, por padrão, só permite retroceder
+// (nunca avançar) — bloqueia tentativas de pular pra frente além do ponto já
+// assistido. Não é infalível contra alguém mexendo no devtools, mas impede o
+// "pular vídeo" casual. Passando `permitirAvancar`, esse bloqueio some por
+// completo (usado nas 49 aulas da Jornada, onde o aluno pode ir e voltar
+// livremente) — os vídeos de venda/intro continuam com o padrão travado.
+function GuardedVideo({ src, onEnded, label, autoPlay = false, onTimeUpdate, permitirAvancar = false }) {
   const videoRef = useRef(null)
   const wrapperRef = useRef(null)
   const maxTimeRef = useRef(0)
@@ -66,22 +69,46 @@ function GuardedVideo({ src, onEnded, label, autoPlay = false, onTimeUpdate }) {
   // Rede de segurança extra: mesmo com a barra visível só permitindo
   // retroceder, mantemos esse bloqueio para tentativas de avanço que não
   // passem pelo onChange da barra (ex: controles de mídia do sistema).
+  // Quando permitirAvancar=true (Jornada) esse freio simplesmente não roda.
   function handleSeeking() {
+    if (permitirAvancar) return
     const v = videoRef.current
     if (v.currentTime > maxTimeRef.current + 0.5) {
       v.currentTime = maxTimeRef.current
     }
   }
 
-  // Barra de progresso: só permite arrastar pra trás (rever algo perdido).
-  // Tentativas de avançar são ignoradas — como o value é controlado pelo
-  // estado currentTime, a barra "volta" sozinha pra posição real.
+  // Barra de progresso: com permitirAvancar=true arrasta livre pros dois
+  // lados. Sem a prop (padrão), só permite arrastar pra trás (rever algo
+  // perdido) — tentativas de avançar são ignoradas e, como o value é
+  // controlado pelo estado currentTime, a barra "volta" sozinha pra posição real.
   function handleSeekBarChange(e) {
     const v = videoRef.current
     const novoTempo = Number(e.target.value)
-    if (novoTempo <= v.currentTime) {
+    if (permitirAvancar || novoTempo <= v.currentTime) {
       v.currentTime = novoTempo
       setCurrentTime(novoTempo)
+    }
+  }
+
+  // ±10s (botões e setas do teclado) — só existem quando permitirAvancar.
+  function pular(segundosDelta) {
+    const v = videoRef.current
+    if (!v) return
+    const limite = duration || v.duration || Infinity
+    const novoTempo = Math.min(Math.max(v.currentTime + segundosDelta, 0), limite)
+    v.currentTime = novoTempo
+    setCurrentTime(novoTempo)
+  }
+
+  function handleKeyDown(e) {
+    if (!permitirAvancar) return
+    if (e.key === 'ArrowRight') {
+      e.preventDefault()
+      pular(10)
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault()
+      pular(-10)
     }
   }
 
@@ -177,13 +204,18 @@ function GuardedVideo({ src, onEnded, label, autoPlay = false, onTimeUpdate }) {
   }
 
   return (
-    <div className="guarded-video" ref={wrapperRef}>
+    <div
+      className="guarded-video"
+      ref={wrapperRef}
+      tabIndex={permitirAvancar ? 0 : -1}
+      onKeyDown={handleKeyDown}
+    >
       {label && <span className="guarded-video-label">{label}</span>}
       <video
         ref={videoRef}
         src={src}
         controls={false}
-        controlsList="nodownload noplaybackrate"
+        controlsList="nodownload"
         disablePictureInPicture
         playsInline
         autoPlay={autoPlay}
@@ -231,6 +263,11 @@ function GuardedVideo({ src, onEnded, label, autoPlay = false, onTimeUpdate }) {
               />
             )}
           </div>
+          {permitirAvancar && (
+            <button type="button" className="guarded-video-skip" onClick={() => pular(-10)} aria-label="Voltar 10 segundos">
+              -10s
+            </button>
+          )}
           <input
             type="range"
             className="guarded-video-seekbar"
@@ -239,8 +276,13 @@ function GuardedVideo({ src, onEnded, label, autoPlay = false, onTimeUpdate }) {
             step="0.1"
             value={currentTime}
             onChange={handleSeekBarChange}
-            aria-label="Progresso do vídeo — só é possível retroceder"
+            aria-label={permitirAvancar ? 'Progresso do vídeo' : 'Progresso do vídeo — só é possível retroceder'}
           />
+          {permitirAvancar && (
+            <button type="button" className="guarded-video-skip" onClick={() => pular(10)} aria-label="Avançar 10 segundos">
+              +10s
+            </button>
+          )}
           <button
             type="button"
             className="guarded-video-rotate"

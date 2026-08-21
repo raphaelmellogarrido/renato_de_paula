@@ -2,36 +2,36 @@ import { useEffect, useRef, useState } from "react";
 import { Check } from "lucide-react";
 import confetti from "canvas-confetti";
 import { DESAFIO_SEMANA } from "../data/mockData";
+import { useEmailSessao, chaveUsuario, logSalvandoParaUsuario } from "./usuarioStorage";
 
 // PHP externo análogo ao de aulas.php (fora deste repo) — ainda não existe
 // no servidor, precisa ser criado espelhando o mesmo contrato:
 // GET ?email=... -> { itens: [{ item_id, concluido }] }
 // POST { email, item_id, concluido } -> marca/desmarca um item.
 const DESAFIO_SEMANA_URL = "https://renatodepaula.com/api/hotmart/desafio-semana.php";
-const CHAVE_LOCAL = "desafioSemana_v1";
+// Base da chave local — SEMPRE passa por chaveUsuario(CHAVE_BASE, email)
+// antes de ir pro localStorage. ContadorDesafioSemanal.jsx lê essa mesma
+// chave (mesma base + mesmo email) pra saber quando o desafio bateu 3/3;
+// mudar esse literal aqui exige mudar lá também.
+const CHAVE_BASE = "desafioSemana_v1";
 const DURACAO_CELEBRACAO_MS = 2500;
 
-function carregarLocal() {
+function carregarLocal(email) {
   try {
-    return JSON.parse(localStorage.getItem(CHAVE_LOCAL) || "{}");
+    return JSON.parse(localStorage.getItem(chaveUsuario(CHAVE_BASE, email)) || "{}");
   } catch {
     return {};
   }
 }
 
-function salvarLocal(concluidos) {
+function salvarLocal(email, concluidos) {
+  logSalvandoParaUsuario("DesafioSemana", email);
   try {
-    localStorage.setItem(CHAVE_LOCAL, JSON.stringify(concluidos));
+    localStorage.setItem(chaveUsuario(CHAVE_BASE, email), JSON.stringify(concluidos));
   } catch {
     // localStorage indisponível (modo privado, quota cheia etc.) — segue só
     // em memória, sem travar o clique.
   }
-}
-
-// Mesma leitura síncrona de sessão usada em AulasMeditacaoRaiz.jsx.
-function lerEmailSessao() {
-  const sess = JSON.parse(localStorage.getItem("comunidade_session") || "{}");
-  return sess.email || localStorage.getItem("user_email") || "";
 }
 
 function dispararConfete() {
@@ -59,8 +59,8 @@ function dispararConfete() {
  */
 export default function DesafioSemana() {
   const itens = DESAFIO_SEMANA.itens;
-  const [email] = useState(lerEmailSessao);
-  const [concluidos, setConcluidos] = useState(carregarLocal);
+  const email = useEmailSessao();
+  const [concluidos, setConcluidos] = useState(() => carregarLocal(email));
   const [celebrando, setCelebrando] = useState(false);
 
   // Controla a celebração: só dispara na transição pra 3/3, nunca ao
@@ -68,6 +68,25 @@ export default function DesafioSemana() {
   // desmarcado.
   const jaCelebrouRef = useRef(false);
   const montouRef = useRef(false);
+  const [emailAnterior, setEmailAnterior] = useState(email);
+
+  // Troca de conta / logout+login: recarrega do zero pra chave do NOVO
+  // usuário — mostra os 3 itens desmarcados se for conta nova, em vez de
+  // arrastar o progresso de quem usou o navegador antes. Ajusta o estado
+  // direto no render (não em efeito) seguindo o padrão recomendado pelo
+  // React pra "resetar estado quando uma prop/valor externo muda".
+  if (email !== emailAnterior) {
+    setEmailAnterior(email);
+    setConcluidos(carregarLocal(email));
+  }
+
+  // Refs não podem ser alterados durante o render (só em efeitos/handlers) —
+  // por isso o reset deles fica num efeito separado, sem nenhum setState
+  // dentro, só pra não escapar do padrão acima.
+  useEffect(() => {
+    jaCelebrouRef.current = false;
+    montouRef.current = false;
+  }, [email]);
 
   // Mescla com o PHP externo — nunca sobrescreve uma marca local já feita,
   // só complementa (mesma regra da tela de aulas).
@@ -84,7 +103,7 @@ export default function DesafioSemana() {
             if (!item.item_id || mesclado[item.item_id]) continue;
             mesclado[item.item_id] = !!item.concluido;
           }
-          salvarLocal(mesclado);
+          salvarLocal(email, mesclado);
           return mesclado;
         });
       })
@@ -123,7 +142,7 @@ export default function DesafioSemana() {
 
     setConcluidos((atual) => {
       const novo = { ...atual, [id]: novoValor };
-      salvarLocal(novo);
+      salvarLocal(email, novo);
       return novo;
     });
 

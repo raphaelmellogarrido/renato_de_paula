@@ -93,6 +93,9 @@ export const EVENTOS = [
 // já usados na Biblioteca — trocar por foto real do Dr. Renato antes do
 // lançamento público).
 export const PROXIMO_ENCONTRO_VIVO = {
+  // Identifica o evento nas reservas (ver components/reservasLive.js) — muda
+  // junto se um dia este encontro virar outra data/horário.
+  id: "aterramento-15-mai-7h",
   titulo: "Aterramento Matinal",
   quando: "Qui, 15 Mai · 7:00 - 7:30 (Brasília)",
   anfitriao: "com Dr. Renato",
@@ -113,28 +116,14 @@ export const DESAFIO_SEMANA = {
   ],
 };
 
-export const RANKING = [
-  { posicao: 1, nome: "Você", diasSeguidos: 7 },
-  { posicao: 2, nome: "Marina Alves", diasSeguidos: 12 },
-  { posicao: 3, nome: "Rafael Lima", diasSeguidos: 10 },
-  { posicao: 4, nome: "Clara Mendes", diasSeguidos: 9 },
-];
+// Ranking de Presença zerado pra teste (ver components/ColunaEncontros.jsx):
+// mostra só o usuário atual, com os dias vindos do streak real do botão
+// "Meditei hoje" (localStorage "meditacaoHoje_streak") — sem mocks de
+// outros alunos.
 
-// Sequência de dias seguidos meditando — mostrada como 7 bolinhas (Seg a
-// Dom) na sidebar direita, igual à referência.
-export const SEQUENCIA = {
-  diasSeguidos: 7,
-  percentualConsistencia: 12,
-  semana: [
-    { label: "S", concluido: true },
-    { label: "T", concluido: true },
-    { label: "Q", concluido: true },
-    { label: "Q", concluido: true },
-    { label: "S", concluido: true },
-    { label: "S", concluido: true },
-    { label: "D", concluido: true },
-  ],
-};
+// SEQUENCIA (mock) foi removido: o card "Sequência" agora é 100% funcional,
+// calculado em components/useSequenciaMeditacao.js a partir do histórico
+// real de "Meditei hoje" (ver components/Sequencia.jsx).
 
 export const PROGRESSO_SEMANA = {
   resumo: "Você meditou 4h18 esta semana",

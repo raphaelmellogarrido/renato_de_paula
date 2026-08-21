@@ -1,0 +1,395 @@
+import { useEffect, useState } from "react";
+import { Check, Eye, EyeOff, ShieldCheck, CheckCircle2, XCircle } from "lucide-react";
+import { useEmailSessao, chaveUsuario, avisarSessaoMudou, logSalvandoParaUsuario } from "./components/usuarioStorage";
+import { checarRequisitosSenha } from "./components/senhaForte";
+
+// Endpoints assumidos por analogia com os demais deste app (login.php,
+// register.php, presenca.php sempre em /api/hotmart/*) — não existem neste
+// repositório pra eu confirmar o contrato exato, então o formato do corpo
+// da requisição é minha melhor suposição. Se o back-end usar outro nome de
+// campo/rota, é só ajustar aqui.
+const PERFIL_URL = "/api/hotmart/user.php";
+const SENHA_URL = "/api/hotmart/user/change-password.php";
+
+const CHAVE_BASE_NOME_COMPLETO = "nomeCompleto";
+const CHAVE_BASE_USERNAME = "userName";
+
+// TODO: reativar lembrete quando configurar Resend + Cron Hostinger
+//
+// CARD 3 - PREFERÊNCIAS (horário do lembrete diário) removido temporariamente
+// da tela em 2026-08-21 a pedido do cliente — o backend de lembrete
+// (tabela `user_reminders` + endpoint /api/cron/lembretes.php, que dispara o
+// e-mail via Resend numa Cron Job da Hostinger) ainda não está configurado
+// no servidor. Nada foi apagado: é só religar quando o backend existir.
+//
+// O que existia e volta assim que o backend estiver pronto:
+// 1. const CHAVE_BASE_LEMBRETE = "lembreteHorario";
+// 2. Estado: const [lembreteHorario, setLembreteHorario] = useState(
+//      () => lerLocal(chaveUsuario(CHAVE_BASE_LEMBRETE, email)) || "07:00",
+//    );
+//    — e resetar junto no bloco de troca de conta (if (email !== emailAnterior) {...}).
+// 3. Handler:
+//    function handleLembreteChange(e) {
+//      const valor = e.target.value;
+//      setLembreteHorario(valor);
+//      localStorage.setItem(chaveUsuario(CHAVE_BASE_LEMBRETE, email), valor);
+//      fetch(PERFIL_URL, {
+//        method: "PATCH",
+//        headers: { "Content-Type": "application/json" },
+//        body: JSON.stringify({ email, lembrete_horario: valor }),
+//      });
+//    }
+// 4. Card JSX (ver histórico do git): input type="time", label "Horário do
+//    lembrete diário", hint "Vamos te lembrar de meditar nesse horário".
+//
+// O botão "Sair da conta" que também vivia neste card 3 foi removido de
+// propósito (não é sobre o TODO acima) — o logout já existe e continua
+// funcionando normalmente pelo botão da sidebar (ComunidadeSidebar.jsx).
+
+function lerLocal(chave) {
+  try {
+    return localStorage.getItem(chave) || "";
+  } catch {
+    return "";
+  }
+}
+
+// Mesma leitura síncrona usada em ColunaEncontros.jsx: `comunidade_session.nome`
+// já é, hoje, o nome mostrado no Ranking — vira o valor inicial de "Como
+// quer ser chamado" (e, na primeira visita, também o rascunho de "Nome
+// completo", já que os dois nasceram do mesmo campo no cadastro).
+function lerNomeSessaoAtual() {
+  try {
+    const sess = JSON.parse(localStorage.getItem("comunidade_session") || "{}");
+    return sess.nome || "";
+  } catch {
+    return "";
+  }
+}
+
+function nomeCompletoValido(valor) {
+  return valor.trim().length >= 3;
+}
+
+function comoChamarValido(valor) {
+  const t = valor.trim();
+  return t.length >= 2 && t.length <= 20;
+}
+
+// Item do checklist de força da senha — mesmo visual do cadastro
+// (Login.jsx), só que com as classes `cm-config-*` (esta página vive dentro
+// de .comunidade-app/ComunidadeApp.css, não de Login.css).
+function ChecklistItem({ ok, texto }) {
+  return (
+    <li className={`cm-config-check-item ${ok ? "is-ok" : ""}`}>
+      <span className="cm-config-check-dot" aria-hidden="true">
+        {ok && <Check size={11} strokeWidth={3} />}
+      </span>
+      {texto}
+    </li>
+  );
+}
+
+// Página /comunidade/configuracoes — perfil, conta/senha e preferências, os
+// 3 cards pedidos. Cada salvamento é POR USUÁRIO (chaveUsuario com o e-mail
+// da sessão) e some/reaparece sozinho se a conta trocar nesta aba, mesmo
+// padrão já usado no resto do /comunidade.
+function Configuracoes() {
+  const email = useEmailSessao();
+
+  const [emailAnterior, setEmailAnterior] = useState(email);
+  const [nomeCompleto, setNomeCompleto] = useState(
+    () => lerLocal(chaveUsuario(CHAVE_BASE_NOME_COMPLETO, email)) || lerNomeSessaoAtual(),
+  );
+  const [comoChamar, setComoChamar] = useState(lerNomeSessaoAtual);
+
+  // Troca de conta nesta mesma aba: recarrega os campos do usuário novo em
+  // vez de deixar os dados do anterior na tela. Ajuste direto no render
+  // (não em efeito), mesmo padrão já usado nos outros hooks/páginas por
+  // usuário desta área.
+  if (email !== emailAnterior) {
+    setEmailAnterior(email);
+    setNomeCompleto(lerLocal(chaveUsuario(CHAVE_BASE_NOME_COMPLETO, email)) || lerNomeSessaoAtual());
+    setComoChamar(lerNomeSessaoAtual());
+  }
+
+  const [salvandoPerfil, setSalvandoPerfil] = useState(false);
+  const [senhaAtual, setSenhaAtual] = useState("");
+  const [novaSenha, setNovaSenha] = useState("");
+  const [confirmarNovaSenha, setConfirmarNovaSenha] = useState("");
+  const [verSenhaAtual, setVerSenhaAtual] = useState(false);
+  const [verNovaSenha, setVerNovaSenha] = useState(false);
+  const [verConfirmar, setVerConfirmar] = useState(false);
+  const [trocandoSenha, setTrocandoSenha] = useState(false);
+  const [toast, setToast] = useState(null); // { tipo: "sucesso" | "erro", texto }
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3200);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  function mostrarToast(tipo, texto) {
+    setToast({ tipo, texto });
+  }
+
+  const nomeOk = nomeCompletoValido(nomeCompleto);
+  const apelidoOk = comoChamarValido(comoChamar);
+  const podeSalvarPerfil = nomeOk && apelidoOk && !salvandoPerfil;
+
+  const requisitosSenha = checarRequisitosSenha(novaSenha);
+  const novaSenhaForte = Object.values(requisitosSenha).every(Boolean);
+  const senhasIguais = confirmarNovaSenha.length > 0 && novaSenha === confirmarNovaSenha;
+  const podeAlterarSenha = senhaAtual.trim().length > 0 && novaSenhaForte && senhasIguais && !trocandoSenha;
+
+  async function handleSalvarPerfil(e) {
+    e.preventDefault();
+    if (!podeSalvarPerfil) return;
+
+    setSalvandoPerfil(true);
+    logSalvandoParaUsuario("Configuracoes/Perfil", email);
+    try {
+      const res = await fetch(PERFIL_URL, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, name: nomeCompleto.trim(), display_name: comoChamar.trim() }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.erro || "Não foi possível salvar o perfil");
+      }
+
+      // localStorage por usuário + sessão + sidebar (via avisarSessaoMudou,
+      // que useComunidadeAuth.js agora escuta) — tudo na hora, sem reload.
+      localStorage.setItem(chaveUsuario(CHAVE_BASE_NOME_COMPLETO, email), nomeCompleto.trim());
+      localStorage.setItem(chaveUsuario(CHAVE_BASE_USERNAME, email), comoChamar.trim());
+      // Chave legada (sem sufixo de usuário) que Login.jsx também grava —
+      // mantém em sincronia caso algo fora do React ainda leia ela.
+      localStorage.setItem("userName", comoChamar.trim());
+      const sessaoAtual = JSON.parse(localStorage.getItem("comunidade_session") || "{}");
+      localStorage.setItem("comunidade_session", JSON.stringify({ ...sessaoAtual, email, nome: comoChamar.trim() }));
+      avisarSessaoMudou();
+
+      mostrarToast("sucesso", "Perfil atualizado");
+    } catch (err) {
+      mostrarToast("erro", err.message || "Erro ao salvar perfil");
+    } finally {
+      setSalvandoPerfil(false);
+    }
+  }
+
+  async function handleAlterarSenha(e) {
+    e.preventDefault();
+    if (!podeAlterarSenha) return;
+
+    setTrocandoSenha(true);
+    logSalvandoParaUsuario("Configuracoes/Senha", email);
+    try {
+      const res = await fetch(SENHA_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, senha_atual: senhaAtual, nova_senha: novaSenha }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.erro || "Não foi possível alterar a senha");
+
+      setSenhaAtual("");
+      setNovaSenha("");
+      setConfirmarNovaSenha("");
+      mostrarToast("sucesso", "Senha alterada com sucesso");
+    } catch (err) {
+      mostrarToast("erro", err.message || "Erro ao alterar senha");
+    } finally {
+      setTrocandoSenha(false);
+    }
+  }
+
+  return (
+    <div className="cm-config-page">
+      <div className="cm-config-header">
+        <h1>Configurações</h1>
+        <p>Gerencie seu perfil</p>
+      </div>
+
+      {/* CARD 1 — PERFIL */}
+      <form className="cm-config-card" onSubmit={handleSalvarPerfil}>
+        <h2 className="cm-config-card-title">Perfil</h2>
+
+        <div className="cm-config-field">
+          <label htmlFor="cm-config-nome">Nome completo</label>
+          <div className="cm-config-input-wrap">
+            <input
+              id="cm-config-nome"
+              type="text"
+              required
+              minLength={3}
+              value={nomeCompleto}
+              onChange={(e) => setNomeCompleto(e.target.value)}
+              className={`cm-config-input ${nomeCompleto ? (nomeOk ? "is-valid" : "is-invalid") : ""}`}
+            />
+            {nomeCompleto && nomeOk && (
+              <span className="cm-config-icon-right" aria-hidden="true">
+                <Check size={18} strokeWidth={3} className="cm-config-icon-valid" />
+              </span>
+            )}
+          </div>
+          {nomeCompleto && !nomeOk && <span className="cm-config-error">Mínimo 3 caracteres</span>}
+        </div>
+
+        <div className="cm-config-field">
+          <label htmlFor="cm-config-apelido">Como quer ser chamado</label>
+          <div className="cm-config-input-wrap">
+            <input
+              id="cm-config-apelido"
+              type="text"
+              required
+              maxLength={20}
+              placeholder="Ex: Renato"
+              value={comoChamar}
+              onChange={(e) => setComoChamar(e.target.value)}
+              className={`cm-config-input ${comoChamar ? (apelidoOk ? "is-valid" : "is-invalid") : ""}`}
+            />
+            {comoChamar && apelidoOk && (
+              <span className="cm-config-icon-right" aria-hidden="true">
+                <Check size={18} strokeWidth={3} className="cm-config-icon-valid" />
+              </span>
+            )}
+          </div>
+          <span className="cm-config-hint">É esse nome que aparece no Ranking de Presença e na Comunidade.</span>
+        </div>
+
+        <button type="submit" disabled={!podeSalvarPerfil} className={`cm-config-btn ${podeSalvarPerfil ? "is-ready" : ""}`}>
+          {salvandoPerfil ? "Salvando..." : "Salvar perfil"}
+        </button>
+      </form>
+
+      {/* CARD 2 — CONTA */}
+      <div className="cm-config-card">
+        <h2 className="cm-config-card-title">Conta</h2>
+
+        <div className="cm-config-field">
+          <label htmlFor="cm-config-email">Email</label>
+          <input id="cm-config-email" type="email" value={email} disabled readOnly className="cm-config-input is-disabled" />
+          <span className="cm-config-hint">Seu acesso é vinculado ao email da Hotmart</span>
+        </div>
+
+        <hr className="cm-config-sep" />
+
+        <form onSubmit={handleAlterarSenha}>
+          <h3 className="cm-config-subtitle">Alterar senha</h3>
+
+          <div className="cm-config-field">
+            <label htmlFor="cm-config-senha-atual">Senha atual</label>
+            <div className="cm-config-input-wrap">
+              <input
+                id="cm-config-senha-atual"
+                type={verSenhaAtual ? "text" : "password"}
+                required
+                value={senhaAtual}
+                onChange={(e) => setSenhaAtual(e.target.value)}
+                className="cm-config-input cm-config-input-senha"
+              />
+              <span className="cm-config-icon-right cm-config-icon-group">
+                <button
+                  type="button"
+                  className="cm-config-eye-btn"
+                  onClick={() => setVerSenhaAtual((v) => !v)}
+                  aria-label={verSenhaAtual ? "Esconder senha" : "Mostrar senha"}
+                >
+                  {verSenhaAtual ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </span>
+            </div>
+          </div>
+
+          <div className="cm-config-field">
+            <label htmlFor="cm-config-nova-senha">Nova senha</label>
+            <div className="cm-config-input-wrap">
+              <input
+                id="cm-config-nova-senha"
+                type={verNovaSenha ? "text" : "password"}
+                required
+                minLength={8}
+                value={novaSenha}
+                onChange={(e) => setNovaSenha(e.target.value)}
+                className={`cm-config-input cm-config-input-senha ${novaSenha ? (novaSenhaForte ? "is-strong" : "is-weak") : ""}`}
+              />
+              <span className="cm-config-icon-right cm-config-icon-group">
+                {novaSenha && novaSenhaForte && (
+                  <span className="cm-config-icon-valid" aria-hidden="true">
+                    <ShieldCheck size={18} strokeWidth={2.5} />
+                  </span>
+                )}
+                <button
+                  type="button"
+                  className="cm-config-eye-btn"
+                  onClick={() => setVerNovaSenha((v) => !v)}
+                  aria-label={verNovaSenha ? "Esconder senha" : "Mostrar senha"}
+                >
+                  {verNovaSenha ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </span>
+            </div>
+            {novaSenha && (
+              <ul className="cm-config-checklist">
+                <ChecklistItem ok={requisitosSenha.comprimento} texto="Mínimo 8 caracteres" />
+                <ChecklistItem ok={requisitosSenha.maiuscula} texto="1 letra maiúscula" />
+                <ChecklistItem ok={requisitosSenha.minuscula} texto="1 letra minúscula" />
+                <ChecklistItem ok={requisitosSenha.numero} texto="1 número" />
+                <ChecklistItem ok={requisitosSenha.especial} texto="1 caractere especial (!@#$%)" />
+              </ul>
+            )}
+          </div>
+
+          <div className="cm-config-field">
+            <label htmlFor="cm-config-confirmar-senha">Confirmar nova senha</label>
+            <div className="cm-config-input-wrap">
+              <input
+                id="cm-config-confirmar-senha"
+                type={verConfirmar ? "text" : "password"}
+                required
+                value={confirmarNovaSenha}
+                onChange={(e) => setConfirmarNovaSenha(e.target.value)}
+                className={`cm-config-input cm-config-input-senha ${confirmarNovaSenha ? (senhasIguais ? "is-valid" : "is-invalid") : ""}`}
+              />
+              <span className="cm-config-icon-right cm-config-icon-group">
+                {senhasIguais && (
+                  <span className="cm-config-icon-valid" aria-hidden="true">
+                    <Check size={18} strokeWidth={3} />
+                  </span>
+                )}
+                <button
+                  type="button"
+                  className="cm-config-eye-btn"
+                  onClick={() => setVerConfirmar((v) => !v)}
+                  aria-label={verConfirmar ? "Esconder senha" : "Mostrar senha"}
+                >
+                  {verConfirmar ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </span>
+            </div>
+            {confirmarNovaSenha && senhasIguais && (
+              <span className="cm-config-success">
+                <Check size={12} strokeWidth={3} /> Senhas coincidem
+              </span>
+            )}
+            {confirmarNovaSenha && !senhasIguais && <span className="cm-config-error">Senhas não coincidem</span>}
+          </div>
+
+          <button type="submit" disabled={!podeAlterarSenha} className={`cm-config-btn ${podeAlterarSenha ? "is-ready" : ""}`}>
+            {trocandoSenha ? "Alterando..." : "Alterar senha"}
+          </button>
+        </form>
+      </div>
+
+      {toast && (
+        <div className={`cm-config-toast ${toast.tipo === "erro" ? "is-erro" : "is-sucesso"}`} role="status">
+          {toast.tipo === "erro" ? <XCircle size={16} /> : <CheckCircle2 size={16} />}
+          {toast.texto}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default Configuracoes;

@@ -15,6 +15,7 @@ const ComunidadeLogin = lazy(() => import("./pages/comunidade/Login"));
 const ComunidadeDashboard = lazy(() => import("./pages/comunidade/Dashboard"));
 const ComunidadeAula = lazy(() => import("./pages/comunidade/Aula"));
 const ComunidadeAulasRaiz = lazy(() => import("./pages/comunidade/AulasMeditacaoRaiz"));
+const ComunidadeConfiguracoes = lazy(() => import("./pages/comunidade/Configuracoes"));
 
 function App() {
   const location = useLocation();
@@ -38,6 +39,7 @@ function App() {
               <Route index element={<ComunidadeDashboard />} />
               <Route path="aulas-raiz" element={<ComunidadeAulasRaiz />} />
               <Route path="aula/:id" element={<ComunidadeAula />} />
+              <Route path="configuracoes" element={<ComunidadeConfiguracoes />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

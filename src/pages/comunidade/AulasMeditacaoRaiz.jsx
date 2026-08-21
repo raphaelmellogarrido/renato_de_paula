@@ -3,6 +3,7 @@ import { Check } from "lucide-react";
 import GuardedVideo from "../../components/GuardedVideo";
 import ComentariosFeed from "./components/ComentariosFeed";
 import JornadaProgress from "./components/JornadaProgress";
+import { useEmailSessao, chaveUsuario, logSalvandoParaUsuario } from "./components/usuarioStorage";
 
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:3001" : "");
 
@@ -16,40 +17,34 @@ const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://l
 const HOTMART_AULAS_URL = "https://renatodepaula.com/api/hotmart/aulas.php";
 const LIMIAR_AUTO_CONCLUIDA = 0.85;
 
-function chaveLocalStorage(email) {
-  return `comunidade_progresso_aulas_raiz_${email}`;
-}
+// Mesma base de chave usada em useProgressoAulasRaiz.js — precisa
+// continuar igual nos dois arquivos, senão a página de aulas e o widget
+// "Sua Jornada" do dashboard não veem o mesmo progresso.
+const CHAVE_BASE_PROGRESSO = "comunidade_progresso_aulas_raiz";
 
 function carregarProgressoLocal(email) {
   try {
-    return JSON.parse(localStorage.getItem(chaveLocalStorage(email)) || "{}");
+    return JSON.parse(localStorage.getItem(chaveUsuario(CHAVE_BASE_PROGRESSO, email)) || "{}");
   } catch {
     return {};
   }
 }
 
 function salvarProgressoLocal(email, progresso) {
+  logSalvandoParaUsuario("AulasMeditacaoRaiz", email);
   try {
-    localStorage.setItem(chaveLocalStorage(email), JSON.stringify(progresso));
+    localStorage.setItem(chaveUsuario(CHAVE_BASE_PROGRESSO, email), JSON.stringify(progresso));
   } catch {
     // localStorage indisponível (modo privado, quota cheia etc.) — ignora
     // silenciosamente, o PHP externo continua sendo a fonte de verdade.
   }
 }
 
-// Lê a sessão do aluno de forma síncrona (mesma lógica já usada no resto de
-// /comunidade). Vira o valor inicial do estado — evita um useEffect só pra
-// disparar um setState sem depender de nada externo (cascading render).
-function lerEmailSessao() {
-  const sess = JSON.parse(localStorage.getItem("comunidade_session") || "{}");
-  return sess.email || localStorage.getItem("user_email") || "";
-}
-
 export default function AulasMeditacaoRaiz() {
   const [dias, setDias] = useState([]);
   const [diaSelecionado, setDiaSelecionado] = useState(null);
   const [videoAtivoArquivo, setVideoAtivoArquivo] = useState(null);
-  const [email] = useState(lerEmailSessao);
+  const email = useEmailSessao();
   const [progressoPorArquivo, setProgressoPorArquivo] = useState(() =>
     email ? carregarProgressoLocal(email) : {},
   );
@@ -57,6 +52,24 @@ export default function AulasMeditacaoRaiz() {
   const [erroCatalogo, setErroCatalogo] = useState(false);
 
   const marcados85Ref = useRef(new Set());
+  const [emailAnterior, setEmailAnterior] = useState(email);
+
+  // Troca de conta / logout+login: recarrega do zero pra chave do NOVO
+  // usuário (mostra tudo desmarcado se for conta nova). Ajusta o estado
+  // direto no render (não em efeito) seguindo o padrão recomendado pelo
+  // React pra "resetar estado quando uma prop/valor externo muda".
+  if (email !== emailAnterior) {
+    setEmailAnterior(email);
+    setProgressoPorArquivo(email ? carregarProgressoLocal(email) : {});
+  }
+
+  // Refs não podem ser alterados durante o render (só em efeitos/handlers) —
+  // por isso libera o ref de auto-conclusão em 85% num efeito separado,
+  // senão um vídeo já assistido pela conta anterior não marcaria sozinho de
+  // novo pra essa conta nova.
+  useEffect(() => {
+    marcados85Ref.current = new Set();
+  }, [email]);
 
   // Catálogo real: vem do backend, que lê a pasta curso-meditacao-raiz e já
   // resolve os títulos via lib/titulosAulasRaiz.js. Não depende de nenhum
@@ -233,6 +246,7 @@ export default function AulasMeditacaoRaiz() {
                 label={videoAtivo.titulo}
                 onEnded={irParaProximoVideo}
                 onTimeUpdate={handleTimeUpdatePlayer}
+                permitirAvancar
               />
             ) : (
               <div style={{ color: "white", display: "flex", alignItems: "center", justifyContent: "center", aspectRatio: "16/9" }}>

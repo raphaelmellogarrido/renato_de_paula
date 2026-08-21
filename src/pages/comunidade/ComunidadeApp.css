@@ -15,6 +15,13 @@
   --cm-border: rgba(51, 49, 44, 0.08);
   --cm-shadow: 0 14px 34px rgba(51, 49, 44, 0.07), 0 2px 8px rgba(51, 49, 44, 0.04);
   --cm-radius: 24px;
+  /* Cores de validação (cadastro em Login.css tinha a mesma paleta local —
+     aqui viram tokens compartilhados porque Configuracoes.jsx também
+     precisa delas e fica dentro de .comunidade-app). */
+  --cm-green: #22c55e;
+  --cm-green-soft: rgba(34, 197, 94, 0.08);
+  --cm-red: #ef4444;
+  --cm-red-soft: rgba(239, 68, 68, 0.06);
 
   font-family:
     "Inter",
@@ -284,6 +291,40 @@
 
 .cm-grid-desafio {
   grid-area: desafio;
+  /* Não estica pra igualar a altura do "Sua Jornada" ao lado (que agora é
+     bem mais alto) — mantém o tamanho natural do card, senão sobra vão
+     em branco dentro dele. */
+  align-self: start;
+}
+
+/* Empilha "Desafio da Semana" + o contador de semanas concluídas dentro da
+   MESMA célula "desafio" do grid principal (em vez de criar uma linha nova
+   em .cm-main) — o contador cai exatamente entre os dois cards existentes
+   sem mexer no espalhamento de hero/biblioteca nem nos breakpoints. */
+.cm-desafio-coluna {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cm-contador-desafio-semanal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--cm-beige-soft);
+  border: 1px solid var(--cm-border);
+  border-radius: 16px;
+  color: #5a5a5a;
+  font-size: 14px;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.cm-contador-desafio-semanal svg {
+  flex-shrink: 0;
+  opacity: 0.7;
 }
 
 .cm-grid-biblioteca-videos {
@@ -811,6 +852,16 @@
   margin-left: 6px;
 }
 
+/* Estados "0 dias" / "1 dia": frase inteira em vez de número grande + rótulo
+   (não há um número isolado pra destacar) — mesma família tipográfica do
+   card, só num tamanho que não estoura a largura do widget. */
+.cm-sequencia-numero-frase {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--cm-text);
+}
+
 .cm-sequencia-dias {
   display: flex;
   justify-content: space-between;
@@ -826,8 +877,8 @@
 }
 
 .cm-sequencia-bolinha {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: var(--cm-bg);
   border: 1px solid var(--cm-border);
@@ -835,12 +886,26 @@
   align-items: center;
   justify-content: center;
   color: transparent;
+  transition:
+    background-color 220ms ease,
+    border-color 220ms ease,
+    color 220ms ease;
 }
 
 .cm-sequencia-bolinha.is-concluido {
   background: var(--cm-text);
   border-color: var(--cm-text);
   color: #fff;
+  animation: cm-sequencia-bolinha-pop 220ms ease;
+}
+
+@keyframes cm-sequencia-bolinha-pop {
+  from {
+    transform: scale(0.8);
+  }
+  to {
+    transform: scale(1);
+  }
 }
 
 .cm-sequencia-label {
@@ -858,6 +923,44 @@
   background: var(--cm-sage-soft);
   border-radius: 12px;
   padding: 9px 12px;
+}
+
+/* Mensagem lúdica do dia que começou — só aparece com streak 1 ou 2. Tom
+   laranja reaproveitado do ícone de chama do cabeçalho do card. */
+.cm-sequencia-ludico {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  animation: cm-sequencia-ludico-pop 220ms ease;
+}
+
+.cm-sequencia-ludico-tag {
+  align-self: flex-start;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #e67e22;
+  background: #fff1e0;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.cm-sequencia-ludico-texto {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--cm-text-soft);
+  line-height: 1.4;
+}
+
+@keyframes cm-sequencia-ludico-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Widget Meu Progresso — verde sálvia sólido, igual referência */
@@ -1710,6 +1813,9 @@
 
 .cm-btn-preto {
   justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 7px;
   background: var(--cm-text);
   color: #fff;
   border: none;
@@ -1718,11 +1824,25 @@
   font-size: 0.85rem;
   font-weight: 600;
   white-space: nowrap;
-  transition: background 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 .cm-btn-preto:hover {
   background: #000;
+}
+
+/* Estado "Já meditei hoje ✓" — marcado e travado até a meia-noite local. */
+.cm-btn-preto.is-marcado,
+.cm-btn-preto:disabled {
+  background: #e4e1da;
+  color: var(--cm-text-soft);
+  cursor: not-allowed;
+}
+
+.cm-btn-preto.is-marcado:hover {
+  background: #e4e1da;
 }
 
 .cm-switch {
@@ -1894,7 +2014,20 @@
 }
 
 /* Sidebar: Próximo encontro ao vivo — bolinha pulsante + caixa com
-   anfitrião, igual referência. */
+   anfitrião, igual referência.
+
+   Esse widget NÃO usa o card branco padrão de .cm-widget (background/
+   border/padding) — só a caixa bege do evento + o botão preto ficam
+   visíveis, direto sobre o fundo da página. `.cm-widget.cm-encontro-vivo`
+   (as duas classes juntas) garante prioridade sobre `.cm-widget` sozinho
+   sem depender da ordem das regras no arquivo. Os outros cards do
+   dashboard continuam brancos normalmente — isso não afeta `.cm-widget`. */
+.cm-widget.cm-encontro-vivo {
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
 .cm-encontro-vivo h3 {
   gap: 9px;
 }
@@ -1957,18 +2090,171 @@
   color: var(--cm-text-soft);
 }
 
+.cm-encontro-divisor {
+  border: none;
+  border-top: 1px solid #e8e0d5;
+  margin: 16px 0;
+}
+
+.cm-encontro-lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cm-encontro-lista li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.cm-encontro-check {
+  flex-shrink: 0;
+  color: var(--cm-green);
+}
+
+.cm-encontro-social {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.cm-encontro-avatares {
+  display: flex;
+}
+
+.cm-encontro-avatar-bolinha {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e8e0d5;
+  color: var(--cm-text);
+  font-size: 10px;
+  font-weight: 700;
+  border: 2px solid #fff;
+}
+
+.cm-encontro-avatar-bolinha + .cm-encontro-avatar-bolinha {
+  margin-left: -8px;
+}
+
+.cm-encontro-social-texto {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.cm-encontro-social-vazio {
+  display: block;
+  margin-top: 14px;
+  font-size: 13px;
+}
+
 .cm-encontro-btn {
   width: 100%;
+  margin-top: 16px;
   padding: 10px;
   font-size: 0.84rem;
   text-align: center;
   /* Referência usa botão preto sólido aqui (não o sage do cm-btn-primary
      padrão) — sobrescreve só neste CTA específico. */
   background: var(--cm-text);
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 .cm-encontro-btn:hover {
   background: #000;
+}
+
+.cm-encontro-btn:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+/* Estado "já reservei": inverte pra fundo branco/borda preta com o check
+   verde, e no hover troca de vermelho pra sinalizar "clique de novo pra
+   cancelar" sem precisar de um segundo botão. */
+.cm-encontro-btn.is-reservado {
+  background: #fff;
+  color: var(--cm-text);
+  border: 1px solid var(--cm-text);
+}
+
+.cm-encontro-btn.is-reservado:hover:not(:disabled) {
+  background: var(--cm-red-soft);
+  border-color: var(--cm-red);
+  color: var(--cm-red);
+}
+
+.cm-encontro-btn-normal {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.cm-encontro-btn-check {
+  color: var(--cm-green);
+}
+
+.cm-encontro-btn-hover {
+  display: none;
+}
+
+.cm-encontro-btn.is-reservado:hover:not(:disabled) .cm-encontro-btn-normal {
+  display: none;
+}
+
+.cm-encontro-btn.is-reservado:hover:not(:disabled) .cm-encontro-btn-hover {
+  display: inline-flex;
+}
+
+.cm-encontro-btn.is-reservado:hover:not(:disabled) .cm-encontro-btn-check {
+  color: var(--cm-red);
+}
+
+.cm-encontro-toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+  z-index: 60;
+  animation: cm-encontro-toast-in 0.2s ease;
+}
+
+.cm-encontro-toast.is-sucesso {
+  background: var(--cm-green);
+}
+
+.cm-encontro-toast.is-erro {
+  background: var(--cm-red);
+}
+
+@keyframes cm-encontro-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Desafio — barra de progresso agregada dos itens concluídos */
@@ -2105,4 +2391,347 @@
   color: var(--cm-text-soft);
   font-size: 0.88rem;
   margin: 0 0 6px;
+}
+
+/* ==========================================================================
+   /comunidade/configuracoes — página própria (fora do grid de .cm-main),
+   mesma ideia de largura travada + padding de .cm-aula-page, mas em coluna
+   única e mais estreita (é um formulário, não um layout de 3 colunas).
+   Reaproveita os tokens --cm-* de .comunidade-app (inclusive --cm-green/
+   --cm-red, adicionados ali só pra esta página e pro card de troca de
+   senha). ========================================================== */
+
+.cm-config-page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.cm-config-header {
+  margin-bottom: 4px;
+}
+
+.cm-config-header h1 {
+  font-size: 1.6rem;
+  margin: 0 0 4px;
+}
+
+.cm-config-header p {
+  color: var(--cm-text-soft);
+  font-size: 0.92rem;
+  margin: 0;
+}
+
+/* Cards brancos arredondados 20px, sombra suave — mesmo espírito visual dos
+   cards do Início (.cm-widget), mas com radius próprio pedido pra esta
+   tela; não reaproveita .cm-widget direto pra não herdar padding/gap
+   pensados pro grid do dashboard. */
+.cm-config-card {
+  background: var(--cm-bg);
+  border: 1px solid var(--cm-border);
+  border-radius: 20px;
+  box-shadow: var(--cm-shadow);
+  padding: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cm-config-card-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.cm-config-subtitle {
+  font-size: 0.92rem;
+  font-weight: 600;
+  margin: 0 0 14px;
+  color: var(--cm-text);
+}
+
+.cm-config-sep {
+  border: none;
+  border-top: 1px solid var(--cm-border);
+  margin: 2px 0;
+}
+
+.cm-config-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.cm-config-field:last-of-type {
+  margin-bottom: 0;
+}
+
+.cm-config-field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--cm-text);
+}
+
+.cm-config-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.cm-config-input {
+  width: 100%;
+  height: 48px;
+  border: 1.5px solid var(--cm-border);
+  background: var(--cm-bg);
+  border-radius: 12px;
+  padding: 0 14px;
+  font-size: 15px;
+  color: var(--cm-text);
+  outline: none;
+  font-family: inherit;
+  transition:
+    border-color 200ms ease,
+    background-color 200ms ease;
+}
+
+.cm-config-input:focus {
+  border-color: var(--cm-text);
+}
+
+.cm-config-input.is-disabled,
+.cm-config-input:disabled {
+  color: var(--cm-text-soft);
+  background: var(--cm-beige-soft);
+  cursor: not-allowed;
+}
+
+.cm-config-input.is-valid,
+.cm-config-input.is-strong {
+  border-color: var(--cm-green);
+  padding-right: 42px;
+}
+
+.cm-config-input.is-strong {
+  background: var(--cm-green-soft);
+}
+
+.cm-config-input.is-invalid {
+  border-color: var(--cm-red);
+  padding-right: 42px;
+}
+
+.cm-config-input.is-weak {
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.cm-config-input-senha {
+  padding-right: 42px;
+}
+
+.cm-config-input-time {
+  max-width: 160px;
+}
+
+.cm-config-icon-right {
+  position: absolute;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.cm-config-icon-group {
+  pointer-events: auto;
+}
+
+.cm-config-icon-valid {
+  color: var(--cm-green);
+  display: inline-flex;
+  animation: cm-config-pop 200ms ease;
+}
+
+.cm-config-eye-btn {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: var(--cm-text-soft);
+  border-radius: 6px;
+  transition: color 200ms ease;
+}
+
+.cm-config-eye-btn:hover {
+  color: var(--cm-text);
+}
+
+@keyframes cm-config-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.cm-config-error {
+  font-size: 12px;
+  color: var(--cm-red);
+}
+
+.cm-config-success {
+  font-size: 12px;
+  color: var(--cm-green);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cm-config-hint {
+  font-size: 12px;
+  color: var(--cm-text-soft);
+}
+
+.cm-config-checklist {
+  list-style: none;
+  margin: 2px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.cm-config-check-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--cm-text-soft);
+  transition: color 200ms ease;
+}
+
+.cm-config-check-item.is-ok {
+  color: var(--cm-green);
+}
+
+.cm-config-check-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1.5px solid var(--cm-border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cm-bg);
+  flex-shrink: 0;
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease;
+}
+
+.cm-config-check-item.is-ok .cm-config-check-dot {
+  background: var(--cm-green);
+  border-color: var(--cm-green);
+}
+
+.cm-config-btn {
+  align-self: flex-start;
+  height: 48px;
+  padding: 0 24px;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  margin-top: 4px;
+  background: var(--cm-border);
+  color: var(--cm-text-soft);
+  cursor: not-allowed;
+  transition:
+    background-color 200ms ease,
+    color 200ms ease,
+    opacity 200ms ease;
+}
+
+.cm-config-btn.is-ready {
+  background: #000;
+  color: #fff;
+  cursor: pointer;
+}
+
+.cm-config-btn.is-ready:hover {
+  background: #1a1a1a;
+}
+
+.cm-config-btn:disabled {
+  opacity: 0.7;
+}
+
+.cm-config-sair {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--cm-red);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 200ms ease;
+}
+
+.cm-config-sair:hover {
+  opacity: 0.75;
+}
+
+.cm-config-toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  background: var(--cm-bg);
+  border: 1px solid var(--cm-border);
+  box-shadow: var(--cm-shadow);
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 50;
+  animation: cm-config-toast-in 220ms ease;
+}
+
+.cm-config-toast.is-sucesso {
+  color: #15803d;
+}
+
+.cm-config-toast.is-sucesso svg {
+  color: var(--cm-green);
+}
+
+.cm-config-toast.is-erro {
+  color: #b91c1c;
+}
+
+.cm-config-toast.is-erro svg {
+  color: var(--cm-red);
+}
+
+@keyframes cm-config-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
