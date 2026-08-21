@@ -57,6 +57,11 @@ export default function AulasMeditacaoRaiz() {
   );
   const [loading, setLoading] = useState(true);
   const [erroCatalogo, setErroCatalogo] = useState(false);
+  // progressoCarregado: true quando o GET de progresso já resolveu (ou não
+  // há sessão, então não há o que esperar) — usado tanto pra segurar a
+  // renderização (evita flash no Dia 0 antes de "pular" pra aula certa)
+  // quanto pra liberar o cálculo de "continuar de onde parou" (alvoResumo).
+  const [progressoCarregado, setProgressoCarregado] = useState(!email);
 
   const marcados85Ref = useRef(new Set());
   const [emailAnterior, setEmailAnterior] = useState(email);
@@ -68,6 +73,7 @@ export default function AulasMeditacaoRaiz() {
   if (email !== emailAnterior) {
     setEmailAnterior(email);
     setProgressoPorArquivo(email ? carregarProgressoLocal(email) : {});
+    setProgressoCarregado(!email);
   }
 
   // Refs não podem ser alterados durante o render (só em efeitos/handlers) —
@@ -80,17 +86,15 @@ export default function AulasMeditacaoRaiz() {
 
   // Catálogo real: vem do backend, que lê a pasta curso-meditacao-raiz e já
   // resolve os títulos via lib/titulosAulasRaiz.js. Não depende de nenhum
-  // cadastro manual em banco.
+  // cadastro manual em banco. Não decide aqui em qual vídeo pousar — isso
+  // fica pro efeito de "continuar de onde parou" logo abaixo, que também
+  // precisa do progresso carregado antes de escolher.
   useEffect(() => {
     fetch(`${API_URL}/api/aulas-raiz`)
       .then((r) => r.json())
       .then((data) => {
         const listaDias = Array.isArray(data?.dias) ? data.dias : [];
         setDias(listaDias);
-        if (listaDias.length) {
-          setDiaSelecionado(listaDias[0].dia);
-          setVideoAtivoArquivo(listaDias[0].videos[0]?.arquivo || null);
-        }
       })
       .catch((err) => {
         console.error("Erro ao carregar catálogo de aulas-raiz:", err);
@@ -126,14 +130,33 @@ export default function AulasMeditacaoRaiz() {
       .catch(() => {
         // PHP indisponível — segue só com o que já está no localStorage,
         // sem travar a página.
-      });
+      })
+      .finally(() => setProgressoCarregado(true));
   }, [email]);
 
-  const diaAtual = useMemo(() => dias.find((d) => d.dia === diaSelecionado), [dias, diaSelecionado]);
+  // "Continuar de onde parou": primeira aula ainda não concluída, na ordem
+  // real do curso (Dia 0 -> Dia 15). Se todas já foram assistidas, cai na
+  // última. Calculado como valor derivado (não em efeito com setState —
+  // dispara "cascading renders" no lint de hooks) e só usado como FALLBACK
+  // enquanto diaSelecionado/videoAtivoArquivo ainda são null: assim que o
+  // usuário clica numa aula da lista (ou troca de dia), o estado explícito
+  // passa a mandar e esse cálculo deixa de ter efeito — não quebra a
+  // navegação manual.
+  const alvoResumo = useMemo(() => {
+    if (!dias.length || !progressoCarregado) return null;
+    const ordemAulas = dias.flatMap((d) => d.videos.map((v) => ({ dia: d.dia, arquivo: v.arquivo })));
+    const proximaNaoAssistida = ordemAulas.find((a) => !progressoPorArquivo[a.arquivo]?.assistida);
+    return proximaNaoAssistida || ordemAulas[ordemAulas.length - 1] || null;
+  }, [dias, progressoCarregado, progressoPorArquivo]);
+
+  const diaEfetivo = diaSelecionado ?? alvoResumo?.dia ?? null;
+  const videoArquivoEfetivo = videoAtivoArquivo ?? alvoResumo?.arquivo ?? null;
+
+  const diaAtual = useMemo(() => dias.find((d) => d.dia === diaEfetivo), [dias, diaEfetivo]);
   const videos = useMemo(() => diaAtual?.videos || [], [diaAtual]);
   const videoAtivo = useMemo(
-    () => videos.find((v) => v.arquivo === videoAtivoArquivo) || videos[0],
-    [videos, videoAtivoArquivo],
+    () => videos.find((v) => v.arquivo === videoArquivoEfetivo) || videos[0],
+    [videos, videoArquivoEfetivo],
   );
 
   function marcarConcluida(arquivoParam, posicaoParam = 0) {
@@ -219,7 +242,7 @@ export default function AulasMeditacaoRaiz() {
       selecionarVideo(videos[indiceAtual + 1].arquivo);
       return;
     }
-    const indiceDia = dias.findIndex((d) => d.dia === diaSelecionado);
+    const indiceDia = dias.findIndex((d) => d.dia === diaEfetivo);
     const proximoDia = dias[indiceDia + 1];
     if (proximoDia) {
       setDiaSelecionado(proximoDia.dia);
@@ -244,6 +267,11 @@ export default function AulasMeditacaoRaiz() {
       </div>
     );
   }
+
+  // Catálogo já chegou, mas o progresso do usuário ainda não (alvoResumo
+  // depende dele) — segura a tela de carregando pra não pintar o Dia 0 por
+  // uma fração de segundo antes de "pular" pra aula certa.
+  if (!progressoCarregado) return <div style={{ padding: 40 }}>Carregando suas aulas...</div>;
 
   return (
     <div className="cm-aula-page">
@@ -271,14 +299,14 @@ export default function AulasMeditacaoRaiz() {
             )}
           </div>
 
-          <ComentariosFeed key={`dia-${diaSelecionado}`} />
+          <ComentariosFeed key={`dia-${diaEfetivo}`} />
         </div>
 
         <div className="cm-aula-sidebar">
           <div className="cm-aula-videos-do-dia">
             <div className="cm-aula-videos-do-dia-cabecalho">
               <h2>{diaAtual?.titulo}</h2>
-              <select className="cm-dia-select" value={diaSelecionado ?? ""} onChange={handleTrocarDia}>
+              <select className="cm-dia-select" value={diaEfetivo ?? ""} onChange={handleTrocarDia}>
                 {dias.map((d) => (
                   <option key={d.dia} value={d.dia}>
                     {d.titulo}
