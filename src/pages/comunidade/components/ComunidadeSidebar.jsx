@@ -30,7 +30,7 @@ function ComunidadeSidebar({ session, onSair }) {
           <Leaf size={18} />
         </span>
         <div>
-          <strong>Clube Presença</strong>
+          <strong>Meditação raiz</strong>
           <span>POR DR. RENATO DE PAULA</span>
         </div>
       </div>
@@ -56,7 +56,7 @@ function ComunidadeSidebar({ session, onSair }) {
             <LogOut size={15} />
           </button>
         </div>
-        <p className="cm-sidebar-copy">© 2025 Clube Presença</p>
+        <p className="cm-sidebar-copy">© 2026 Clube Presença</p>
       </div>
     </aside>
   );

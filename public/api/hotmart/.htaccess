@@ -1,1 +1,11 @@
 RewriteEngine Off
+
+# config.php (credenciais do banco) e _conexao.php (include compartilhado)
+# nunca devem ser servidos direto por URL — só via `require` de outro PHP
+# desta pasta.
+<Files "config.php">
+    Require all denied
+</Files>
+<FilesMatch "^_.*\.php$">
+    Require all denied
+</FilesMatch>

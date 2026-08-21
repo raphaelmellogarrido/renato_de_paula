@@ -131,48 +131,59 @@ export const PROGRESSO_SEMANA = {
   metaMinutos: 360,
 };
 
-// Chips de filtro da Biblioteca de Meditações — cruzam com a tag de cada
-// item de VIDEOS_BIBLIOTECA (ver ComunidadeTopBar/Dashboard).
-export const FILTROS = ["Todas", "Ansiedade", "Sono", "Foco"];
+// Chips de filtro da Biblioteca de Meditações — linguagem humana (não
+// clínica) combinada de propósito com `tag` de cada item de
+// VIDEOS_BIBLIOTECA (ver ComunidadeTopBar/Dashboard). `categoria` (dentro de
+// cada vídeo) é o rótulo clínico curto que aparece no badge sobre a foto —
+// as duas coisas divergem por design: o chip de filtro fala como gente, o
+// badge da capa continua objetivo.
+export const FILTROS = ["Todas", "Quando aperta", "Pra dormir", "Pra focar"];
 
 // "Biblioteca de Meditações" — grid de exatamente 3 vídeos, dimensionada de
 // propósito para preencher a área "biblioteca" (coluna 1 + coluna 2) da
 // última linha do dashboard sem sobrar espaço em branco (ver
 // ComunidadeApp.css: `grid-template-areas`). `src` é placeholder (arquivo
 // ainda não existe) — troca antes do lançamento público, mesmo espírito dos
-// vídeos placeholder dos Dias 1-15. Fotos de capa via Unsplash (hotlink
-// direto, URLs validadas) — trocar por assets próprios/licenciados antes do
-// lançamento público.
+// vídeos placeholder dos Dias 1-15. Fotos de capa: 3 fotos reais do Dr.
+// Renato (public/meditacoes/, copiadas dos originais em public/ com nomes
+// ASCII pra evitar problemas de encoding de URL) — grading unificado
+// (warm tint + overlay preto) fica todo em CSS, ver
+// `.cm-card-biblioteca-capa` em ComunidadeApp.css. `posicaoFoto` ajusta o
+// enquadramento do crop 4:3 pra manter o rosto visível em cada foto
+// (as 3 são retrato, o card é paisagem).
 export const VIDEOS_BIBLIOTECA = [
   {
     id: "bib-ansiedade",
-    titulo: "Respiração para Ansiedade",
-    tag: "Ansiedade",
+    titulo: "SOS Ansiedade - Respiração pra voltar",
+    categoria: "Ansiedade",
+    tag: "Quando aperta",
+    frase: "Quando o peito aperta",
     duracao: "12min",
-    nivel: "Iniciante",
-    praticas: "2.4k",
     src: "/videos/ansiedade.mp4",
-    imagem: "https://images.unsplash.com/photo-1493836512294-502baa1986e2?auto=format&fit=crop&w=800&q=60",
+    imagem: "/meditacoes/sos-ansiedade.jpg",
+    posicaoFoto: "center 15%",
   },
   {
     id: "bib-sono",
-    titulo: "Sono Profundo",
-    tag: "Sono",
+    titulo: "Ritual da Noite - Sono Profundo",
+    categoria: "Sono",
+    tag: "Pra dormir",
+    frase: "Quando o sono não vem",
     duracao: "18min",
-    nivel: "Iniciante",
-    praticas: "3.1k",
     src: "/videos/sono.mp4",
-    imagem: "https://images.unsplash.com/photo-1495360010541-f48722b34f7d?auto=format&fit=crop&w=800&q=60",
+    imagem: "/meditacoes/ritual-noite.jpg",
+    posicaoFoto: "center 35%",
   },
   {
     id: "bib-foco",
-    titulo: "Foco Matinal",
-    tag: "Foco",
+    titulo: "Voltar ao Foco - Manhã sem neblina",
+    categoria: "Foco",
+    tag: "Pra focar",
+    frase: "Quando a manhã não decola",
     duracao: "10min",
-    nivel: "Iniciante",
-    praticas: "1.6k",
     src: "/videos/foco.mp4",
-    imagem: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?auto=format&fit=crop&w=800&q=60",
+    imagem: "/meditacoes/foco-manha.jpg",
+    posicaoFoto: "center 15%",
   },
 ];
 

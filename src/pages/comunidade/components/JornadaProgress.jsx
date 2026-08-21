@@ -143,9 +143,11 @@ export default function JornadaProgress({ progressoPorArquivo = {}, compacto = f
     <div className="cm-jornada cm-grid-progresso">
       <div className="cm-jornada-topo">
         <h2>Sua Jornada</h2>
-        {sequencia > 0 && !jornadaCompleta && (
+        {!jornadaCompleta && (
           <span className="cm-jornada-streak">
-            🔥 {sequencia} dia{sequencia === 1 ? "" : "s"} seguido{sequencia === 1 ? "" : "s"}
+            {sequencia === 0 && "Comece hoje"}
+            {sequencia === 1 && "1 dia"}
+            {sequencia >= 2 && <>🔥 {sequencia} dias seguidos</>}
           </span>
         )}
       </div>

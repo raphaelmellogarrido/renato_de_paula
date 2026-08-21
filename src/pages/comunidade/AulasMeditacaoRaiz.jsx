@@ -7,15 +7,22 @@ import { useEmailSessao, chaveUsuario, logSalvandoParaUsuario } from "./componen
 
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:3001" : "");
 
-// Progresso por usuário: hoje sincroniza com um PHP fora deste repo
-// (https://renatodepaula.com/api/hotmart/aulas.php), que não temos como
-// inspecionar/editar. Como o catálogo passou a vir do sistema de arquivos,
-// usamos o nome do arquivo (ex: "dia1.2.mp4") como aula_id — mas também
-// guardamos tudo no localStorage como rede de segurança, pra "Marcar como
-// concluída" nunca falhar silenciosamente caso aquele PHP não reconheça
-// esse formato de id.
-const HOTMART_AULAS_URL = "https://renatodepaula.com/api/hotmart/aulas.php";
+// Progresso por usuário: sincroniza com public/api/hotmart/aulas-raiz/progresso.php
+// (tabela própria progresso_aulas_raiz, chaveada por email + nome do
+// arquivo, ex: "dia1.2.mp4") — separado do PHP/tabela do curso antigo
+// Hotmart (aula_id INTEIRO), que não reconhecia esse formato de id.
+// Também guardamos tudo no localStorage como cache instantâneo, pra pintar
+// a tela sem esperar rede e pra "Marcar como concluída" nunca travar se o
+// PHP estiver fora do ar.
+const PROGRESSO_AULAS_RAIZ_URL = "/api/hotmart/aulas-raiz/progresso.php";
 const LIMIAR_AUTO_CONCLUIDA = 0.85;
+
+// Extrai o número do dia a partir do nome do arquivo ("dia1.2.mp4" -> 1),
+// mesmo padrão de regex que JornadaProgress.jsx já usa pra agrupar
+// TITULOS_AULAS_RAIZ por dia.
+function diaDoArquivo(arquivo) {
+  return Number(arquivo.match(/^dia(\d+)\./)?.[1]) || 0;
+}
 
 // Mesma base de chave usada em useProgressoAulasRaiz.js — precisa
 // continuar igual nos dois arquivos, senão a página de aulas e o widget
@@ -99,15 +106,17 @@ export default function AulasMeditacaoRaiz() {
   useEffect(() => {
     if (!email) return;
 
-    fetch(`${HOTMART_AULAS_URL}?email=${encodeURIComponent(email)}`)
+    fetch(`${PROGRESSO_AULAS_RAIZ_URL}?email=${encodeURIComponent(email)}`)
       .then((r) => r.json())
       .then((data) => {
         const lista = Array.isArray(data?.aulas) ? data.aulas : [];
         setProgressoPorArquivo((atual) => {
           const mesclado = { ...atual };
           for (const item of lista) {
-            const chave = item.arquivo || item.aula_id;
-            if (!chave || mesclado[chave]?.assistida) continue;
+            const chave = item.arquivo;
+            if (!chave) continue;
+            // Servidor é a fonte de verdade (cobre outro navegador/dispositivo,
+            // inclusive uma desmarcação feita lá) — não preserva o valor local.
             mesclado[chave] = { assistida: !!item.assistida, progresso: item.progresso || 0 };
           }
           salvarProgressoLocal(email, mesclado);
@@ -115,8 +124,8 @@ export default function AulasMeditacaoRaiz() {
         });
       })
       .catch(() => {
-        // PHP externo indisponível ou não reconhece o formato — segue só
-        // com o que já está no localStorage, sem travar a página.
+        // PHP indisponível — segue só com o que já está no localStorage,
+        // sem travar a página.
       });
   }, [email]);
 
@@ -127,7 +136,7 @@ export default function AulasMeditacaoRaiz() {
     [videos, videoAtivoArquivo],
   );
 
-  function marcarConcluida(arquivoParam) {
+  function marcarConcluida(arquivoParam, posicaoParam = 0) {
     const arquivo = arquivoParam || videoAtivo?.arquivo;
     if (!arquivo || !email) return;
 
@@ -138,10 +147,17 @@ export default function AulasMeditacaoRaiz() {
       return novo;
     });
 
-    fetch(HOTMART_AULAS_URL, {
+    fetch(PROGRESSO_AULAS_RAIZ_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, aula_id: arquivo, progresso: 100, completou: true }),
+      body: JSON.stringify({
+        email,
+        arquivo,
+        dia: diaDoArquivo(arquivo),
+        progresso: 100,
+        posicao: Math.round(posicaoParam),
+        completou: true,
+      }),
     }).catch((err) => {
       console.error("Não foi possível sincronizar progresso com o servidor:", err);
     });
@@ -165,10 +181,10 @@ export default function AulasMeditacaoRaiz() {
       return novo;
     });
 
-    fetch(HOTMART_AULAS_URL, {
+    fetch(PROGRESSO_AULAS_RAIZ_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, aula_id: arquivo, progresso: 0, completou: false }),
+      body: JSON.stringify({ email, arquivo, dia: diaDoArquivo(arquivo), progresso: 0, posicao: 0, completou: false }),
     }).catch((err) => {
       console.error("Não foi possível sincronizar remoção de progresso com o servidor:", err);
     });
@@ -189,7 +205,7 @@ export default function AulasMeditacaoRaiz() {
     if (marcados85Ref.current.has(arquivo)) return;
     if (currentTime / duration >= LIMIAR_AUTO_CONCLUIDA) {
       marcados85Ref.current.add(arquivo);
-      marcarConcluida(arquivo);
+      marcarConcluida(arquivo, currentTime);
     }
   }
 

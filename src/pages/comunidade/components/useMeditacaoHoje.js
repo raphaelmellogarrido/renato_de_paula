@@ -130,9 +130,21 @@ export function useMeditacaoHoje() {
       // sessão pra separar por usuário, o que evita problemas se front e
       // /api ficarem em origens diferentes (ex: dev local).
       body: JSON.stringify({ data: hojeIsoStr, acao: "meditei", email, historico: novoHistorico }),
-    }).catch((err) => {
-      console.error("Não foi possível sincronizar a presença de hoje com o servidor:", err);
-    });
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        // O servidor calcula o streak a partir de `presencas` no banco —
+        // fonte de verdade real (cobre presença marcada em outro
+        // navegador/dispositivo). Reconcilia o valor otimista assim que a
+        // resposta chega, em vez de confiar só no contador local.
+        if (Number.isFinite(data?.streak)) {
+          localStorage.setItem(chaveUsuario(CHAVE_BASE_STREAK, email), String(data.streak));
+          setStreak(data.streak);
+        }
+      })
+      .catch((err) => {
+        console.error("Não foi possível sincronizar a presença de hoje com o servidor:", err);
+      });
   }
 
   return { marcado, streak, marcarHoje };

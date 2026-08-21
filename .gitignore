@@ -22,6 +22,11 @@ server/videos/*
 server/curso-meditacao-raiz/*
 !server/curso-meditacao-raiz/.gitkeep
 
+# Credenciais do banco Hostinger (u790959747_clube) - sobe manualmente pro
+# servidor por FTP/Gerenciador de Arquivos, nunca pelo Git. Template
+# comitado em public/api/hotmart/config.example.php.
+public/api/hotmart/config.php
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

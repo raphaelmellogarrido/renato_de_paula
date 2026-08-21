@@ -1956,61 +1956,132 @@
   box-shadow: var(--cm-shadow);
 }
 
+/* Capa: crop 4:3 das fotos reais do Dr. Renato, com um grading único pra
+   disfarçar que vêm de 3 sessões bem diferentes (estúdio cinza x rio ao ar
+   livre) — brightness/contrast no filter + tint quente via ::before em
+   soft-light, e um overlay preto plano (unifica tudo em 12%) somado a um
+   gradiente mais forte perto do rodapé só pra manter os badges legíveis. */
 .cm-card-biblioteca-capa {
   position: relative;
   aspect-ratio: 4 / 3;
   overflow: hidden;
+  border-radius: 16px;
   background-size: cover;
   background-position: center;
+  filter: brightness(1.05) contrast(0.95);
 }
 
 .cm-card-biblioteca-capa::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.35));
+  background: #f5f1eb;
+  mix-blend-mode: soft-light;
+  opacity: 0.55;
 }
 
-.cm-card-biblioteca .cm-card-aula-tag,
-.cm-card-biblioteca .cm-card-aula-duracao,
-.cm-card-biblioteca .cm-card-aula-play {
+.cm-card-biblioteca-capa::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.12) 0%, rgba(0, 0, 0, 0.12) 55%, rgba(0, 0, 0, 0.46) 100%);
+}
+
+.cm-card-biblioteca-categoria,
+.cm-card-biblioteca-duracao,
+.cm-card-biblioteca-play {
+  position: absolute;
   z-index: 1;
 }
 
-.cm-card-biblioteca-titulo {
-  font-size: 0.94rem;
-  font-family: "Playfair Display", Georgia, serif;
+.cm-card-biblioteca-categoria {
+  top: 10px;
+  left: 10px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #1a1a1a;
+  font-size: 0.6875rem;
   font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.cm-card-biblioteca-duracao {
+  bottom: 10px;
+  left: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #fff;
+  font-size: 0.75rem;
+  padding: 4px 9px;
+  border-radius: 999px;
+}
+
+.cm-card-biblioteca-play {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #fff;
+  color: #1a1a1a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+  opacity: 0;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+
+.cm-card-biblioteca:hover .cm-card-biblioteca-play {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* Em telas sem hover (mobile/tablet touch), o play fica sempre visível —
+   sem isso, ninguém veria o botão até tocar (e o toque já dispara o card). */
+@media (hover: none) {
+  .cm-card-biblioteca-play {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.cm-card-biblioteca-titulo {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1a1a1a;
   padding-left: 5px;
 }
 
 .cm-card-biblioteca-rodape-area {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
   padding: 4px 2px 2px;
 }
 
-.cm-card-biblioteca-rodape {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.cm-card-biblioteca-subtitulo {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: #6b7280;
+  padding-left: 5px;
+  margin: 0;
 }
 
-.cm-card-biblioteca-nivel {
-  font-size: 0.7rem;
-  padding: 3px 9px;
-  border-radius: 999px;
-  background: var(--cm-beige);
-  border: 1px solid var(--cm-border);
-  color: var(--cm-text-soft);
-  margin-left: 5px;
-  margin-bottom: 5px;
-}
-
-.cm-card-biblioteca-praticas {
-  font-size: 0.72rem;
-  color: var(--cm-text-soft);
+.cm-card-biblioteca-subtitulo em {
+  font-style: italic;
+  font-weight: 400;
 }
 
 /* Sidebar: Próximo encontro ao vivo — bolinha pulsante + caixa com

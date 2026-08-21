@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import { useEmailSessao, chaveUsuario, logSalvandoParaUsuario } from "./usuarioStorage";
 
 // Mesma fonte de verdade de AulasMeditacaoRaiz.jsx (localStorage + PHP
-// externo aulas.php), só que em modo leitura: usado por widgets fora da
-// página de aulas (ex: o card "Sua Jornada" do dashboard) que só exibem o
-// progresso, sem marcar/desmarcar nada. Não duplica a lógica de
-// marcar/desmarcar — essa continua vivendo só em AulasMeditacaoRaiz.jsx.
-const HOTMART_AULAS_URL = "https://renatodepaula.com/api/hotmart/aulas.php";
+// aulas-raiz/progresso.php, tabela progresso_aulas_raiz), só que em modo
+// leitura: usado por widgets fora da página de aulas (ex: o card "Sua
+// Jornada" do dashboard) que só exibem o progresso, sem marcar/desmarcar
+// nada. Não duplica a lógica de marcar/desmarcar — essa continua vivendo
+// só em AulasMeditacaoRaiz.jsx.
+const PROGRESSO_AULAS_RAIZ_URL = "/api/hotmart/aulas-raiz/progresso.php";
 // Mesma base de chave usada em AulasMeditacaoRaiz.jsx — precisa continuar
 // igual nos dois arquivos, senão um não vê o progresso salvo pelo outro.
 const CHAVE_BASE = "comunidade_progresso_aulas_raiz";
@@ -48,14 +49,14 @@ export function useProgressoAulasRaiz() {
   useEffect(() => {
     if (!email) return;
 
-    fetch(`${HOTMART_AULAS_URL}?email=${encodeURIComponent(email)}`)
+    fetch(`${PROGRESSO_AULAS_RAIZ_URL}?email=${encodeURIComponent(email)}`)
       .then((r) => r.json())
       .then((data) => {
         const lista = Array.isArray(data?.aulas) ? data.aulas : [];
         setProgressoPorArquivo((atual) => {
           const mesclado = { ...atual };
           for (const item of lista) {
-            const chave = item.arquivo || item.aula_id;
+            const chave = item.arquivo;
             if (!chave || mesclado[chave]?.assistida) continue;
             mesclado[chave] = { assistida: !!item.assistida, progresso: item.progresso || 0 };
           }
@@ -64,8 +65,8 @@ export function useProgressoAulasRaiz() {
         });
       })
       .catch(() => {
-        // PHP externo indisponível — segue só com o que já está no
-        // localStorage, sem travar o widget.
+        // PHP indisponível — segue só com o que já está no localStorage,
+        // sem travar o widget.
       });
   }, [email]);
 
