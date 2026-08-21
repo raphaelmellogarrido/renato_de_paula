@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import GuardedVideo from "../../components/GuardedVideo";
 import ComentariosFeed from "./components/ComentariosFeed";
+import JornadaProgress from "./components/JornadaProgress";
 
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:3001" : "");
 
@@ -206,44 +207,48 @@ export default function AulasMeditacaoRaiz() {
           <ComentariosFeed key={`dia-${diaSelecionado}`} />
         </div>
 
-        <div className="cm-aula-videos-do-dia">
-          <div className="cm-aula-videos-do-dia-cabecalho">
-            <h2>{diaAtual?.titulo}</h2>
-            <select className="cm-dia-select" value={diaSelecionado ?? ""} onChange={handleTrocarDia}>
-              {dias.map((d) => (
-                <option key={d.dia} value={d.dia}>
-                  {d.titulo}
-                </option>
-              ))}
-            </select>
+        <div className="cm-aula-sidebar">
+          <div className="cm-aula-videos-do-dia">
+            <div className="cm-aula-videos-do-dia-cabecalho">
+              <h2>{diaAtual?.titulo}</h2>
+              <select className="cm-dia-select" value={diaSelecionado ?? ""} onChange={handleTrocarDia}>
+                {dias.map((d) => (
+                  <option key={d.dia} value={d.dia}>
+                    {d.titulo}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {videos.map((video) => {
+              const concluida = !!progressoPorArquivo[video.arquivo]?.assistida;
+              return (
+                <button
+                  key={video.arquivo}
+                  type="button"
+                  className={`cm-video-item ${video.arquivo === videoAtivo?.arquivo ? "is-ativo" : ""}`}
+                  onClick={() => selecionarVideo(video.arquivo)}
+                >
+                  <span className="cm-video-item-dot" />
+                  <span>{video.titulo}</span>
+                  {concluida && <span className="cm-video-item-check">✓</span>}
+                </button>
+              );
+            })}
+
+            <button
+              type="button"
+              onClick={() => marcarConcluida()}
+              style={{ marginTop: 16, width: "100%", background: "black", color: "white", padding: 12, borderRadius: 10, fontWeight: 600, border: "none" }}
+            >
+              Marcar como concluída
+            </button>
+            <p style={{ fontSize: 11, color: "#9ca3af", marginTop: 8 }}>
+              Marcada automaticamente ao assistir 85% do vídeo, ou manualmente pelo botão acima.
+            </p>
           </div>
 
-          {videos.map((video) => {
-            const concluida = !!progressoPorArquivo[video.arquivo]?.assistida;
-            return (
-              <button
-                key={video.arquivo}
-                type="button"
-                className={`cm-video-item ${video.arquivo === videoAtivo?.arquivo ? "is-ativo" : ""}`}
-                onClick={() => selecionarVideo(video.arquivo)}
-              >
-                <span className="cm-video-item-dot" />
-                <span>{video.titulo}</span>
-                {concluida && <span className="cm-video-item-check">✓</span>}
-              </button>
-            );
-          })}
-
-          <button
-            type="button"
-            onClick={() => marcarConcluida()}
-            style={{ marginTop: 16, width: "100%", background: "black", color: "white", padding: 12, borderRadius: 10, fontWeight: 600, border: "none" }}
-          >
-            Marcar como concluída
-          </button>
-          <p style={{ fontSize: 11, color: "#9ca3af", marginTop: 8 }}>
-            Marcada automaticamente ao assistir 85% do vídeo, ou manualmente pelo botão acima.
-          </p>
+          <JornadaProgress progressoPorArquivo={progressoPorArquivo} />
         </div>
       </div>
     </div>

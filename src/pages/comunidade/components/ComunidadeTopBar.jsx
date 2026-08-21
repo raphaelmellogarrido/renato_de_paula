@@ -4,37 +4,19 @@
 function ComunidadeTopBar({ view, onViewChange, busca, onBuscaChange }) {
   return (
     <div className="cm-topbar-nova cm-grid-topbar">
-      <input
-        type="search"
-        className="cm-busca-input"
-        placeholder="Buscar meditações, temas, emoções..."
-        value={busca}
-        onChange={(e) => onBuscaChange(e.target.value)}
-      />
+      <input type="search" className="cm-busca-input" placeholder="Buscar meditações, temas, emoções..." value={busca} onChange={(e) => onBuscaChange(e.target.value)} />
 
       <div className="cm-switch" role="tablist" aria-label="Alternar entre curso e comunidade">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={view === "curso"}
-          className={`cm-switch-btn ${view === "curso" ? "is-ativo" : ""}`}
-          onClick={() => onViewChange("curso")}
-        >
+        <button type="button" role="tab" aria-selected={view === "curso"} className={`cm-switch-btn ${view === "curso" ? "is-ativo" : ""}`} onClick={() => onViewChange("curso")}>
           Curso Meditação Raiz
         </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={view === "comunidade"}
-          className={`cm-switch-btn ${view === "comunidade" ? "is-ativo" : ""}`}
-          onClick={() => onViewChange("comunidade")}
-        >
+        <button type="button" role="tab" aria-selected={view === "comunidade"} className={`cm-switch-btn ${view === "comunidade" ? "is-ativo" : ""}`} onClick={() => onViewChange("comunidade")}>
           Clube Presença
         </button>
       </div>
 
       <button type="button" className="cm-btn-preto" title="Em breve">
-        + Nova Meditação
+        Meditei hoje
       </button>
     </div>
   );

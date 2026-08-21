@@ -1125,6 +1125,202 @@
   font-size: 0.8rem;
 }
 
+/* Empilha o card "Dia N" (.cm-aula-videos-do-dia) com o card da Jornada
+   logo abaixo, os dois na coluna de 280px de .cm-aula-layout. */
+.cm-aula-sidebar {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Card "Sua Jornada" — anel de progresso circular + trilha dos 16 dias.
+   Vive só aqui: usa lavanda/dourado como acento próprio (--cm-jornada-*),
+   não mexe na paleta sálvia do resto de /comunidade. */
+.cm-jornada {
+  --cm-jornada-violeta: #9b7fc7;
+  --cm-jornada-dourado: #e0b978;
+  background: var(--cm-beige);
+  border-radius: var(--cm-radius);
+  padding: 20px;
+  text-align: center;
+}
+
+.cm-jornada-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+  text-align: left;
+}
+
+.cm-jornada-topo h2 {
+  font-size: 1.05rem;
+}
+
+.cm-jornada-streak {
+  flex-shrink: 0;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--cm-text);
+  background: var(--cm-beige-soft);
+  border: 1px solid var(--cm-border);
+  border-radius: 999px;
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+
+.cm-jornada-anel-wrap {
+  position: relative;
+  width: 148px;
+  height: 148px;
+  margin: 4px auto 18px;
+}
+
+.cm-jornada-anel {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.cm-jornada-anel-trilho,
+.cm-jornada-anel-progresso {
+  fill: none;
+  stroke-width: 10;
+}
+
+.cm-jornada-anel-trilho {
+  stroke: var(--cm-beige-soft);
+}
+
+.cm-jornada-anel-progresso {
+  stroke: url(#cm-jornada-gradiente);
+  stroke-linecap: round;
+  transition: stroke-dashoffset 900ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cm-jornada-anel-centro {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.cm-jornada-anel-numero {
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--cm-text);
+}
+
+.cm-jornada-anel-legenda {
+  font-size: 0.72rem;
+  color: var(--cm-text-soft);
+}
+
+.cm-jornada-trilha {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.cm-jornada-bolinha {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--cm-text-soft);
+  background: var(--cm-bg);
+  border: 1px solid var(--cm-border);
+  cursor: default;
+  transition:
+    background 300ms ease,
+    border-color 300ms ease,
+    color 300ms ease,
+    transform 150ms ease;
+}
+
+.cm-jornada-bolinha:hover {
+  transform: scale(1.12);
+}
+
+.cm-jornada-bolinha.is-completo {
+  background: linear-gradient(135deg, var(--cm-jornada-violeta), var(--cm-jornada-dourado));
+  border-color: transparent;
+  color: #fff;
+}
+
+.cm-jornada-bolinha.is-atual {
+  background: var(--cm-beige-soft);
+  border: 2px dashed var(--cm-jornada-violeta);
+  color: var(--cm-text);
+}
+
+.cm-jornada-bolinha.is-bloqueado {
+  background: var(--cm-beige-soft);
+  border-color: var(--cm-border);
+  color: #c8c3ba;
+}
+
+.cm-jornada-mensagem {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--cm-text);
+}
+
+.cm-jornada-mensagem.is-completa {
+  color: var(--cm-jornada-violeta);
+}
+
+/* Confete — dispara só com a jornada 100% concluída */
+.cm-jornada-confete {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: 50%;
+}
+
+.cm-jornada-confete-peca {
+  position: absolute;
+  top: -10%;
+  left: calc(8% + (var(--i) * 7%));
+  width: 6px;
+  height: 6px;
+  border-radius: 2px;
+  background: hsl(calc(var(--i) * 26), 70%, 65%);
+  animation: cm-jornada-cair calc(2.4s + (var(--i) * 0.15s)) linear calc(var(--i) * -0.2s) infinite;
+}
+
+@keyframes cm-jornada-cair {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(180px) rotate(340deg);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cm-jornada-anel-progresso {
+    transition: none;
+  }
+  .cm-jornada-confete-peca {
+    animation: none;
+    display: none;
+  }
+}
+
 /* Navegação sequencial de dias */
 .cm-dias-nav {
   background: var(--cm-beige);
