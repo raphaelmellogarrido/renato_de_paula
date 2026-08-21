@@ -1,6 +1,6 @@
 <?php
 header('Content-Type: application/json');
-$HOTTOK = 'COLOQUE_SEU_HOTTOK_AQUI'; // pega na Hotmart em Autenticação
+$HOTTOK = 'nIp7KnYiaLXQz5svRfNi4JjV9Kfxn230709350'; // pega na Hotmart em Autenticação
 
 $recebido = $_SERVER['HTTP_X_HOTTOK'] ?? $_SERVER['HTTP_HOTTOK'] ?? '';
 // Comenta essa verificação só pro primeiro teste se quiser
