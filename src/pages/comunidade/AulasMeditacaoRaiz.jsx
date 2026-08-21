@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Check } from "lucide-react";
 import GuardedVideo from "../../components/GuardedVideo";
 import ComentariosFeed from "./components/ComentariosFeed";
 import JornadaProgress from "./components/JornadaProgress";
@@ -160,6 +161,15 @@ export default function AulasMeditacaoRaiz() {
     });
   }
 
+  // Único handler que o checkbox circular de cada aula chama: decide, pelo
+  // estado atual, se marca ou desmarca — reaproveita as duas funções acima
+  // (mesmo localStorage + mesmo POST pro PHP), só unifica o clique.
+  function toggleConcluida(arquivo) {
+    const concluida = !!progressoPorArquivo[arquivo]?.assistida;
+    if (concluida) desmarcarConcluida(arquivo);
+    else marcarConcluida(arquivo);
+  }
+
   function handleTimeUpdatePlayer(currentTime, duration) {
     if (!duration || !videoAtivo) return;
     const arquivo = videoAtivo.arquivo;
@@ -250,36 +260,25 @@ export default function AulasMeditacaoRaiz() {
             {videos.map((video) => {
               const concluida = !!progressoPorArquivo[video.arquivo]?.assistida;
               return (
-                <button
-                  key={video.arquivo}
-                  type="button"
-                  className={`cm-video-item ${video.arquivo === videoAtivo?.arquivo ? "is-ativo" : ""}`}
-                  onClick={() => selecionarVideo(video.arquivo)}
-                >
-                  <span className="cm-video-item-dot" />
-                  <span>{video.titulo}</span>
-                  {concluida && <span className="cm-video-item-check">✓</span>}
-                </button>
+                <div key={video.arquivo} className={`cm-video-item ${video.arquivo === videoAtivo?.arquivo ? "is-ativo" : ""}`}>
+                  <button type="button" className="cm-video-item-titulo" onClick={() => selecionarVideo(video.arquivo)}>
+                    <span className={`cm-video-item-dot ${concluida ? "is-concluido" : ""}`} />
+                    <span>{video.titulo}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`cm-video-check ${concluida ? "is-concluido" : ""}`}
+                    onClick={() => toggleConcluida(video.arquivo)}
+                    aria-pressed={concluida}
+                    aria-label={concluida ? `Desmarcar "${video.titulo}" como concluída` : `Marcar "${video.titulo}" como concluída`}
+                  >
+                    {concluida && <Check size={14} strokeWidth={3} />}
+                  </button>
+                </div>
               );
             })}
 
-            <button
-              type="button"
-              onClick={() => marcarConcluida()}
-              style={{ marginTop: 16, width: "100%", background: "black", color: "white", padding: 12, borderRadius: 10, fontWeight: 600, border: "none" }}
-            >
-              Marcar como concluída
-            </button>
-            <button
-              type="button"
-              onClick={() => desmarcarConcluida()}
-              style={{ marginTop: 8, width: "100%", background: "transparent", color: "#6b7280", padding: 12, borderRadius: 10, fontWeight: 600, border: "1px solid #d1d5db" }}
-            >
-              Desmarcar como concluída
-            </button>
-            <p style={{ fontSize: 11, color: "#9ca3af", marginTop: 8 }}>
-              Marcada automaticamente ao assistir 85% do vídeo, ou manualmente pelo botão acima.
-            </p>
+            <p className="cm-video-legenda">✓ marcado automaticamente ao atingir 85% do vídeo</p>
           </div>
 
           <JornadaProgress progressoPorArquivo={progressoPorArquivo} />

@@ -1082,12 +1082,6 @@
   font-weight: 600;
 }
 
-.cm-video-item-check {
-  margin-left: auto;
-  color: var(--cm-sage-dark);
-  font-weight: 700;
-}
-
 .cm-video-item {
   display: flex;
   align-items: center;
@@ -1123,6 +1117,98 @@
   margin-left: auto;
   color: var(--cm-text-soft);
   font-size: 0.8rem;
+}
+
+/* Lista de aulas de /comunidade/aulas-raiz especificamente: em vez do
+   .cm-video-item inteiro ser um <button> (como em Aula.jsx), aqui ele é um
+   <div> com dois botões-irmãos — abrir o vídeo (título) e marcar/desmarcar
+   concluída (checkbox circular à direita), estilo Hotmart/Notion. Escopado
+   em .cm-aula-sidebar pra não afetar a página antiga de Aula.jsx, que
+   reaproveita as mesmas classes .cm-video-item/-dot acima. */
+.cm-aula-sidebar .cm-video-item {
+  gap: 8px;
+  padding: 6px 8px 6px 12px;
+  width: auto;
+  transition: background 150ms ease;
+}
+
+.cm-aula-sidebar .cm-video-item-titulo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  padding: 4px 0;
+  background: transparent;
+  border: none;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.cm-aula-sidebar .cm-video-item-dot {
+  background: #d1d5db;
+  transition: background 200ms ease;
+}
+
+.cm-aula-sidebar .cm-video-item-dot.is-concluido {
+  background: #22c55e;
+}
+
+/* Checkbox circular: vazado (borda cinza, escurece no hover) quando não
+   concluído; preenchido com check branco, com scale-in de 200ms, quando
+   concluído. Clique isolado do de abrir o vídeo — botão irmão, não
+   aninhado dentro de outro botão. */
+.cm-video-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1.5px solid #ccc;
+  background: transparent;
+  color: #fff;
+  flex-shrink: 0;
+  padding: 0;
+  cursor: pointer;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease;
+}
+
+.cm-video-check:hover {
+  border-color: var(--cm-text);
+}
+
+.cm-video-check.is-concluido {
+  background: var(--cm-text);
+  border-color: var(--cm-text);
+  animation: cm-check-scale-in 200ms ease;
+}
+
+@keyframes cm-check-scale-in {
+  from {
+    transform: scale(0.5);
+    opacity: 0.4;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.cm-video-legenda {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cm-video-check.is-concluido {
+    animation: none;
+  }
 }
 
 /* Empilha o card "Dia N" (.cm-aula-videos-do-dia) com o card da Jornada
