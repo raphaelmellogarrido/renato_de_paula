@@ -14,7 +14,7 @@ export default function ComunidadeLogin() {
     setErro("");
     setMsg("");
 
-    const url = modo === "criar" ? "https://renatodepaula.com/api/hotmart/register.php" : "https://renatodepaula.com/api/hotmart/login.php";
+    const url = modo === "criar" ? "/api/hotmart/register.php" : "/api/hotmart/login.php";
 
     try {
       const res = await fetch(url, {
@@ -24,20 +24,19 @@ export default function ComunidadeLogin() {
       });
       const data = await res.json();
       if (!res.ok) {
-        if (data.precisa_criar_senha) setModo("criar");
-        if (data.ja_tem_senha) setModo("login");
-        throw new Error(data.erro);
+        throw new Error(data.erro || "Erro ao processar");
       }
 
       if (modo === "criar") {
-        setMsg("Senha criada! Agora faça login.");
+        setMsg("Senha criada com sucesso! Agora faca login.");
         setModo("login");
+        setSenha("");
         return;
       }
 
-      // login ok
-      localStorage.setItem("user_email", data.session.email);
-      localStorage.setItem("comunidade_session", JSON.stringify(data.session));
+      // login ok - salva sessao
+      localStorage.setItem("user_email", data.email);
+      localStorage.setItem("comunidade_session", JSON.stringify({ email: data.email, nome: data.nome }));
       navigate("/comunidade");
     } catch (err) {
       setErro(err.message);
@@ -47,8 +46,8 @@ export default function ComunidadeLogin() {
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-[#f7f5f2]">
       <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow">
-        <h1 className="text-2xl font-bold mb-2">{modo === "criar" ? "Crie sua senha do Clube" : "Entrar no Clube Presença"}</h1>
-        <p className="text-sm text-gray-600 mb-6">{modo === "criar" ? "Detectamos sua compra na Hotmart. Crie uma senha só pro Clube." : "Use o email da sua compra na Hotmart."}</p>
+        <h1 className="text-2xl font-bold mb-2">{modo === "criar" ? "Crie sua senha do Clube" : "Entrar no Clube Presenca"}</h1>
+        <p className="text-sm text-gray-600 mb-6">{modo === "criar" ? "Detectamos sua compra na Hotmart. Crie uma senha so pro Clube." : "Use o email da sua compra na Hotmart."}</p>
 
         {erro && <div className="bg-red-50 text-red-700 p-3 rounded mb-4 text-sm">{erro}</div>}
         {msg && <div className="bg-green-50 text-green-700 p-3 rounded mb-4 text-sm">{msg}</div>}
@@ -68,7 +67,7 @@ export default function ComunidadeLogin() {
             </button>
           ) : (
             <button onClick={() => setModo("login")} className="underline">
-              Já tenho senha
+              Ja tenho senha
             </button>
           )}
         </div>
