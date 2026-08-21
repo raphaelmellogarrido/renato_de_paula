@@ -15,7 +15,7 @@ const NAV_ITEMS = [
   { label: "Aulas", icon: Library, to: "/comunidade/aulas-raiz" },
   // { label: "Meditações da Semana", icon: CalendarDays, to: "/comunidade/meditacoes-semana" },
   // { label: "Ao Vivo", icon: Video, to: "/comunidade/ao-vivo", comBolinha: true },
-  { label: "Comunidade", icon: Users, to: "/comunidade/comunidade" },
+  // { label: "Comunidade", icon: Users, to: "/comunidade/comunidade" },
   // { label: "Meu Progresso", icon: BarChart3, to: "/comunidade/progresso" },
   { label: "Configurações", icon: Settings, to: "/comunidade/configuracoes" },
 ];
