@@ -30,6 +30,6 @@ if (!password_verify($senha, $hash) && $senha !== $hash) { http_response_code(40
 echo json_encode([
   'ok'=>true,
   'email'=>$aluno['email'],
-  'nome'=>$aluno['nome'],
-  'apelido'=>$aluno['apelido'] ?? $aluno['nome']
+  'nome'=> $aluno['apelido'] ?: $aluno['nome'],
+  'apelido'=> $aluno['apelido'] ?? $aluno['nome']
 ]);
