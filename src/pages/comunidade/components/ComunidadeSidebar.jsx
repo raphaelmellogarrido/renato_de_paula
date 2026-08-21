@@ -56,7 +56,7 @@ function ComunidadeSidebar({ session, onSair }) {
             <LogOut size={15} />
           </button>
         </div>
-        <p className="cm-sidebar-copy">© 2026 Clube Presença</p>
+        <p className="cm-sidebar-copy">© 2026 Comunidade meditação raiz</p>
       </div>
     </aside>
   );

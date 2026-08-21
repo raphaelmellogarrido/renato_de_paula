@@ -16,17 +16,11 @@ function ComunidadeTopBar({ view, onViewChange, busca, onBuscaChange }) {
           Curso Meditação Raiz
         </button>
         <button type="button" role="tab" aria-selected={view === "comunidade"} className={`cm-switch-btn ${view === "comunidade" ? "is-ativo" : ""}`} onClick={() => onViewChange("comunidade")}>
-          Clube Presença
+          Comunidade
         </button>
       </div>
 
-      <button
-        type="button"
-        className={`cm-btn-preto ${marcado ? "is-marcado" : ""}`}
-        onClick={marcarHoje}
-        disabled={marcado}
-        aria-pressed={marcado}
-      >
+      <button type="button" className={`cm-btn-preto ${marcado ? "is-marcado" : ""}`} onClick={marcarHoje} disabled={marcado} aria-pressed={marcado}>
         {marcado ? (
           <>
             <Check size={14} strokeWidth={3} /> Já meditei hoje
