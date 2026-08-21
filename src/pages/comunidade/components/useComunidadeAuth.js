@@ -1,23 +1,30 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+
+export function limparSessao() {
+  localStorage.removeItem("comunidade_session");
+  localStorage.removeItem("user_email");
+  localStorage.removeItem("comunidade_email");
+}
 
 export function useComunidadeAuth() {
-  const [status, setStatus] = useState(() => {
-    // já verifica antes do effect, sem setState
-    const email = typeof window !== "undefined" ? localStorage.getItem("user_email") || localStorage.getItem("email") : null;
-    return email ? "loading" : "negado";
-  });
+  const [session, setSession] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const email = localStorage.getItem("user_email") || localStorage.getItem("email");
-    if (!email) return; // já está como negado, não precisa setar
-
-    fetch(`https://renatodepaula.com/api/hotmart/check.php?email=${encodeURIComponent(email)}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setStatus(data.tem_acesso ? "autorizado" : "negado");
-      })
-      .catch(() => setStatus("negado"));
+    try {
+      const raw = localStorage.getItem("comunidade_session");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        setSession(parsed);
+      } else {
+        const email = localStorage.getItem("user_email");
+        if (email) setSession({ email });
+      }
+    } catch {}
+    setLoading(false);
   }, []);
 
-  return status;
+  return { session, loading };
 }
+
+export default useComunidadeAuth;
