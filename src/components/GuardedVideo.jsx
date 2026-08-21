@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 // Player com barra de progresso que só permite retroceder (nunca avançar) —
 // bloqueia tentativas de pular pra frente além do ponto já assistido. Não é
 // infalível contra alguém mexendo no devtools, mas impede o "pular vídeo" casual.
-function GuardedVideo({ src, onEnded, label, autoPlay = false }) {
+function GuardedVideo({ src, onEnded, label, autoPlay = false, onTimeUpdate }) {
   const videoRef = useRef(null)
   const wrapperRef = useRef(null)
   const maxTimeRef = useRef(0)
@@ -54,6 +54,9 @@ function GuardedVideo({ src, onEnded, label, autoPlay = false }) {
     if (v.currentTime > maxTimeRef.current) {
       maxTimeRef.current = v.currentTime
     }
+    // Prop opcional (ex: usada em /comunidade/aulas-raiz pra auto-marcar a
+    // aula como concluída aos 85% assistidos) — quem não passar não é afetado.
+    if (onTimeUpdate) onTimeUpdate(v.currentTime, v.duration)
   }
 
   function handleLoadedMetadata() {

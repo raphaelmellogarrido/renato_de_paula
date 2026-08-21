@@ -1058,6 +1058,36 @@
   margin-bottom: 14px;
 }
 
+/* Painel lateral de /comunidade/aulas-raiz: título "Dia N" + dropdown de
+   dias na mesma linha, e checkmark de concluída nos itens da lista. */
+.cm-aula-videos-do-dia-cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.cm-aula-videos-do-dia-cabecalho h2 {
+  margin-bottom: 0;
+}
+
+.cm-dia-select {
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--cm-border);
+  background: var(--cm-bg);
+  color: var(--cm-text);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.cm-video-item-check {
+  margin-left: auto;
+  color: var(--cm-sage-dark);
+  font-weight: 700;
+}
+
 .cm-video-item {
   display: flex;
   align-items: center;

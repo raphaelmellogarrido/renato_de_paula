@@ -1,85 +1,250 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import GuardedVideo from "../../components/GuardedVideo";
+import ComentariosFeed from "./components/ComentariosFeed";
+
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:3001" : "");
+
+// Progresso por usuário: hoje sincroniza com um PHP fora deste repo
+// (https://renatodepaula.com/api/hotmart/aulas.php), que não temos como
+// inspecionar/editar. Como o catálogo passou a vir do sistema de arquivos,
+// usamos o nome do arquivo (ex: "dia1.2.mp4") como aula_id — mas também
+// guardamos tudo no localStorage como rede de segurança, pra "Marcar como
+// concluída" nunca falhar silenciosamente caso aquele PHP não reconheça
+// esse formato de id.
+const HOTMART_AULAS_URL = "https://renatodepaula.com/api/hotmart/aulas.php";
+const LIMIAR_AUTO_CONCLUIDA = 0.85;
+
+function chaveLocalStorage(email) {
+  return `comunidade_progresso_aulas_raiz_${email}`;
+}
+
+function carregarProgressoLocal(email) {
+  try {
+    return JSON.parse(localStorage.getItem(chaveLocalStorage(email)) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function salvarProgressoLocal(email, progresso) {
+  try {
+    localStorage.setItem(chaveLocalStorage(email), JSON.stringify(progresso));
+  } catch {
+    // localStorage indisponível (modo privado, quota cheia etc.) — ignora
+    // silenciosamente, o PHP externo continua sendo a fonte de verdade.
+  }
+}
+
+// Lê a sessão do aluno de forma síncrona (mesma lógica já usada no resto de
+// /comunidade). Vira o valor inicial do estado — evita um useEffect só pra
+// disparar um setState sem depender de nada externo (cascading render).
+function lerEmailSessao() {
+  const sess = JSON.parse(localStorage.getItem("comunidade_session") || "{}");
+  return sess.email || localStorage.getItem("user_email") || "";
+}
 
 export default function AulasMeditacaoRaiz() {
-  const [aulas, setAulas] = useState([]);
-  const [aulaAtiva, setAulaAtiva] = useState(null);
+  const [dias, setDias] = useState([]);
+  const [diaSelecionado, setDiaSelecionado] = useState(null);
+  const [videoAtivoArquivo, setVideoAtivoArquivo] = useState(null);
+  const [email] = useState(lerEmailSessao);
+  const [progressoPorArquivo, setProgressoPorArquivo] = useState(() =>
+    email ? carregarProgressoLocal(email) : {},
+  );
   const [loading, setLoading] = useState(true);
-  const [email, setEmail] = useState("");
+  const [erroCatalogo, setErroCatalogo] = useState(false);
 
+  const marcados85Ref = useRef(new Set());
+
+  // Catálogo real: vem do backend, que lê a pasta curso-meditacao-raiz e já
+  // resolve os títulos via lib/titulosAulasRaiz.js. Não depende de nenhum
+  // cadastro manual em banco.
   useEffect(() => {
-    const sess = JSON.parse(localStorage.getItem("comunidade_session") || "{}");
-    const em = sess.email || localStorage.getItem("user_email") || "";
-    setEmail(em);
-    if (em) {
-      fetch(`https://renatodepaula.com/api/hotmart/aulas.php?email=${encodeURIComponent(em)}`)
-        .then(r=>r.json())
-        .then(data=>{ if(data.aulas){ setAulas(data.aulas); setAulaAtiva(data.aulas[0]); } })
-        .finally(()=>setLoading(false));
-    } else {
-      setLoading(false);
-    }
+    fetch(`${API_URL}/api/aulas-raiz`)
+      .then((r) => r.json())
+      .then((data) => {
+        const listaDias = Array.isArray(data?.dias) ? data.dias : [];
+        setDias(listaDias);
+        if (listaDias.length) {
+          setDiaSelecionado(listaDias[0].dia);
+          setVideoAtivoArquivo(listaDias[0].videos[0]?.arquivo || null);
+        }
+      })
+      .catch((err) => {
+        console.error("Erro ao carregar catálogo de aulas-raiz:", err);
+        setErroCatalogo(true);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
-  function marcarConcluida() {
-    if (!aulaAtiva || !email) return;
-    fetch("https://renatodepaula.com/api/hotmart/aulas.php", {
+  // Progresso: o estado já nasce carregado do localStorage (garante que uma
+  // marca local nunca "some", mesmo antes desse efeito rodar). Aqui só
+  // tentamos mesclar com o PHP existente — o merge nunca sobrescreve uma
+  // marca local já concluída, só complementa.
+  useEffect(() => {
+    if (!email) return;
+
+    fetch(`${HOTMART_AULAS_URL}?email=${encodeURIComponent(email)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        const lista = Array.isArray(data?.aulas) ? data.aulas : [];
+        setProgressoPorArquivo((atual) => {
+          const mesclado = { ...atual };
+          for (const item of lista) {
+            const chave = item.arquivo || item.aula_id;
+            if (!chave || mesclado[chave]?.assistida) continue;
+            mesclado[chave] = { assistida: !!item.assistida, progresso: item.progresso || 0 };
+          }
+          salvarProgressoLocal(email, mesclado);
+          return mesclado;
+        });
+      })
+      .catch(() => {
+        // PHP externo indisponível ou não reconhece o formato — segue só
+        // com o que já está no localStorage, sem travar a página.
+      });
+  }, [email]);
+
+  const diaAtual = useMemo(() => dias.find((d) => d.dia === diaSelecionado), [dias, diaSelecionado]);
+  const videos = useMemo(() => diaAtual?.videos || [], [diaAtual]);
+  const videoAtivo = useMemo(
+    () => videos.find((v) => v.arquivo === videoAtivoArquivo) || videos[0],
+    [videos, videoAtivoArquivo],
+  );
+
+  function marcarConcluida(arquivoParam) {
+    const arquivo = arquivoParam || videoAtivo?.arquivo;
+    if (!arquivo || !email) return;
+
+    // Otimista: atualiza local + localStorage já, sem esperar o PHP responder.
+    setProgressoPorArquivo((atual) => {
+      const novo = { ...atual, [arquivo]: { assistida: true, progresso: 100 } };
+      salvarProgressoLocal(email, novo);
+      return novo;
+    });
+
+    fetch(HOTMART_AULAS_URL, {
       method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({ email, aula_id: aulaAtiva.id, progresso: 100, completou: true })
-    }).then(()=>{
-      setAulas(prev=>prev.map(a=>a.id===aulaAtiva.id ? {...a, assistida:true, progresso:100} : a));
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, aula_id: arquivo, progresso: 100, completou: true }),
+    }).catch((err) => {
+      console.error("Não foi possível sincronizar progresso com o servidor:", err);
     });
   }
 
-  if (loading) return <div style={{padding:40}}>Carregando suas aulas...</div>;
-  if (!aulas.length) return <div style={{padding:40}}>Nenhuma aula cadastrada ainda. Cadastre no phpMyAdmin na tabela aulas_raiz.</div>;
+  function handleTimeUpdatePlayer(currentTime, duration) {
+    if (!duration || !videoAtivo) return;
+    const arquivo = videoAtivo.arquivo;
+    if (marcados85Ref.current.has(arquivo)) return;
+    if (currentTime / duration >= LIMIAR_AUTO_CONCLUIDA) {
+      marcados85Ref.current.add(arquivo);
+      marcarConcluida(arquivo);
+    }
+  }
+
+  function selecionarVideo(arquivo) {
+    setVideoAtivoArquivo(arquivo);
+  }
+
+  function irParaProximoVideo() {
+    const indiceAtual = videos.findIndex((v) => v.arquivo === videoAtivo?.arquivo);
+    if (indiceAtual > -1 && indiceAtual < videos.length - 1) {
+      selecionarVideo(videos[indiceAtual + 1].arquivo);
+      return;
+    }
+    const indiceDia = dias.findIndex((d) => d.dia === diaSelecionado);
+    const proximoDia = dias[indiceDia + 1];
+    if (proximoDia) {
+      setDiaSelecionado(proximoDia.dia);
+      setVideoAtivoArquivo(proximoDia.videos[0]?.arquivo || null);
+    }
+  }
+
+  function handleTrocarDia(e) {
+    const novoDia = Number(e.target.value);
+    const dia = dias.find((d) => d.dia === novoDia);
+    setDiaSelecionado(novoDia);
+    setVideoAtivoArquivo(dia?.videos[0]?.arquivo || null);
+  }
+
+  if (loading) return <div style={{ padding: 40 }}>Carregando suas aulas...</div>;
+
+  if (erroCatalogo || !dias.length) {
+    return (
+      <div style={{ padding: 40 }}>
+        Nenhum vídeo encontrado em curso-meditacao-raiz. Em produção, confirme se a variável de
+        ambiente CURSO_RAIZ_DIR está configurada no painel da Hostinger (ver HANDOFF.md).
+      </div>
+    );
+  }
 
   return (
-    <div style={{ padding: 24, maxWidth: 1200, margin: "0 auto" }}>
-      <h1 style={{ fontSize: 28, fontWeight: 800, marginBottom: 6 }}>Aulas Meditação Raiz</h1>
-      <p style={{ color: "#6b7280", marginBottom: 24 }}>Sua jornada real - progresso salvo no seu perfil {email}</p>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 24 }}>
-        {/* Player */}
-        <div style={{ background: "black", borderRadius: 16, overflow: "hidden", aspectRatio: "16/9" }}>
-          {aulaAtiva?.video_url ? (
-            <iframe src={aulaAtiva.video_url} style={{ width: "100%", height: "100%", border: 0 }} allowFullScreen />
-          ) : (
-            <div style={{ color: "white", display: "flex", alignItems: "center", justifyContent: "center", height: "100%" }}>Sem video</div>
-          )}
-        </div>
-
-        {/* Lista */}
-        <div style={{ background: "white", borderRadius: 16, padding: 16, boxShadow: "0 4px 20px rgba(0,0,0,0.06)", height: "fit-content" }}>
-          <h3 style={{ fontWeight: 700, marginBottom: 12 }}>{aulaAtiva?.modulo}</h3>
-          {aulas.map(aula=>(
-            <button 
-              key={aula.id} 
-              onClick={()=>setAulaAtiva(aula)}
-              style={{ 
-                width: "100%", textAlign: "left", padding: "12px", borderRadius: 10, marginBottom: 8,
-                background: aulaAtiva?.id===aula.id ? "#f3f4f6" : "transparent",
-                border: aula.assistida ? "1px solid #bbf7d0" : "1px solid #e5e7eb",
-                display: "flex", justifyContent: "space-between", alignItems: "center"
-              }}
-            >
-              <div>
-                <div style={{ fontWeight: 600, fontSize: 14 }}>{aula.ordem}. {aula.titulo}</div>
-                <div style={{ fontSize: 12, color: "#6b7280" }}>{aula.duracao_min} min {aula.assistida ? "• Concluída" : `• ${aula.progresso}%`}</div>
-              </div>
-              {aula.assistida && <span style={{ color: "#16a34a" }}>✓</span>}
-            </button>
-          ))}
-          <button onClick={marcarConcluida} style={{ marginTop: 16, width: "100%", background: "black", color: "white", padding: 12, borderRadius: 10, fontWeight: 600 }}>
-            Marcar como concluída
-          </button>
-          <p style={{ fontSize: 11, color: "#9ca3af", marginTop: 8 }}>Isso já atualiza sua sequência real e seu "Olá, {email}" no dashboard.</p>
-        </div>
+    <div className="cm-aula-page">
+      <div className="cm-aula-header">
+        <h1>Aulas Meditação Raiz</h1>
+        <p style={{ color: "#6b7280" }}>Sua jornada real — progresso salvo no seu perfil {email}</p>
       </div>
 
-      <div style={{ marginTop: 24, background: "white", borderRadius: 16, padding: 20 }}>
-        <h2 style={{ fontSize: 20, fontWeight: 700 }}>{aulaAtiva?.titulo}</h2>
-        <p style={{ color: "#4b5563", marginTop: 8 }}>{aulaAtiva?.descricao}</p>
+      <div className="cm-aula-layout">
+        <div>
+          <div className="cm-player-wrap">
+            {videoAtivo ? (
+              <GuardedVideo
+                key={videoAtivo.arquivo}
+                src={`${API_URL}${videoAtivo.url}`}
+                label={videoAtivo.titulo}
+                onEnded={irParaProximoVideo}
+                onTimeUpdate={handleTimeUpdatePlayer}
+              />
+            ) : (
+              <div style={{ color: "white", display: "flex", alignItems: "center", justifyContent: "center", aspectRatio: "16/9" }}>
+                Sem vídeo
+              </div>
+            )}
+          </div>
+
+          <ComentariosFeed key={`dia-${diaSelecionado}`} />
+        </div>
+
+        <div className="cm-aula-videos-do-dia">
+          <div className="cm-aula-videos-do-dia-cabecalho">
+            <h2>{diaAtual?.titulo}</h2>
+            <select className="cm-dia-select" value={diaSelecionado ?? ""} onChange={handleTrocarDia}>
+              {dias.map((d) => (
+                <option key={d.dia} value={d.dia}>
+                  {d.titulo}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {videos.map((video) => {
+            const concluida = !!progressoPorArquivo[video.arquivo]?.assistida;
+            return (
+              <button
+                key={video.arquivo}
+                type="button"
+                className={`cm-video-item ${video.arquivo === videoAtivo?.arquivo ? "is-ativo" : ""}`}
+                onClick={() => selecionarVideo(video.arquivo)}
+              >
+                <span className="cm-video-item-dot" />
+                <span>{video.titulo}</span>
+                {concluida && <span className="cm-video-item-check">✓</span>}
+              </button>
+            );
+          })}
+
+          <button
+            type="button"
+            onClick={() => marcarConcluida()}
+            style={{ marginTop: 16, width: "100%", background: "black", color: "white", padding: 12, borderRadius: 10, fontWeight: 600, border: "none" }}
+          >
+            Marcar como concluída
+          </button>
+          <p style={{ fontSize: 11, color: "#9ca3af", marginTop: 8 }}>
+            Marcada automaticamente ao assistir 85% do vídeo, ou manualmente pelo botão acima.
+          </p>
+        </div>
       </div>
     </div>
   );

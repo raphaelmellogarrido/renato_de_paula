@@ -17,6 +17,11 @@ dist-ssr
 server/videos/*
 !server/videos/.gitkeep
 
+# Vídeos do curso Meditação Raiz (49 arquivos) - mesma lógica acima, servidos
+# via CURSO_RAIZ_DIR (rota /curso-meditacao-raiz no Express)
+server/curso-meditacao-raiz/*
+!server/curso-meditacao-raiz/.gitkeep
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -14,17 +14,29 @@ import {
   registrarEnvio,
   listarHistorico,
 } from './db.js'
+import { TITULOS_AULAS_RAIZ } from '../src/lib/titulosAulasRaiz.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const DIST_DIR = path.join(__dirname, '..', 'dist')
 // Vídeos grandes (>100MB) ficam fora do Git e do build (dist/ é apagado a
 // cada `npm run build`). Servidos à parte para sobreviver a novos deploys.
 const VIDEOS_DIR = process.env.VIDEOS_DIR || path.join(__dirname, 'videos')
+// Mesmo padrão do VIDEOS_DIR acima: os 49 vídeos do curso Meditação Raiz
+// ficam numa pasta fora do Git e fora da pasta do app (em produção,
+// CURSO_RAIZ_DIR aponta pra /home/.../domains/renatodepaula.com/curso-meditacao-raiz,
+// ao lado de public_html — ver HANDOFF.md).
+const CURSO_RAIZ_DIR = process.env.CURSO_RAIZ_DIR || path.join(__dirname, 'curso-meditacao-raiz')
 
 try {
   fs.readdirSync(VIDEOS_DIR)
 } catch (err) {
   console.error('Não foi possível ler VIDEOS_DIR:', err.message)
+}
+
+try {
+  fs.readdirSync(CURSO_RAIZ_DIR)
+} catch (err) {
+  console.error('Não foi possível ler CURSO_RAIZ_DIR:', err.message)
 }
 
 const app = express()
@@ -239,6 +251,49 @@ app.get('/api/meditacao/contagem', async (req, res) => {
 })
 
 app.use('/videos', express.static(VIDEOS_DIR))
+app.use('/curso-meditacao-raiz', express.static(CURSO_RAIZ_DIR))
+
+// Catálogo do curso Meditação Raiz: monta a lista de dias/vídeos direto do
+// que existe em CURSO_RAIZ_DIR (nada de cadastro manual em banco) — o nome
+// do arquivo (ex: "dia1.2.mp4") é a única fonte de verdade sobre o que
+// existe, a ordem e o dia; o título vem do mapa fixo em titulosAulasRaiz.js.
+const REGEX_ARQUIVO_AULA_RAIZ = /^dia(\d+)\.(\d+)\.mp4$/i
+
+app.get('/api/aulas-raiz', (req, res) => {
+  let arquivos
+  try {
+    arquivos = fs.readdirSync(CURSO_RAIZ_DIR)
+  } catch (err) {
+    console.error('Erro ao listar CURSO_RAIZ_DIR:', err.message)
+    return res.status(500).json({ error: 'Não foi possível carregar as aulas.' })
+  }
+
+  const porDia = new Map()
+
+  for (const arquivo of arquivos) {
+    const match = arquivo.match(REGEX_ARQUIVO_AULA_RAIZ)
+    if (!match) continue
+    const diaNumero = Number(match[1])
+    const ordem = Number(match[2])
+    if (!porDia.has(diaNumero)) porDia.set(diaNumero, [])
+    porDia.get(diaNumero).push({
+      arquivo,
+      ordem,
+      titulo: TITULOS_AULAS_RAIZ[arquivo] || arquivo,
+      url: `/curso-meditacao-raiz/${arquivo}`,
+    })
+  }
+
+  const dias = Array.from(porDia.entries())
+    .sort(([diaA], [diaB]) => diaA - diaB)
+    .map(([diaNumero, videos]) => ({
+      dia: diaNumero,
+      titulo: `Dia ${diaNumero}`,
+      videos: videos.sort((a, b) => a.ordem - b.ordem),
+    }))
+
+  res.json({ dias })
+})
 
 // Assets do build (dist/assets/...) têm hash no nome — mudam de nome quando
 // o conteúdo muda, então podem ser cacheados "para sempre". index.html (e
