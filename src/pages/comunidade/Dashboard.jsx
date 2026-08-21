@@ -11,7 +11,12 @@ import CardBiblioteca from "./components/CardBiblioteca";
 import FeedComunidade from "./components/FeedComunidade";
 
 const meditacaoDeHoje = DIAS[0].videos[0];
-const HERO_FOTO = "https://images.unsplash.com/photo-1506126613408-eca07ce68773?auto=format&fit=crop&w=1400&q=70";
+// Antes era um hotlink pro Unsplash (foto genérica de silhueta, sem relação
+// com o Dr. Renato) — trocado por asset local: some se o Unsplash bloquear
+// hotlink/rate-limit em algum ambiente (aí só sobra o gradiente escuro de
+// fallback do .cm-hero, que pode ler como "fundo sólido sem foto"), e não
+// é a imagem que devia estar aqui de qualquer forma.
+const HERO_FOTO = "/mianmar.jpeg";
 
 // Dashboard: grid único de 3 colunas (a 4ª, sidebar esquerda, é resolvida
 // por fora em ComunidadeLayout) usando `grid-template-areas` nomeadas (ver
