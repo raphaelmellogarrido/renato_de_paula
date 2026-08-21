@@ -1,29 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEmailSessao, lerNomeSessao } from "./usuarioStorage";
+import { iniciais, formatarDataBr } from "./comentariosUtils";
 
 const COMENTARIOS_URL = "/api/hotmart/comentarios.php";
-
-function iniciais(nome) {
-  return (nome || "Aluno")
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((parte) => parte[0])
-    .join("")
-    .toUpperCase();
-}
-
-// created_at já vem em horário de Brasília (mysql `SET time_zone = '-03:00'`
-// em _conexao.php) — reformata a string direto, sem passar por Date()/fuso
-// do navegador, senão duplica o offset (mesmo bug de fuso já corrigido em
-// useMeditacaoHoje.js).
-function formatarDataBr(datetimeStr) {
-  const [data, hora] = String(datetimeStr || "").split(" ");
-  if (!data) return "";
-  const [ano, mes, dia] = data.split("-");
-  return `${dia}/${mes}/${ano}${hora ? " às " + hora.slice(0, 5) : ""}`;
-}
 
 // Feed de comentários por aula: persistido em
 // public/api/hotmart/comentarios.php, paginado de 10 em 10 (mais recentes

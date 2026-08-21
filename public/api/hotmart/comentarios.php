@@ -8,17 +8,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit; }
 require __DIR__ . '/_conexao.php';
 garantirEstruturaClube($mysqli); // cria a tabela comentarios se ainda não existir
 
-// Comentários por aula, paginados (10 mais recentes por página).
-// GET  ?aula_id=&page=  -> { itens:[{id,nome,comentario,created_at}], total, page, pages }
+// Comentários por aula, paginados (10 mais recentes por página por padrão).
+// GET  ?aula_id=&page=&per_page=  -> { itens:[{id,nome,comentario,created_at}], total, page, pages }
 // POST { email, nome, aula_id, comentario } -> INSERT
 // Permanente: não é afetado por nenhum reset semanal (DesafioSemana etc.).
+// `per_page` é opcional (default 10) — o widget "Dificuldade do dia"
+// (DificuldadeDoDia.jsx) pede 5; ComentariosFeed.jsx não manda, fica em 10.
 $metodo = $_SERVER['REQUEST_METHOD'];
-$POR_PAGINA = 10;
 
 if ($metodo === 'GET') {
     $aulaId = trim($_GET['aula_id'] ?? '') ?: 'geral';
     $page = max(1, intval($_GET['page'] ?? 1));
-    $offset = ($page - 1) * $POR_PAGINA;
+    // Clampa entre 1 e 50 pra ninguém pedir a tabela inteira numa página só.
+    $porPagina = min(50, max(1, intval($_GET['per_page'] ?? 10)));
+    $offset = ($page - 1) * $porPagina;
 
     $stmtTotal = $mysqli->prepare("SELECT COUNT(*) AS total FROM comentarios WHERE aula_id = ?");
     $stmtTotal->bind_param('s', $aulaId);
@@ -26,19 +29,19 @@ if ($metodo === 'GET') {
     $total = (int) $stmtTotal->get_result()->fetch_assoc()['total'];
     $stmtTotal->close();
 
-    $pages = max(1, (int) ceil($total / $POR_PAGINA));
+    $pages = max(1, (int) ceil($total / $porPagina));
     // page pedida além do fim (ex: comentário apagado direto no banco
     // reduziu o total) — devolve a última página válida em vez de vazio.
     if ($page > $pages) {
         $page = $pages;
-        $offset = ($page - 1) * $POR_PAGINA;
+        $offset = ($page - 1) * $porPagina;
     }
 
     $stmt = $mysqli->prepare(
         "SELECT id, nome, comentario, created_at FROM comentarios
          WHERE aula_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?"
     );
-    $stmt->bind_param('sii', $aulaId, $POR_PAGINA, $offset);
+    $stmt->bind_param('sii', $aulaId, $porPagina, $offset);
     $stmt->execute();
     $res = $stmt->get_result();
     $itens = [];

@@ -1,7 +1,5 @@
-import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { Play, SkipBack, SkipForward, Volume2, Clock, Sparkles } from "lucide-react";
-import { DIAS, VIDEOS_BIBLIOTECA, FILTROS } from "./data/mockData";
+import { VIDEOS_BIBLIOTECA, FILTROS } from "./data/mockData";
 import { temAcessoComunidade } from "./featureFlags";
 import useComunidadeAuth from "./components/useComunidadeAuth";
 import ColunaProgresso from "./components/ColunaProgresso";
@@ -9,14 +7,7 @@ import ColunaEncontros from "./components/ColunaEncontros";
 import ComunidadeTopBar from "./components/ComunidadeTopBar";
 import CardBiblioteca from "./components/CardBiblioteca";
 import FeedComunidade from "./components/FeedComunidade";
-
-const meditacaoDeHoje = DIAS[0].videos[0];
-// Antes era um hotlink pro Unsplash (foto genérica de silhueta, sem relação
-// com o Dr. Renato) — trocado por asset local: some se o Unsplash bloquear
-// hotlink/rate-limit em algum ambiente (aí só sobra o gradiente escuro de
-// fallback do .cm-hero, que pode ler como "fundo sólido sem foto"), e não
-// é a imagem que devia estar aqui de qualquer forma.
-const HERO_FOTO = "/mianmar.jpeg";
+import DificuldadeDoDia from "./components/DificuldadeDoDia";
 
 // Dashboard: grid único de 3 colunas (a 4ª, sidebar esquerda, é resolvida
 // por fora em ComunidadeLayout) usando `grid-template-areas` nomeadas (ver
@@ -34,11 +25,6 @@ function Dashboard() {
   const [view, setView] = useState("curso");
   const [busca, setBusca] = useState("");
   const [filtroAtivo, setFiltroAtivo] = useState("Todas");
-  const navigate = useNavigate();
-
-  function abrirMeditacaoDeHoje() {
-    navigate(`/comunidade/aula/dia-0?video=${meditacaoDeHoje.id}`);
-  }
 
   const termoBusca = busca.trim().toLowerCase();
   const videosFiltrados = VIDEOS_BIBLIOTECA.filter((item) => {
@@ -54,44 +40,9 @@ function Dashboard() {
 
       {view === "curso" ? (
         <>
-          <section
-            className="cm-hero cm-hero-foto cm-grid-hero"
-            style={{ backgroundImage: `url(${HERO_FOTO})` }}
-            onClick={abrirMeditacaoDeHoje}
-            role="button"
-            tabIndex={0}
-          >
-            <div className="cm-hero-conteudo">
-              <div className="cm-hero-topo">
-                <span className="cm-hero-eyebrow">
-                  <Sparkles size={13} /> Continue sua jornada
-                </span>
-                <span className="cm-hero-duracao">
-                  <Clock size={13} /> {meditacaoDeHoje.duracao}
-                </span>
-              </div>
-              <h1>Respiração para voltar ao centro</h1>
-              <p>Uma prática guiada pelo Dr. Renato para acalmar o sistema nervoso e recomeçar o dia com presença.</p>
-
-              <div className="cm-hero-player" onClick={(e) => e.stopPropagation()}>
-                <button type="button" className="cm-hero-player-btn" aria-label="Voltar 15s" tabIndex={-1}>
-                  <SkipBack size={16} />
-                </button>
-                <button type="button" className="cm-hero-player-play" onClick={abrirMeditacaoDeHoje} aria-label="Assistir">
-                  <Play size={18} fill="currentColor" />
-                </button>
-                <button type="button" className="cm-hero-player-btn" aria-label="Avançar 15s" tabIndex={-1}>
-                  <SkipForward size={16} />
-                </button>
-                <span className="cm-hero-player-tempo">3:06</span>
-                <div className="cm-progress-track cm-hero-player-track">
-                  <div className="cm-progress-fill" style={{ width: "26%" }} />
-                </div>
-                <span className="cm-hero-player-tempo">12:00</span>
-                <Volume2 size={16} className="cm-hero-player-vol" />
-              </div>
-            </div>
-          </section>
+          <div className="cm-grid-hero">
+            <DificuldadeDoDia />
+          </div>
 
           <div className="cm-grid-biblioteca-videos">
             <div className="cm-biblioteca-header">
