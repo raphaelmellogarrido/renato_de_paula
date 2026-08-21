@@ -16,20 +16,21 @@ const CHAVE_BASE_HISTORICO = "meditacaoHistorico";
 const PRESENCA_URL = "/api/hotmart/presenca.php";
 const EVENTO_ATUALIZOU = "meditacaoHojeAtualizada";
 
-// Formato pedido pro localStorage: dd/mm/aaaa, no fuso do navegador (nunca
-// UTC) — é isso que faz a virada de dia bater com a meia-noite LOCAL da
-// pessoa, não a de Greenwich.
+// Fuso travado em America/Sao_Paulo (não o fuso do sistema operacional do
+// aparelho) — evita depender do relógio/fuso do dispositivo estar
+// configurado certo, e garante que "hoje" bate com o que o backend também
+// calcula em -03:00 (ver _conexao.php).
+const FUSO_BRASIL = "America/Sao_Paulo";
+
+// Formato pedido pro localStorage: dd/mm/aaaa, no fuso de Brasília.
 function hojePtBr() {
-  return new Date().toLocaleDateString("pt-BR");
+  return new Date().toLocaleDateString("pt-BR", { timeZone: FUSO_BRASIL });
 }
 
-// Formato pedido pro corpo do POST: aaaa-mm-dd.
+// Formato pedido pro corpo do POST / histórico: aaaa-mm-dd, no fuso de
+// Brasília. `en-CA` é o truque padrão pra Intl devolver já em YYYY-MM-DD.
 function hojeIso() {
-  const d = new Date();
-  const ano = d.getFullYear();
-  const mes = String(d.getMonth() + 1).padStart(2, "0");
-  const dia = String(d.getDate()).padStart(2, "0");
-  return `${ano}-${mes}-${dia}`;
+  return new Intl.DateTimeFormat("en-CA", { timeZone: FUSO_BRASIL }).format(new Date());
 }
 
 function lerUltimaData(email) {
@@ -94,6 +95,56 @@ export function useMeditacaoHoje() {
       clearTimeout(timer);
     };
   }, [email, streak]); // reagenda o timer de meia-noite depois de cada marcação/virada/troca de conta
+
+  // Busca o histórico real de presenças no servidor ao montar/trocar de
+  // conta — `presenca.php` é a fonte de verdade; o localStorage é só cache
+  // rápido pra pintar a tela sem esperar rede. Corrige o caso relatado de
+  // "desmarca sozinho": se o localStorage foi perdido (aba anônima,
+  // storage limpo pelo navegador, outro aparelho) mas o servidor já tem
+  // presença de hoje, reconcilia o botão pra marcado — nunca o contrário
+  // (nunca desmarca com base no servidor, só complementa).
+  useEffect(() => {
+    if (!email) return;
+    let cancelado = false;
+
+    fetch(`${PRESENCA_URL}?email=${encodeURIComponent(email)}`)
+      .then((r) => r.json())
+      .then((dados) => {
+        if (cancelado) return;
+        console.log("[Clube Presença] presença carregada com a data retornada:", dados);
+
+        const historicoServidor = Array.isArray(dados?.historico) ? dados.historico : [];
+        if (!historicoServidor.length) return;
+
+        // Merge — nunca overwrite: soma o que já está local com o que veio
+        // do servidor, sem apagar nada que já estava salvo.
+        const historicoMesclado = Array.from(new Set([...lerHistorico(email), ...historicoServidor])).sort();
+
+        try {
+          localStorage.setItem(chaveUsuario(CHAVE_BASE_HISTORICO, email), JSON.stringify(historicoMesclado));
+          // Servidor já tem presença de hoje (fuso Brasil) mas o aparelho
+          // não — reconcilia sem exigir novo clique.
+          if (historicoServidor.includes(hojeIso())) {
+            localStorage.setItem(chaveUsuario(CHAVE_BASE_DATA, email), hojePtBr());
+          }
+          if (Number.isFinite(dados?.streak)) {
+            localStorage.setItem(chaveUsuario(CHAVE_BASE_STREAK, email), String(dados.streak));
+          }
+        } catch {
+          // localStorage indisponível (modo privado, quota cheia etc.) —
+          // segue só em memória, sem travar a tela.
+        }
+
+        window.dispatchEvent(new CustomEvent(EVENTO_ATUALIZOU));
+      })
+      .catch((err) => {
+        console.error("[Clube Presença] falha ao carregar presença do servidor:", err);
+      });
+
+    return () => {
+      cancelado = true;
+    };
+  }, [email]);
 
   function marcarHoje() {
     if (marcadoHojeAgora(email)) return; // já marcado hoje — impossível desmarcar

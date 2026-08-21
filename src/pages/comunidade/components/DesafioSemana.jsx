@@ -13,7 +13,13 @@ const DESAFIO_SEMANA_URL = "https://renatodepaula.com/api/hotmart/desafio-semana
 // antes de ir pro localStorage. ContadorDesafioSemanal.jsx lê essa mesma
 // chave (mesma base + mesmo email) pra saber quando o desafio bateu 3/3;
 // mudar esse literal aqui exige mudar lá também.
-const CHAVE_BASE = "desafioSemana_v1";
+function getSemanaBRT() {
+  const agora = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  const jan1 = new Date(agora.getFullYear(), 0, 1);
+  const dias = Math.floor((agora - jan1) / 86400000);
+  return `${agora.getFullYear()}-W${Math.ceil((dias + jan1.getDay() + 1) / 7)}`;
+}
+const CHAVE_BASE = `desafioSemana_v1_${getSemanaBRT()}`;
 const DURACAO_CELEBRACAO_MS = 2500;
 
 function carregarLocal(email) {

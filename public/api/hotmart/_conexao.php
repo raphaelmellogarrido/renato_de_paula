@@ -8,6 +8,13 @@
 // subpasta) e use $mysqli. Este arquivo não é acessível direto via URL
 // (bloqueado no .htaccess desta pasta).
 
+// Fuso fixo em Brasília — o servidor da Hostinger normalmente roda em UTC,
+// então sem isso `new DateTime('today')` (usado em calcularStreakEmail) e
+// qualquer CURDATE()/NOW() em SQL (aulas.php, aulas-raiz/progresso.php)
+// calculam "hoje" adiantado em relação ao usuário entre ~21h e meia-noite
+// BRT, criando/lendo linha de presença com a data errada.
+date_default_timezone_set('America/Sao_Paulo');
+
 if (file_exists(__DIR__ . '/config.php')) {
     require __DIR__ . '/config.php';
 } else {
@@ -25,6 +32,10 @@ if ($mysqli->connect_error) {
     exit;
 }
 $mysqli->set_charset('utf8mb4');
+// Mesmo motivo do date_default_timezone_set acima, só que pro lado do
+// MySQL: garante que CURDATE()/NOW() dentro de SQL (não só em PHP) também
+// resolvem pra data de Brasília, não UTC.
+$mysqli->query("SET time_zone = '-03:00'");
 
 // Cria/ajusta o que os endpoints novos precisam, sem exigir SQL manual no
 // phpMyAdmin — mesmo padrão de auto-provisionamento que webhook.php e
