@@ -10,25 +10,16 @@ function iniciais(nome) {
     .toUpperCase();
 }
 
-// Itens de navegação da referência. Só "Início" tem uma rota construída
-// nesta fase — os demais ficam visualmente prontos (facilita a Fase 2)
-// mas levam de volta ao dashboard em vez de gerar links quebrados.
-// Todos apontam para /comunidade nesta fase (só o dashboard existe), então
-// usam `end` para só ficarem ativos quando a rota é exatamente essa —
-// sem isso, qualquer subrota (ex: /comunidade/aula/dia-0) acenderia todos
-// os itens ao mesmo tempo.
 const NAV_ITEMS = [
-  { label: "Início", icon: Home, to: "/comunidade" },
-  { label: "Aulas meditação raiz", icon: Library, to: "/comunidade" },
-  { label: "Meditações da Semana", icon: CalendarDays, to: "/comunidade" },
-  { label: "Ao Vivo", icon: Video, to: "/comunidade", comBolinha: true },
-  { label: "Comunidade", icon: Users, to: "/comunidade" },
-  { label: "Meu Progresso", icon: BarChart3, to: "/comunidade" },
-  { label: "Configurações", icon: Settings, to: "/comunidade" },
+  { label: "Início", icon: Home, to: "/comunidade", end: true },
+  { label: "Aulas meditação raiz", icon: Library, to: "/comunidade/aulas-raiz" },
+  { label: "Meditações da Semana", icon: CalendarDays, to: "/comunidade/meditacoes-semana" },
+  { label: "Ao Vivo", icon: Video, to: "/comunidade/ao-vivo", comBolinha: true },
+  { label: "Comunidade", icon: Users, to: "/comunidade/comunidade" },
+  { label: "Meu Progresso", icon: BarChart3, to: "/comunidade/progresso" },
+  { label: "Configurações", icon: Settings, to: "/comunidade/config" },
 ];
 
-// Sidebar esquerda fixa (280px), igual à referência "Clube Presença":
-// logo, navegação e card do usuário no rodapé.
 function ComunidadeSidebar({ session, onSair }) {
   const nome = session?.nome || "Aluno";
 
@@ -46,18 +37,7 @@ function ComunidadeSidebar({ session, onSair }) {
 
       <nav className="cm-sidebar-nav">
         {NAV_ITEMS.map((item) => (
-          <NavLink
-            key={item.label}
-            to={item.to}
-            end
-            // Todos os itens apontam pra "/comunidade" nesta fase (só o
-            // dashboard existe de verdade) — se deixássemos o NavLink decidir
-            // sozinho, TODOS ficariam "ativos" ao mesmo tempo quando a rota
-            // bate (mesmo `to`, mesmo `end`). Só "Início" deve acender;
-            // os demais ficam sempre no estado neutro (cinza), igual à
-            // referência, mesmo sendo clicáveis.
-            className={({ isActive }) => `cm-sidebar-nav-item ${isActive && item.label === "Início" ? "is-ativo" : ""}`}
-          >
+          <NavLink key={item.label} to={item.to} end={item.end} className={({ isActive }) => `cm-sidebar-nav-item ${isActive ? "is-ativo" : ""}`}>
             <item.icon size={18} strokeWidth={1.8} />
             <span>{item.label}</span>
             {item.comBolinha && <span className="cm-sidebar-dot" aria-hidden="true" />}
