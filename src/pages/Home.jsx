@@ -416,6 +416,25 @@ function Home() {
           </a>
         </div>
       </section>
+
+      {/* 12. Minha Raiz */}
+      <section className="section minha-raiz">
+        <div className="container">
+          <div className="minha-raiz-card">
+            <div className="minha-raiz-media">
+              <img src="/mianmar.jpeg" alt="Dr. Renato com monge em Mianmar ao pôr do sol, onde nasceu a Meditação Raiz" />
+            </div>
+            <div className="minha-raiz-copy">
+              <span className="minha-raiz-eyebrow">Minha raiz</span>
+              <h2 className="minha-raiz-titulo">Aprendi na fonte, não no Instagram</h2>
+              <p className="minha-raiz-texto">
+                Essa foto foi em 2017, no topo de uma montanha em Mianmar. Eu tinha ido buscar o que nenhum curso de medicina ensinava: como acalmar uma mente que não desliga. Esse monge não falava inglês, eu não falava birmanês. A gente só sentou e respirou juntos até o sol sumir. Quando levantei, entendi:
+                meditação não é técnica exótica. É voltar pra casa. Foi desse encontro que nasceu a Meditação Raiz.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
     </>
   );
 }
