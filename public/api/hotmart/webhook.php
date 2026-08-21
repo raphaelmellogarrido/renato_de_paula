@@ -15,7 +15,7 @@ $payload = json_decode($input, true);
 $event = $payload['event'] ?? 'TESTE';
 $data = $payload['data'] ?? [];
 
-$mysqli = new mysqli('localhost', 'u790959747_clube_user', '1*GrGAbVdv', 'u790959747_clube');
+$mysqli = new mysqli('localhost', 'u790959747_clube_user', 'yB8=~FE1$', 'u790959747_clube');
 if ($mysqli->connect_error) {
     http_response_code(500);
     echo json_encode(['erro' => $mysqli->connect_error]);

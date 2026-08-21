@@ -7,7 +7,7 @@ header('Access-Control-Allow-Headers: Content-Type');
 $email = strtolower(trim($_GET['email'] ?? ''));
 if (!$email) { echo json_encode(['tem_acesso'=>false]); exit; }
 
-$mysqli = new mysqli('localhost', 'u790959747_clube_user', '1*GrGAbVdv', 'u790959747_clube');
+$mysqli = new mysqli('localhost', 'u790959747_clube_user', 'yB8=~FE1$', 'u790959747_clube');
 if ($mysqli->connect_error) { echo json_encode(['tem_acesso'=>false]); exit; }
 
 $email_safe = $mysqli->real_escape_string($email);
