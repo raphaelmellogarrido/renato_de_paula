@@ -1,41 +1,65 @@
 <?php
-// /api/hotmart/register.php - CRIA SENHA NA PRIMEIRA VEZ
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type");
-header("Content-Type: application/json");
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(200); exit; }
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit; }
 
-require_once __DIR__ . '/../db.php'; // ajuste se seu db.php estiver em outro lugar
-
-$data = json_decode(file_get_contents("php://input"), true);
-$email = strtolower(trim($data['email'] ?? ''));
-$senha = $data['senha'] ?? '';
-
-if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($senha) < 6) {
-    http_response_code(400);
-    echo json_encode(["erro" => "Email inválido ou senha muito curta (min 6)"]);
+$mysqli = new mysqli('localhost', 'u790959747_clube_user', '1*GrGAbVdv', 'u790959747_clube');
+if ($mysqli->connect_error) {
+    http_response_code(500);
+    echo json_encode(['erro' => 'Erro banco: ' . $mysqli->connect_error]);
     exit;
 }
 
-// Verifica se tem compra ativa
-$stmt = $pdo->prepare("SELECT id, senha_hash FROM alunos WHERE email = ? AND status = 'ativo' LIMIT 1");
-$stmt->execute([$email]);
-$aluno = $stmt->fetch(PDO::FETCH_ASSOC);
+$input = json_decode(file_get_contents('php://input'), true);
+$email = strtolower(trim($input['email'] ?? ''));
+$senha = $input['senha'] ?? '';
+
+if (!$email || !$senha) {
+    http_response_code(400);
+    echo json_encode(['erro' => 'Email e senha obrigatórios']);
+    exit;
+}
+if (strlen($senha) < 6) {
+    http_response_code(400);
+    echo json_encode(['erro' => 'Senha deve ter no mínimo 6 caracteres']);
+    exit;
+}
+
+$stmt = $mysqli->prepare("SELECT email, nome, status, senha_hash FROM alunos WHERE email = ? LIMIT 1");
+$stmt->bind_param('s', $email);
+$stmt->execute();
+$res = $stmt->get_result();
+$aluno = $res->fetch_assoc();
+$stmt->close();
 
 if (!$aluno) {
     http_response_code(403);
-    echo json_encode(["erro" => "Email sem compra ativa. Use o email da Hotmart."]);
+    echo json_encode(['erro' => 'Este email não tem compra ativa. Use o mesmo email da Hotmart.']);
     exit;
 }
-
+if ($aluno['status'] !== 'ativo') {
+    http_response_code(403);
+    echo json_encode(['erro' => 'Sua compra não está ativa']);
+    exit;
+}
 if (!empty($aluno['senha_hash'])) {
     http_response_code(409);
-    echo json_encode(["erro" => "Você já tem senha. Faça login.", "ja_tem_senha" => true]);
+    echo json_encode(['erro' => 'Você já criou senha. Faça login.']);
     exit;
 }
 
-$hash = password_hash($senha, PASSWORD_DEFAULT);
-$pdo->prepare("UPDATE alunos SET senha_hash = ? WHERE id = ?")->execute([$hash, $aluno['id']]);
+$hash = password_hash($senha, PASSWORD_BCRYPT);
+$stmt = $mysqli->prepare("UPDATE alunos SET senha_hash = ? WHERE email = ?");
+$stmt->bind_param('ss', $hash, $email);
+$ok = $stmt->execute();
+$stmt->close();
+$mysqli->close();
 
-echo json_encode(["ok" => true, "msg" => "Senha criada! Faça login agora."]);
+if ($ok) {
+    echo json_encode(['ok' => true, 'email' => $email, 'nome' => $aluno['nome']]);
+} else {
+    http_response_code(500);
+    echo json_encode(['erro' => 'Erro ao salvar senha']);
+}

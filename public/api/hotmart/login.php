@@ -1,51 +1,55 @@
 <?php
-// /api/hotmart/login.php - LOGIN COM EMAIL + SENHA DO CLUBE
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Methods: POST, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type");
-header("Content-Type: application/json");
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(200); exit; }
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit; }
 
-require_once __DIR__ . '/../db.php';
-
-$data = json_decode(file_get_contents("php://input"), true);
-$email = strtolower(trim($data['email'] ?? ''));
-$senha = $data['senha'] ?? '';
-
-if (!filter_var($email, FILTER_VALIDATE_EMAIL) || !$senha) {
-    http_response_code(400);
-    echo json_encode(["erro" => "Preencha email e senha"]);
+$mysqli = new mysqli('localhost', 'u790959747_clube_user', '1*GrGAbVdv', 'u790959747_clube');
+if ($mysqli->connect_error) {
+    http_response_code(500);
+    echo json_encode(['erro' => 'Erro banco: ' . $mysqli->connect_error]);
     exit;
 }
 
-$stmt = $pdo->prepare("SELECT email, nome, senha_hash FROM alunos WHERE email = ? AND status = 'ativo' LIMIT 1");
-$stmt->execute([$email]);
-$aluno = $stmt->fetch(PDO::FETCH_ASSOC);
+$input = json_decode(file_get_contents('php://input'), true);
+$email = strtolower(trim($input['email'] ?? ''));
+$senha = $input['senha'] ?? '';
+
+if (!$email || !$senha) {
+    http_response_code(400);
+    echo json_encode(['erro' => 'Email e senha obrigatórios']);
+    exit;
+}
+
+$stmt = $mysqli->prepare("SELECT email, nome, status, senha_hash FROM alunos WHERE email = ? LIMIT 1");
+$stmt->bind_param('s', $email);
+$stmt->execute();
+$res = $stmt->get_result();
+$aluno = $res->fetch_assoc();
+$stmt->close();
 
 if (!$aluno) {
     http_response_code(403);
-    echo json_encode(["erro" => "Acesso não encontrado ou inativo"]);
+    echo json_encode(['erro' => 'Email não encontrado']);
     exit;
 }
-
+if ($aluno['status'] !== 'ativo') {
+    http_response_code(403);
+    echo json_encode(['erro' => 'Compra não ativa']);
+    exit;
+}
 if (empty($aluno['senha_hash'])) {
-    http_response_code(401);
-    echo json_encode(["erro" => "Você ainda não criou sua senha", "precisa_criar_senha" => true]);
+    http_response_code(403);
+    echo json_encode(['erro' => 'Você ainda não criou senha. Clique em Criar senha.']);
     exit;
 }
 
 if (!password_verify($senha, $aluno['senha_hash'])) {
     http_response_code(401);
-    echo json_encode(["erro" => "Senha incorreta"]);
+    echo json_encode(['erro' => 'Senha incorreta']);
     exit;
 }
 
-// OK
-echo json_encode([
-    "ok" => true,
-    "session" => [
-        "email" => $aluno['email'],
-        "nome" => $aluno['nome'],
-        "isAlunoCurso" => true
-    ]
-]);
+$mysqli->close();
+echo json_encode(['ok' => true, 'email' => $aluno['email'], 'nome' => $aluno['nome']]);
