@@ -133,6 +133,33 @@ export default function AulasMeditacaoRaiz() {
     });
   }
 
+  // Inverso de marcarConcluida: some com a marca local (some do check na
+  // lista e some da Jornada, que lê o mesmo estado) e avisa o PHP externo.
+  // Também libera o ref de auto-conclusão em 85%, senão o vídeo nunca mais
+  // marcaria sozinho se o aluno assistir de novo.
+  function desmarcarConcluida(arquivoParam) {
+    const arquivo = arquivoParam || videoAtivo?.arquivo;
+    if (!arquivo || !email) return;
+
+    marcados85Ref.current.delete(arquivo);
+
+    setProgressoPorArquivo((atual) => {
+      if (!atual[arquivo]) return atual;
+      const novo = { ...atual };
+      delete novo[arquivo];
+      salvarProgressoLocal(email, novo);
+      return novo;
+    });
+
+    fetch(HOTMART_AULAS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, aula_id: arquivo, progresso: 0, completou: false }),
+    }).catch((err) => {
+      console.error("Não foi possível sincronizar remoção de progresso com o servidor:", err);
+    });
+  }
+
   function handleTimeUpdatePlayer(currentTime, duration) {
     if (!duration || !videoAtivo) return;
     const arquivo = videoAtivo.arquivo;
@@ -242,6 +269,13 @@ export default function AulasMeditacaoRaiz() {
               style={{ marginTop: 16, width: "100%", background: "black", color: "white", padding: 12, borderRadius: 10, fontWeight: 600, border: "none" }}
             >
               Marcar como concluída
+            </button>
+            <button
+              type="button"
+              onClick={() => desmarcarConcluida()}
+              style={{ marginTop: 8, width: "100%", background: "transparent", color: "#6b7280", padding: 12, borderRadius: 10, fontWeight: 600, border: "1px solid #d1d5db" }}
+            >
+              Desmarcar como concluída
             </button>
             <p style={{ fontSize: 11, color: "#9ca3af", marginTop: 8 }}>
               Marcada automaticamente ao assistir 85% do vídeo, ou manualmente pelo botão acima.
