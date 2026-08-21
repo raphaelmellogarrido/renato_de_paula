@@ -99,15 +99,18 @@ export const PROXIMO_ENCONTRO_VIVO = {
   avatar: "https://i.pravatar.cc/100?img=12",
 };
 
+// Desafio da Semana: card da sidebar do dashboard (ver components/DesafioSemana.jsx).
+// Pra trocar o conteúdo toda segunda-feira, só editar os 3 objetos abaixo —
+// nada de código precisa mudar. O "concluído" de cada aluno não mora mais
+// aqui: é estado real, salvo em localStorage + sincronizado com o PHP
+// (mesmo padrão do progresso das aulas em AulasMeditacaoRaiz.jsx).
 export const DESAFIO_SEMANA = {
-  tituloWidget: "Desafio de Maio",
-  titulo: "Presença Consciente — 21 dias",
+  tituloWidget: "Desafio da Semana",
   itens: [
-    { id: 1, titulo: "Manhã sem celular", subtitulo: "5 min ao acordar", concluido: true },
-    { id: 2, titulo: "Respiração 4-4-6", subtitulo: "Antes de dormir", concluido: true },
-    { id: 3, titulo: "Escuta atenta", subtitulo: "Em uma conversa hoje", concluido: false },
+    { id: "manha-sem-celular", titulo: "Uma manhã sem celular", subtitulo: "5 min ao acordar sem pegar no celular" },
+    { id: "respiracao-consciente", titulo: "Respiração consciente", subtitulo: "3 respirações profundas antes do almoço" },
+    { id: "escuta-atenta", titulo: "Escuta atenta", subtitulo: "Ouça alguém por 2 min sem interromper hoje" },
   ],
-  participantes: 128,
 };
 
 export const RANKING = [

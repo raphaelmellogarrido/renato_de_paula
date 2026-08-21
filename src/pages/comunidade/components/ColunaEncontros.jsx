@@ -1,16 +1,13 @@
-import { Check, Trophy } from "lucide-react";
-import { PROXIMO_ENCONTRO_VIVO, DESAFIO_SEMANA, RANKING } from "../data/mockData";
+import { Trophy } from "lucide-react";
+import { PROXIMO_ENCONTRO_VIVO, RANKING } from "../data/mockData";
+import DesafioSemana from "./DesafioSemana";
 
-// Próximo encontro (linha 1) + Desafio de Maio (linha 2) + Ranking (linha 3)
+// Próximo encontro (linha 1) + Desafio da Semana (linha 2) + Ranking (linha 3)
 // da coluna 4 do dashboard. Fragment (sem wrapper) de propósito: cada
 // widget cai numa linha diferente do grid definido em `.cm-main` (ver
 // ComunidadeApp.css), então os três `.cm-widget` têm que ser filhos
 // diretos do grid, não agrupados dentro de um `<aside>`.
 function ColunaEncontros() {
-  const percentualDesafio = Math.round(
-    (DESAFIO_SEMANA.itens.filter((item) => item.concluido).length / DESAFIO_SEMANA.itens.length) * 100
-  );
-
   return (
     <>
       <div className="cm-widget cm-encontro-vivo cm-grid-encontro">
@@ -30,24 +27,7 @@ function ColunaEncontros() {
         </button>
       </div>
 
-      <div className="cm-widget cm-grid-desafio">
-        <h3>{DESAFIO_SEMANA.tituloWidget}</h3>
-        <p className="cm-desafio-titulo">{DESAFIO_SEMANA.titulo}</p>
-        {DESAFIO_SEMANA.itens.map((item) => (
-          <div className="cm-desafio-item" key={item.id}>
-            <span className={`cm-desafio-check ${item.concluido ? "is-concluido" : ""}`}>
-              {item.concluido && <Check size={12} strokeWidth={3} />}
-            </span>
-            <div>
-              <strong>{item.titulo}</strong>
-              <span>{item.subtitulo}</span>
-            </div>
-          </div>
-        ))}
-        <div className="cm-desafio-progress">
-          <div className="cm-desafio-progress-fill" style={{ width: `${percentualDesafio}%` }} />
-        </div>
-      </div>
+      <DesafioSemana />
 
       <div className="cm-widget cm-widget-escuro cm-grid-ranking">
         <h3>

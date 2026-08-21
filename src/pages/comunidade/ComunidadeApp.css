@@ -898,12 +898,6 @@
 }
 
 /* Desafio da semana — checklist */
-.cm-desafio-titulo {
-  font-size: 0.88rem;
-  font-weight: 600;
-  margin: 0 0 12px;
-}
-
 .cm-desafio-item {
   display: flex;
   align-items: flex-start;
@@ -926,31 +920,107 @@
 }
 
 .cm-desafio-check {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--cm-bg);
-  border: 1px solid var(--cm-border);
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: transparent;
+  border: 1.5px solid #ccc;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: transparent;
+  color: #fff;
   flex-shrink: 0;
   margin-top: 1px;
+  padding: 0;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.cm-desafio-check:hover {
+  border-color: var(--cm-text);
 }
 
 .cm-desafio-check.is-concluido {
-  background: var(--cm-sage);
-  border-color: var(--cm-sage);
-  color: #fff;
+  background: var(--cm-text);
+  border-color: var(--cm-text);
+  animation: cm-check-scale-in 200ms ease;
 }
 
-.cm-desafio-participantes {
-  display: block;
+/* Celebração ao completar os 3 itens: lótus abrindo/brilhando por 2.5s no
+   lugar do checklist, junto do texto de conclusão. */
+.cm-desafio-celebracao {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 10px 4px 2px;
+  animation: cm-desafio-fade-in 250ms ease;
+}
+
+.cm-desafio-celebracao-lotus {
+  font-size: 2.6rem;
+  line-height: 1;
+  margin-bottom: 14px;
+  animation: cm-lotus-abrir 2.5s ease;
+}
+
+.cm-desafio-celebracao-titulo {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--cm-text);
+  margin: 0 0 6px;
+}
+
+.cm-desafio-celebracao-sub {
   font-size: 0.78rem;
   color: var(--cm-sage-dark);
-  font-weight: 600;
-  margin-top: 10px;
+  margin: 0;
+}
+
+@keyframes cm-desafio-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cm-lotus-abrir {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+    filter: drop-shadow(0 0 0 rgba(155, 127, 199, 0));
+  }
+  30% {
+    transform: scale(1.15);
+    opacity: 1;
+    filter: drop-shadow(0 0 18px rgba(155, 127, 199, 0.55));
+  }
+  55% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 10px rgba(224, 185, 120, 0.45));
+  }
+  75% {
+    transform: scale(1.06);
+    filter: drop-shadow(0 0 16px rgba(155, 127, 199, 0.5));
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+    filter: drop-shadow(0 0 0 rgba(155, 127, 199, 0));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cm-desafio-celebracao-lotus {
+    animation: none;
+  }
+  .cm-desafio-celebracao {
+    animation: none;
+  }
 }
 
 .cm-ranking-item {
@@ -1407,6 +1477,74 @@
   }
 }
 
+/* "Sua Jornada" compacto — substitui o antigo "Meu Progresso" no dashboard.
+   Mesmo footprint de um `.cm-widget` comum (fica no lugar de cm-grid-progresso),
+   só troca o anel grande + trilha de 16 dias por um anel pequeno ao lado do
+   texto, pra não ficar maior que os widgets vizinhos (Sequência/Desafio). */
+.cm-jornada-compacta {
+  background: var(--cm-beige);
+}
+
+.cm-jornada-compacta-corpo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.cm-jornada-compacta-anel-wrap {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+}
+
+.cm-jornada-compacta-anel-percentual {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Playfair Display", Georgia, serif;
+  font-weight: 600;
+  font-size: 0.86rem;
+  color: var(--cm-text);
+}
+
+.cm-jornada-anel-progresso.cm-jornada-anel-progresso--compacta {
+  stroke: url(#cm-jornada-gradiente-compacta);
+}
+
+.cm-jornada-compacta-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.cm-jornada-compacta-texto strong {
+  font-size: 0.9rem;
+  color: var(--cm-text);
+}
+
+.cm-jornada-compacta-texto span {
+  font-size: 0.78rem;
+  color: var(--cm-text-soft);
+  line-height: 1.3;
+}
+
+.cm-jornada-compacta-trilha {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.cm-jornada-bolinha.cm-jornada-bolinha--compacta {
+  width: 20px;
+  height: 20px;
+  font-size: 0.6rem;
+}
+
 /* Navegação sequencial de dias */
 .cm-dias-nav {
   background: var(--cm-beige);
@@ -1846,6 +1984,7 @@
   height: 100%;
   background: var(--cm-sage);
   border-radius: 999px;
+  transition: width 400ms ease;
 }
 
 /* Sidebar: variante escura (Ranking de Presença, "fundo preto" do print) */

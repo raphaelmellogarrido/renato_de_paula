@@ -54,8 +54,14 @@ function contarSequencia(statusPorDia) {
  * já usado em AulasMeditacaoRaiz ({ [arquivo]: { assistida, progresso } }),
  * pra continuar valendo a mesma fonte de verdade (localStorage + PHP
  * externo) que já alimenta a lista de vídeos do dia.
+ *
+ * `compacto`: versão mini que ocupa o lugar do antigo card "Meu Progresso"
+ * no dashboard — mesmo cálculo de progresso, só troca o card grande
+ * (anel + trilha de 16 dias) por um anel pequeno ao lado do texto, do
+ * tamanho de um `.cm-widget` comum, pra não desalinhar a grade do
+ * dashboard com o "Desafio da Semana" ao lado.
  */
-export default function JornadaProgress({ progressoPorArquivo = {} }) {
+export default function JornadaProgress({ progressoPorArquivo = {}, compacto = false }) {
   const { totalAssistidos, statusPorDia, diaAtualIndex } = useMemo(
     () => calcularStatusPorDia(progressoPorArquivo),
     [progressoPorArquivo],
@@ -78,8 +84,63 @@ export default function JornadaProgress({ progressoPorArquivo = {} }) {
     mensagem = "Você está na metade! Continue firme 🔥";
   }
 
+  if (compacto) {
+    return (
+      <div className="cm-widget cm-grid-progresso cm-jornada-compacta">
+        <h3>Sua Jornada</h3>
+        <div className="cm-jornada-compacta-corpo">
+          <div className="cm-jornada-compacta-anel-wrap">
+            <svg className="cm-jornada-anel" viewBox="0 0 120 120">
+              <defs>
+                <linearGradient id="cm-jornada-gradiente-compacta" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#9b7fc7" />
+                  <stop offset="100%" stopColor="#e0b978" />
+                </linearGradient>
+              </defs>
+              <circle className="cm-jornada-anel-trilho" cx="60" cy="60" r={RAIO_ANEL} />
+              <circle
+                className="cm-jornada-anel-progresso cm-jornada-anel-progresso--compacta"
+                cx="60"
+                cy="60"
+                r={RAIO_ANEL}
+                strokeDasharray={CIRCUNFERENCIA_ANEL}
+                strokeDashoffset={dashoffset}
+              />
+            </svg>
+            <span className="cm-jornada-compacta-anel-percentual">{percentual}%</span>
+          </div>
+          <div className="cm-jornada-compacta-texto">
+            <strong>
+              {totalAssistidos}/{TOTAL_AULAS} aulas
+            </strong>
+            <span>{mensagem}</span>
+          </div>
+        </div>
+
+        <div className="cm-jornada-compacta-trilha" role="list">
+          {statusPorDia.map(({ dia, total, concluidas }) => {
+            const completo = total > 0 && concluidas === total;
+            const atual = dia === diaAtualIndex && !completo;
+            const bloqueado = !completo && !atual && dia > diaAtualIndex;
+            const classe = completo ? "is-completo" : atual ? "is-atual" : bloqueado ? "is-bloqueado" : "";
+            return (
+              <span
+                key={dia}
+                role="listitem"
+                className={`cm-jornada-bolinha cm-jornada-bolinha--compacta ${classe}`}
+                title={`Dia ${dia} - ${concluidas}/${total} concluídas`}
+              >
+                {completo ? "✓" : dia}
+              </span>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="cm-jornada">
+    <div className="cm-jornada cm-grid-progresso">
       <div className="cm-jornada-topo">
         <h2>Sua Jornada</h2>
         {sequencia > 0 && !jornadaCompleta && (
