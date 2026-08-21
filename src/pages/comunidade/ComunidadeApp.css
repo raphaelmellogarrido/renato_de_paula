@@ -2087,17 +2087,11 @@
 /* Sidebar: Próximo encontro ao vivo — bolinha pulsante + caixa com
    anfitrião, igual referência.
 
-   Esse widget NÃO usa o card branco padrão de .cm-widget (background/
-   border/padding) — só a caixa bege do evento + o botão preto ficam
-   visíveis, direto sobre o fundo da página. `.cm-widget.cm-encontro-vivo`
-   (as duas classes juntas) garante prioridade sobre `.cm-widget` sozinho
-   sem depender da ordem das regras no arquivo. Os outros cards do
-   dashboard continuam brancos normalmente — isso não afeta `.cm-widget`. */
-.cm-widget.cm-encontro-vivo {
-  background: transparent;
-  border: none;
-  padding: 0;
-}
+   Usa o MESMO card branco arredondado padrão de .cm-widget (background/
+   border/padding) que todo widget do dashboard usa — título, caixa bege do
+   evento e botão preto ficam todos dentro do mesmo container, em vez de
+   soltos sobre o fundo da página. Não precisa de override nenhum aqui:
+   herda .cm-widget puro. */
 
 .cm-encontro-vivo h3 {
   gap: 9px;
