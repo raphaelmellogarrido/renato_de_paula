@@ -1,0 +1,90 @@
+<?php
+header('Content-Type: application/json');
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type');
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit; }
+
+require __DIR__ . '/_conexao.php';
+garantirEstruturaClube($mysqli); // cria a tabela comentarios se ainda não existir
+
+// Comentários por aula, paginados (10 mais recentes por página).
+// GET  ?aula_id=&page=  -> { itens:[{id,nome,comentario,created_at}], total, page, pages }
+// POST { email, nome, aula_id, comentario } -> INSERT
+// Permanente: não é afetado por nenhum reset semanal (DesafioSemana etc.).
+$metodo = $_SERVER['REQUEST_METHOD'];
+$POR_PAGINA = 10;
+
+if ($metodo === 'GET') {
+    $aulaId = trim($_GET['aula_id'] ?? '') ?: 'geral';
+    $page = max(1, intval($_GET['page'] ?? 1));
+    $offset = ($page - 1) * $POR_PAGINA;
+
+    $stmtTotal = $mysqli->prepare("SELECT COUNT(*) AS total FROM comentarios WHERE aula_id = ?");
+    $stmtTotal->bind_param('s', $aulaId);
+    $stmtTotal->execute();
+    $total = (int) $stmtTotal->get_result()->fetch_assoc()['total'];
+    $stmtTotal->close();
+
+    $pages = max(1, (int) ceil($total / $POR_PAGINA));
+    // page pedida além do fim (ex: comentário apagado direto no banco
+    // reduziu o total) — devolve a última página válida em vez de vazio.
+    if ($page > $pages) {
+        $page = $pages;
+        $offset = ($page - 1) * $POR_PAGINA;
+    }
+
+    $stmt = $mysqli->prepare(
+        "SELECT id, nome, comentario, created_at FROM comentarios
+         WHERE aula_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?"
+    );
+    $stmt->bind_param('sii', $aulaId, $POR_PAGINA, $offset);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $itens = [];
+    while ($row = $res->fetch_assoc()) {
+        $itens[] = [
+            'id' => (int) $row['id'],
+            'nome' => $row['nome'] !== null && $row['nome'] !== '' ? $row['nome'] : 'Aluno',
+            'comentario' => $row['comentario'],
+            'created_at' => $row['created_at'], // já em horário de Brasília (SET time_zone em _conexao.php)
+        ];
+    }
+    $stmt->close();
+
+    echo json_encode(['ok' => true, 'itens' => $itens, 'total' => $total, 'page' => $page, 'pages' => $pages]);
+    exit;
+}
+
+if ($metodo === 'POST') {
+    $input = json_decode(file_get_contents('php://input'), true);
+    $email = strtolower(trim($input['email'] ?? ''));
+    $nome = trim($input['nome'] ?? '') ?: 'Aluno';
+    $aulaId = trim($input['aula_id'] ?? '') ?: 'geral';
+    $comentario = trim($input['comentario'] ?? '');
+
+    if (!$email || $comentario === '') {
+        http_response_code(400);
+        echo json_encode(['erro' => 'email e comentario obrigatórios']);
+        exit;
+    }
+    // Guarda-chuva contra abuso/erro de cliente — sem limite nenhum um POST
+    // mal-formado poderia gravar um TEXT gigante sem aviso nenhum pro usuário.
+    if (mb_strlen($comentario) > 2000) {
+        $comentario = mb_substr($comentario, 0, 2000);
+    }
+
+    $stmt = $mysqli->prepare(
+        "INSERT INTO comentarios (email, nome, aula_id, comentario) VALUES (?, ?, ?, ?)"
+    );
+    $stmt->bind_param('ssss', $email, $nome, $aulaId, $comentario);
+    $stmt->execute();
+    $novoId = $stmt->insert_id;
+    $stmt->close();
+
+    echo json_encode(['ok' => true, 'id' => $novoId]);
+    exit;
+}
+
+http_response_code(405);
+echo json_encode(['erro' => 'Método não permitido']);

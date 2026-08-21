@@ -299,7 +299,7 @@ export default function AulasMeditacaoRaiz() {
             )}
           </div>
 
-          <ComentariosFeed key={`dia-${diaEfetivo}`} />
+          <ComentariosFeed aulaId={videoArquivoEfetivo || "geral"} />
         </div>
 
         <div className="cm-aula-sidebar">

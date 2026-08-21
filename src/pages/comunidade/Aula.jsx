@@ -78,7 +78,7 @@ function Aula() {
             ))}
           </div>
 
-          <ComentariosFeed />
+          <ComentariosFeed aulaId={videoAtivo.id} />
         </div>
 
         <nav className="cm-dias-nav">

@@ -61,3 +61,17 @@ export function useEmailSessao() {
 export function logSalvandoParaUsuario(modulo, email) {
   console.log(`[Clube Presença] ${modulo} → salvando para usuário:`, email || "(sem sessão / anônimo)");
 }
+
+// Nome pra exibir/gravar quando o usuário comenta (ComentariosFeed.jsx) —
+// mesma prioridade que a sidebar já usa: "como quer ser chamado"
+// (comunidade_session.nome, atualizável em Configuracoes.jsx) primeiro,
+// caindo pro nome de cadastro gravado no login (userName) se a sessão ainda
+// não tiver passado por Configuracoes.
+export function lerNomeSessao() {
+  try {
+    const sess = JSON.parse(localStorage.getItem("comunidade_session") || "{}");
+    return sess.nome || localStorage.getItem("userName") || "Aluno";
+  } catch {
+    return localStorage.getItem("userName") || "Aluno";
+  }
+}

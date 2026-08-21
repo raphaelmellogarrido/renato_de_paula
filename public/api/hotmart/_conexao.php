@@ -56,6 +56,24 @@ function garantirEstruturaClube(mysqli $mysqli): void
         )"
     );
 
+    // Comentários por aula (ComentariosFeed.jsx) — permanente, não faz parte
+    // de nenhum reset semanal (DesafioSemana etc.). aula_id sem FK de
+    // propósito: aceita tanto id de vídeo do curso mock (Aula.jsx, ex:
+    // "boas-vindas") quanto arquivo do curso real (AulasMeditacaoRaiz.jsx,
+    // ex: "dia1.2.mp4"), sem exigir uma tabela de aulas unificada.
+    $mysqli->query(
+        "CREATE TABLE IF NOT EXISTS comentarios (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            email VARCHAR(255) NOT NULL,
+            nome VARCHAR(255),
+            aula_id VARCHAR(100) NOT NULL DEFAULT 'geral',
+            comentario TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            INDEX(aula_id),
+            INDEX(created_at)
+        )"
+    );
+
     $temApelido = $mysqli->query(
         "SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
          WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'alunos' AND COLUMN_NAME = 'apelido'"
