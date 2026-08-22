@@ -1,15 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, Trash2, Star } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEmailSessao, lerNomeSessao } from "./usuarioStorage";
-import { formatarDataBr } from "./comentariosUtils";
+import ComentarioCard, { EMAIL_ADMINISTRADOR, EMAIL_ORIENTADOR } from "./ComentarioCard";
 
 const COMENTARIOS_URL = "/api/hotmart/comentarios.php";
-// Mesmas 2 contas com destaque + poder de excluir de ComentariosFeed.jsx —
-// backend é o mesmo endpoint (só muda aula_id), então a checagem de
-// permissão é idêntica. Ver ComentariosFeed.jsx pro comentário completo
-// sobre a checagem ser client-side (sem $_SESSION nesta API).
-const EMAIL_ADMINISTRADOR = "raphaelmellogarrido@gmail.com";
-const EMAIL_ORIENTADOR = "rsp.ren@gmail.com";
 // aula_id fixo — este card não é sobre um vídeo específico, é uma reflexão
 // livre do dia, compartilhada entre todos os alunos (não reseta por
 // semana/dia, é a mesma tabela permanente de comentarios.php).
@@ -122,40 +116,10 @@ function DificuldadeDoDia() {
       {!carregando && vazio && <p className="cm-duvida-vazio">Seja o primeiro a comentar</p>}
 
       {!carregando && !vazio && (
-        <div className="cm-duvida-lista">
-          {itens.map((comentario) => {
-            const emailAutorNormalizado = (comentario.email || "").toLowerCase().trim();
-            const autorOrientador = emailAutorNormalizado === EMAIL_ORIENTADOR;
-            const autorAdmin = !autorOrientador && emailAutorNormalizado === EMAIL_ADMINISTRADOR;
-            const classeDestaque = autorOrientador ? "cm-duvida-comentario-orientador" : autorAdmin ? "cm-duvida-comentario-admin" : "";
-
-            return (
-              <div className={`cm-duvida-comentario ${classeDestaque}`} key={comentario.id}>
-                <strong>
-                  {comentario.nome}
-                  {autorOrientador && (
-                    <span className="cm-badge-orientador">
-                      <Star size={11} strokeWidth={3} fill="currentColor" /> Orientador
-                    </span>
-                  )}
-                  {autorAdmin && <span className="cm-badge-admin">Administrador</span>}
-                  <span className="cm-duvida-quando">{formatarDataBr(comentario.created_at)}</span>
-                </strong>
-                <p>{comentario.comentario}</p>
-                {podeExcluir && (
-                  <button
-                    type="button"
-                    className="cm-duvida-excluir"
-                    aria-label="Excluir comentário"
-                    title="Excluir comentário"
-                    onClick={() => handleExcluir(comentario.id)}
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                )}
-              </div>
-            );
-          })}
+        <div className="cm-comentarios-lista">
+          {itens.map((comentario) => (
+            <ComentarioCard key={comentario.id} comentario={comentario} podeExcluir={podeExcluir} onExcluir={handleExcluir} />
+          ))}
         </div>
       )}
 

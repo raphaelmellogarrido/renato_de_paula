@@ -1,16 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, Trash2, Star } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEmailSessao, lerNomeSessao } from "./usuarioStorage";
-import { iniciais, formatarDataBr } from "./comentariosUtils";
+import ComentarioCard, { EMAIL_ADMINISTRADOR, EMAIL_ORIENTADOR } from "./ComentarioCard";
 
 const COMENTARIOS_URL = "/api/hotmart/comentarios.php";
-// 2 contas fixas com destaque visual + poder de apagar qualquer comentário
-// do mural (pedido do cliente). Orientador tem destaque MAIOR que
-// Administrador (borda dourada + brilho + estrela), não é hierarquia de
-// permissão — os dois podem excluir igual. Comparação sempre em
-// minúsculo/trim (mesmo padrão que o backend já usa pra email).
-const EMAIL_ADMINISTRADOR = "raphaelmellogarrido@gmail.com";
-const EMAIL_ORIENTADOR = "rsp.ren@gmail.com";
 // aula_id fixo — antes cada vídeo tinha seu próprio bucket de comentários
 // (prop `aulaId` dinâmica) e trocar de aula fazia a lista toda "sumir"
 // (bug real: sumia porque ia pra outro aula_id, não porque perdia dado).
@@ -123,43 +116,13 @@ function ComentariosFeed() {
         </button>
       </form>
 
-      {!carregando &&
-        itens.map((comentario) => {
-          const emailAutorNormalizado = (comentario.email || "").toLowerCase().trim();
-          const autorOrientador = emailAutorNormalizado === EMAIL_ORIENTADOR;
-          const autorAdmin = !autorOrientador && emailAutorNormalizado === EMAIL_ADMINISTRADOR;
-          const classeDestaque = autorOrientador ? "cm-comentario-orientador" : autorAdmin ? "cm-comentario-admin" : "";
-
-          return (
-            <div className={`cm-comentario ${classeDestaque}`} key={comentario.id}>
-              <div className="cm-comentario-avatar">{iniciais(comentario.nome)}</div>
-              <div className="cm-comentario-corpo">
-                <strong>
-                  {comentario.nome}
-                  {autorOrientador && (
-                    <span className="cm-badge-orientador">
-                      <Star size={11} strokeWidth={3} fill="currentColor" /> Orientador
-                    </span>
-                  )}
-                  {autorAdmin && <span className="cm-badge-admin">Administrador</span>}
-                  <span className="cm-comentario-quando">{formatarDataBr(comentario.created_at)}</span>
-                </strong>
-                <p className="cm-comentario-texto">{comentario.comentario}</p>
-              </div>
-              {podeExcluir && (
-                <button
-                  type="button"
-                  className="cm-comentario-excluir"
-                  aria-label="Excluir comentário"
-                  title="Excluir comentário"
-                  onClick={() => handleExcluir(comentario.id)}
-                >
-                  <Trash2 size={15} />
-                </button>
-              )}
-            </div>
-          );
-        })}
+      {!carregando && !vazio && (
+        <div className="cm-comentarios-lista">
+          {itens.map((comentario) => (
+            <ComentarioCard key={comentario.id} comentario={comentario} podeExcluir={podeExcluir} onExcluir={handleExcluir} />
+          ))}
+        </div>
+      )}
 
       {!carregando && !vazio && (
         <div className="cm-comentarios-paginacao">

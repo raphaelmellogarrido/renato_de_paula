@@ -16,10 +16,10 @@ function ListaPosts() {
     <div className="cm-feed-lista">
       {FEED_COMUNIDADE.map((post) => (
         <article className="cm-feed-post" key={post.id}>
-          <div className="cm-comentario-avatar">{iniciais(post.autor)}</div>
+          <div className="cm-feed-post-avatar">{iniciais(post.autor)}</div>
           <div>
             <strong>
-              {post.autor} <span className="cm-comentario-quando">{post.quando}</span>
+              {post.autor} <span className="cm-feed-post-quando">{post.quando}</span>
             </strong>
             <p className="cm-feed-post-texto">{post.texto}</p>
             <span className="cm-feed-post-curtidas">♥ {post.curtidas}</span>

@@ -563,99 +563,134 @@
   margin: 0;
 }
 
-.cm-duvida-lista {
+/* Card de comentário ÚNICO (ComentarioCard.jsx) — usado tanto no mural
+   "geral" (ComentariosFeed.jsx, em Aulas) quanto em "Sua prática hoje"
+   (DificuldadeDoDia.jsx, no Dashboard). Antes cada página tinha sua própria
+   cópia (.cm-comentario* aqui embaixo e .cm-duvida-comentario* — removidas)
+   e um fix de contraste aplicado só numa delas ficava pra trás na outra sem
+   ninguém perceber: foi exatamente o bug do texto preto em fundo escuro no
+   Dashboard. Regra daqui pra frente: TODA variante escura (admin/orientador)
+   sobrescreve cor via seletor de 2 classes (`.cm-comentario-card-admin
+   .cm-comentario-card-nome`, nunca `.cm-comentario-card-admin strong`)
+   pra ter especificidade sempre maior que qualquer regra-base de 1 classe,
+   não dependendo de ordem no arquivo pra ganhar o empate. */
+.cm-comentarios-lista {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.cm-duvida-comentario {
+.cm-comentario-card {
   position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
   background: #fff;
   border: 1px solid var(--cm-border);
   border-radius: 14px;
-  padding: 12px 16px;
 }
 
-/* Mesmo esquema de badge/destaque de ComentariosFeed.jsx (.cm-badge-admin,
-   .cm-badge-orientador reaproveitados), só que o card aqui é branco por
-   padrão, então as variantes escuras precisam sobrescrever cor do texto
-   também (strong/p), não só fundo/borda. */
-.cm-duvida-comentario-admin,
-.cm-duvida-comentario-orientador {
+.cm-comentario-card-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--cm-sage-soft);
+  color: var(--cm-sage-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.cm-comentario-card-corpo {
+  flex: 1;
+  min-width: 0;
+}
+
+.cm-comentario-card-topo {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.cm-comentario-card-nome {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--cm-text);
+}
+
+.cm-comentario-card-quando {
+  margin-left: auto;
+  padding-left: 8px;
+  font-size: 0.76rem;
+  font-weight: 400;
+  color: var(--cm-text-soft);
+  white-space: nowrap;
+}
+
+.cm-comentario-card-texto {
+  margin: 4px 0 0;
+  font-size: 0.88rem;
+  color: var(--cm-text);
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.cm-comentario-card-excluir {
+  flex-shrink: 0;
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: var(--cm-text-soft);
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 6px;
+  line-height: 0;
+}
+
+.cm-comentario-card-excluir:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.cm-comentario-card-admin,
+.cm-comentario-card-orientador {
   border-color: transparent;
 }
 
-.cm-duvida-comentario-admin {
+.cm-comentario-card-admin {
   border-left: 3px solid #3b82f6;
   background: #1e293b;
 }
 
-.cm-duvida-comentario-orientador {
+.cm-comentario-card-orientador {
   border-left: 3px solid #f59e0b;
   background: #29210a;
   box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
 }
 
-.cm-duvida-comentario-admin strong,
-.cm-duvida-comentario-orientador strong {
-  color: #f1f5f9;
+.cm-comentario-card-admin .cm-comentario-card-nome,
+.cm-comentario-card-admin .cm-comentario-card-texto,
+.cm-comentario-card-orientador .cm-comentario-card-nome,
+.cm-comentario-card-orientador .cm-comentario-card-texto {
+  color: #f1f5f9; /* slate-100 */
 }
 
-.cm-duvida-comentario-admin p,
-.cm-duvida-comentario-orientador p {
-  color: #e2e8f0;
-}
-
-.cm-duvida-comentario-admin .cm-duvida-quando {
+.cm-comentario-card-admin .cm-comentario-card-quando {
   color: #94a3b8; /* slate-400 */
 }
 
-.cm-duvida-comentario-orientador .cm-duvida-quando {
+.cm-comentario-card-orientador .cm-comentario-card-quando {
   color: rgba(253, 230, 138, 0.6); /* amber-200/60 */
 }
 
-.cm-duvida-excluir {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: none;
-  border: none;
-  color: var(--cm-text-soft);
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 6px;
-  line-height: 0;
-}
-
-.cm-duvida-comentario-admin .cm-duvida-excluir,
-.cm-duvida-comentario-orientador .cm-duvida-excluir {
+.cm-comentario-card-admin .cm-comentario-card-excluir,
+.cm-comentario-card-orientador .cm-comentario-card-excluir {
   color: rgba(241, 245, 249, 0.65);
-}
-
-.cm-duvida-excluir:hover {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.12);
-}
-
-.cm-duvida-comentario strong {
-  display: block;
-  font-size: 0.86rem;
-  color: #1a1a1a;
-}
-
-.cm-duvida-quando {
-  font-weight: 400;
-  color: var(--cm-text-soft);
-  font-size: 0.74rem;
-  margin-left: 8px;
-}
-
-.cm-duvida-comentario p {
-  margin: 4px 0 0;
-  font-size: 0.86rem;
-  color: #333;
-  line-height: 1.5;
 }
 
 .cm-duvida-paginacao {
@@ -1942,86 +1977,9 @@
   cursor: not-allowed;
 }
 
-.cm-comentario {
-  display: flex;
-  gap: 12px;
-  padding: 14px 0;
-  border-top: 1px solid var(--cm-border);
-}
-
-.cm-comentario:first-of-type {
-  border-top: none;
-  padding-top: 0;
-}
-
-.cm-comentario-avatar {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: var(--cm-sage-soft);
-  color: var(--cm-sage-dark);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 0.82rem;
-  flex-shrink: 0;
-}
-
-.cm-comentario-corpo strong {
-  font-size: 0.9rem;
-}
-
-.cm-comentario-quando {
-  color: var(--cm-text-soft);
-  font-size: 0.76rem;
-  margin-left: 8px;
-  font-weight: 400;
-}
-
-.cm-comentario-texto {
-  margin: 4px 0 0;
-  font-size: 0.88rem;
-  color: var(--cm-text);
-}
-
-/* Badges de Administrador/Orientador + botão de excluir no mural de
-   comentários (ComentariosFeed.jsx) — Orientador tem destaque MAIOR
-   (borda + brilho + estrela), pedido explícito do cliente. */
-.cm-comentario-admin,
-.cm-comentario-orientador {
-  align-items: flex-start;
-  border-radius: 10px;
-  padding: 12px 14px;
-  margin: 6px 0;
-}
-
-.cm-comentario-admin {
-  border-left: 3px solid #3b82f6;
-  background: #1e293b;
-}
-
-.cm-comentario-orientador {
-  border-left: 3px solid #f59e0b;
-  background: #29210a;
-  box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
-}
-
-.cm-comentario-admin .cm-comentario-corpo strong,
-.cm-comentario-admin .cm-comentario-texto,
-.cm-comentario-orientador .cm-comentario-corpo strong,
-.cm-comentario-orientador .cm-comentario-texto {
-  color: #f1f5f9;
-}
-
-.cm-comentario-admin .cm-comentario-quando {
-  color: #94a3b8; /* slate-400 */
-}
-
-.cm-comentario-orientador .cm-comentario-quando {
-  color: rgba(253, 230, 138, 0.6); /* amber-200/60 */
-}
-
+/* Badges de Administrador/Orientador — compartilhados por ComentarioCard.jsx
+   (mural "geral" em Aulas E "Sua prática hoje" no Dashboard). Orientador tem
+   destaque MAIOR (borda + brilho + estrela), pedido explícito do cliente. */
 .cm-badge-admin,
 .cm-badge-orientador {
   display: inline-flex;
@@ -2053,29 +2011,6 @@
 
 .cm-badge-orientador svg {
   color: #1c1300;
-}
-
-.cm-comentario-excluir {
-  margin-left: auto;
-  align-self: flex-start;
-  background: none;
-  border: none;
-  color: var(--cm-text-soft);
-  cursor: pointer;
-  padding: 5px;
-  border-radius: 6px;
-  flex-shrink: 0;
-  line-height: 0;
-}
-
-.cm-comentario-admin .cm-comentario-excluir,
-.cm-comentario-orientador .cm-comentario-excluir {
-  color: rgba(241, 245, 249, 0.65);
-}
-
-.cm-comentario-excluir:hover {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.12);
 }
 
 /* Reestiliza o GuardedVideo (componente compartilhado) para combinar com
@@ -2679,6 +2614,27 @@
 .cm-feed-post:first-of-type {
   border-top: none;
   padding-top: 0;
+}
+
+.cm-feed-post-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--cm-sage-soft);
+  color: var(--cm-sage-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.82rem;
+  flex-shrink: 0;
+}
+
+.cm-feed-post-quando {
+  color: var(--cm-text-soft);
+  font-size: 0.76rem;
+  margin-left: 8px;
+  font-weight: 400;
 }
 
 .cm-feed-post-texto {
