@@ -92,6 +92,16 @@ function AdminMeditacao() {
   const [encontroSucesso, setEncontroSucesso] = useState(false);
   const [encontroErro, setEncontroErro] = useState("");
 
+  // Seção "Controle da Live" — trava/libera manualmente o botão "Entrar na
+  // live" que o aluno vê em /comunidade (ColunaEncontros.jsx via
+  // public/api/live/status.php), independente do link_live salvo acima em
+  // "Encontro ao Vivo". Mesmo padrão de auth (X-Admin-Secret) e mesmo
+  // back-end PHP separado (public/api/admin/live-controle.php).
+  const [liveLiberada, setLiveLiberada] = useState(false);
+  const [liveCarregado, setLiveCarregado] = useState(false);
+  const [salvandoLive, setSalvandoLive] = useState(false);
+  const [liveErro, setLiveErro] = useState("");
+
   // Seção "Desafio da Semana" — edita os 3 itens (título + descrição) que
   // o aluno vê em /comunidade (DesafioSemana.jsx via
   // public/api/desafios-semana.php). Mesmo padrão de auth (X-Admin-Secret)
@@ -136,6 +146,53 @@ function AdminMeditacao() {
 
   function handleEncontroChange(campo) {
     return (e) => setEncontroForm((atual) => ({ ...atual, [campo]: e.target.value }));
+  }
+
+  useEffect(() => {
+    if (!autenticado) return;
+    let cancelado = false;
+    fetch("/api/admin/live-controle.php", { headers: { "X-Admin-Secret": secret } })
+      .then((r) => r.json())
+      .then((dados) => {
+        if (!cancelado && dados?.ok) {
+          setLiveLiberada(!!dados.liberada);
+          setLiveCarregado(true);
+        }
+      })
+      .catch(() => {
+        // Endpoint PHP indisponível (ex: dev local sem PHP rodando) — o
+        // botão de alternar fica desabilitado (liveCarregado continua
+        // false) em vez de arriscar mostrar/enviar um estado desatualizado.
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [autenticado, secret]);
+
+  async function handleAlternarLive() {
+    if (salvandoLive || !liveCarregado) return;
+    setLiveErro("");
+    setSalvandoLive(true);
+    const novoValor = !liveLiberada;
+
+    try {
+      const res = await fetch("/api/admin/live-controle.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Admin-Secret": secret },
+        body: JSON.stringify({ liberada: novoValor ? 1 : 0 }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(res.status === 401 ? "Senha incorreta." : data.erro || "Falha ao salvar.");
+      }
+
+      setLiveLiberada(!!data.liberada);
+    } catch (err) {
+      setLiveErro(err.message || "Não foi possível atualizar.");
+    } finally {
+      setSalvandoLive(false);
+    }
   }
 
   useEffect(() => {
@@ -563,6 +620,45 @@ function AdminMeditacao() {
               </div>
             </>
           )}
+        </div>
+
+        <div className="form-card" style={{ marginTop: 40 }}>
+          <h3>Controle da Live</h3>
+          <p style={{ marginTop: -8, marginBottom: 16, color: "#666" }}>
+            Trava/libera o botão "Entrar na live" que o aluno vê em /comunidade — independente do link salvo abaixo em "Encontro ao Vivo".
+          </p>
+          {liveErro && <div className="error-box">{liveErro}</div>}
+          <button
+            type="button"
+            onClick={handleAlternarLive}
+            disabled={salvandoLive || !liveCarregado}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              width: "100%",
+              maxWidth: 360,
+              padding: "12px 18px",
+              borderRadius: 999,
+              border: "1px solid #ddd",
+              background: liveLiberada ? "#e8f5e9" : "#fdecea",
+              cursor: salvandoLive || !liveCarregado ? "default" : "pointer",
+              fontWeight: 600,
+              fontSize: 14,
+              opacity: liveCarregado ? 1 : 0.6,
+            }}
+          >
+            <span>{liveLiberada ? "🟢 Liberar entrada" : "🔴 Live Fechada"}</span>
+            <span style={{ fontSize: 12, color: "#666", fontWeight: 400 }}>
+              {salvandoLive ? "Salvando..." : "Clique para alternar"}
+            </span>
+          </button>
+          <p style={{ marginTop: 10, marginBottom: 0, fontSize: 13, color: "#666" }}>
+            Status atual:{" "}
+            {liveLiberada
+              ? 'Liberada — o aluno vê o botão "Entrar na live" clicável.'
+              : 'Travada — o aluno vê "Aguardando liberação do professor".'}
+          </p>
         </div>
 
         <div className="form-card" style={{ marginTop: 40 }}>

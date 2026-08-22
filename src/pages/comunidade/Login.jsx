@@ -115,7 +115,7 @@ export default function ComunidadeLogin() {
     <div className="cm-login-page">
       <div className="cm-login-card">
         <h1 className="cm-login-title">{modo === "criar" ? "Crie sua senha do Clube" : "Entrar no Clube Presença"}</h1>
-        <p className="cm-login-subtitle">{modo === "criar" ? "Detectamos sua compra na Hotmart. Crie uma senha só pro Clube." : "Use o email da sua compra na Hotmart."}</p>
+        <p className="cm-login-subtitle">{modo === "criar" ? "Detectamos sua compra na Hotmart. Crie uma senha só pro Clube." : "Use o e-mail da sua compra na Hotmart."}</p>
 
         {erro && <div className="cm-login-alert cm-login-alert-erro">{erro}</div>}
         {msg && <div className="cm-login-alert cm-login-alert-msg">{msg}</div>}
@@ -147,8 +147,8 @@ export default function ComunidadeLogin() {
           )}
 
           <div className="cm-login-field">
-            <label htmlFor="cm-login-email">Email</label>
-            <input id="cm-login-email" type="email" required placeholder="Email da compra" value={email} onChange={(e) => setEmail(e.target.value)} className="cm-login-input" />
+            <label htmlFor="cm-login-email">E-mail da compra</label>
+            <input id="cm-login-email" type="email" required placeholder="seu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="cm-login-input" />
           </div>
 
           <div className="cm-login-field">
@@ -159,7 +159,7 @@ export default function ComunidadeLogin() {
                 type={mostrarSenha ? "text" : "password"}
                 required
                 minLength={modo === "criar" ? 8 : undefined}
-                placeholder={modo === "criar" ? "Crie uma senha forte" : "Sua senha do Clube"}
+                placeholder="••••••••"
                 value={senha}
                 onChange={(e) => setSenha(e.target.value)}
                 className={`cm-login-input cm-login-input-senha ${modo === "criar" && senha ? (senhaForte ? "is-strong" : "is-weak") : ""}`}
@@ -199,7 +199,7 @@ export default function ComunidadeLogin() {
                   id="cm-login-confirmar"
                   type={mostrarConfirmar ? "text" : "password"}
                   required
-                  placeholder="Repita a senha"
+                  placeholder="••••••••"
                   value={confirmarSenha}
                   onChange={(e) => setConfirmarSenha(e.target.value)}
                   className={`cm-login-input cm-login-input-confirmar ${confirmarSenha ? (senhasIguais ? "is-valid" : "is-invalid") : ""}`}

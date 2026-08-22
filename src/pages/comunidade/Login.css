@@ -1,18 +1,26 @@
 /* Tela de login/cadastro do Clube Presença — fica fora do wrapper
    .comunidade-app (rota separada, ComunidadeLayout não entra aqui), então
    repete a mesma paleta bege/sálvia de ComunidadeApp.css em vez de herdar
-   dela, mais os tons de validação (verde/vermelho) usados só nesta tela. */
+   dela, mais os tons de validação (verde/vermelho) usados só nesta tela.
+
+   Redesign "premium" (referência Hotmart/Memberkit, pedido explícito do
+   cliente): card branco flutuando sobre fundo bege, título serif alinhado
+   à esquerda, labels SEMPRE fora/acima do input (nunca centralizado),
+   inputs cinza-claro que clareiam no foco com borda preta, e o botão
+   principal como pílula preta — mesmo tratamento do CTA "Reservar minha
+   vaga" do dashboard (ColunaEncontros.jsx). */
 
 .cm-login-page {
-  --cm-bg: #fffefb;
-  --cm-beige: #f5f1eb;
-  --cm-beige-soft: #faf8f4;
-  --cm-sage: #8a9a8c;
-  --cm-sage-dark: #6f7d71;
-  --cm-text: #33312c;
-  --cm-text-soft: #7a766e;
-  --cm-border: rgba(51, 49, 44, 0.14);
-  --cm-shadow: 0 14px 34px rgba(51, 49, 44, 0.07), 0 2px 8px rgba(51, 49, 44, 0.04);
+  --cm-page-bg: #f5f1e8;
+  --cm-bg: #fff;
+  --cm-text: #1a1a1a;
+  --cm-text-soft: #6b7280;
+  --cm-label: #374151;
+  --cm-border: #e5e7eb;
+  --cm-input-bg: #f9fafb;
+  --cm-placeholder: #9ca3af;
+  --cm-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+  --cm-card-border: rgba(0, 0, 0, 0.05);
   --cm-radius: 24px;
   --cm-green: #22c55e;
   --cm-green-soft: rgba(34, 197, 94, 0.08);
@@ -24,7 +32,7 @@
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: var(--cm-beige-soft);
+  background: var(--cm-page-bg);
   font-family: "Inter", -apple-system, sans-serif;
   color: var(--cm-text);
 }
@@ -36,7 +44,7 @@
   padding: 32px;
   border-radius: var(--cm-radius);
   box-shadow: var(--cm-shadow);
-  border: 1px solid var(--cm-border);
+  border: 1px solid var(--cm-card-border);
 }
 
 /* px-4 md:px-8: card já é width:100% com max-width, então cabe em 375px
@@ -51,17 +59,23 @@
   }
 }
 
+/* Título e subtítulo: SEMPRE à esquerda (pedido explícito do cliente —
+   "nada centralizado"), diferente do resto do site institucional que usa
+   título centralizado em telas cheias. */
 .cm-login-title {
-  font-size: 26px;
-  font-weight: 800;
-  margin: 0 0 6px;
+  font-family: "Playfair Display", Georgia, serif;
+  font-size: 28px;
+  font-weight: 700;
+  text-align: left;
+  margin: 0 0 8px;
   color: var(--cm-text);
 }
 
 .cm-login-subtitle {
   font-size: 14px;
+  text-align: left;
   color: var(--cm-text-soft);
-  margin: 0 0 24px;
+  margin: 0 0 32px;
 }
 
 .cm-login-alert {
@@ -69,6 +83,7 @@
   border-radius: 12px;
   margin-bottom: 16px;
   font-size: 14px;
+  text-align: left;
 }
 
 .cm-login-alert-erro {
@@ -84,19 +99,25 @@
 .cm-login-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 }
 
 .cm-login-field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+  text-align: left;
 }
 
+/* Label SEMPRE fora e acima do input, nunca dentro dele como placeholder —
+   é exatamente essa troca que resolve a queixa do cliente ("Email" saindo
+   centralizado por cima do texto de exemplo). */
 .cm-login-field label {
+  display: block;
   font-size: 13px;
   font-weight: 600;
-  color: var(--cm-text);
+  text-align: left;
+  color: var(--cm-label);
 }
 
 .cm-login-input-wrap {
@@ -108,10 +129,11 @@
 .cm-login-input {
   width: 100%;
   height: 48px;
-  border: 1.5px solid var(--cm-border);
-  background: var(--cm-bg);
+  border: 1px solid var(--cm-border);
+  background: var(--cm-input-bg);
   border-radius: 12px;
-  padding: 0 14px;
+  padding: 0 16px;
+  text-align: left;
   font-size: 15px;
   color: var(--cm-text);
   outline: none;
@@ -120,8 +142,13 @@
     background-color 200ms ease;
 }
 
+.cm-login-input::placeholder {
+  color: var(--cm-placeholder);
+}
+
 .cm-login-input:focus {
-  border-color: var(--cm-sage);
+  border-color: #2b2b2b;
+  background: #fff;
 }
 
 .cm-login-input.is-valid,
@@ -176,13 +203,13 @@
   border: none;
   padding: 4px;
   cursor: pointer;
-  color: var(--cm-text-soft);
+  color: var(--cm-placeholder);
   border-radius: 6px;
   transition: color 200ms ease;
 }
 
 .cm-login-eye-btn:hover {
-  color: var(--cm-text);
+  color: #4b5563;
 }
 
 @keyframes cm-login-pop {
@@ -198,18 +225,19 @@
 
 .cm-login-error {
   font-size: 12px;
+  text-align: left;
   color: var(--cm-red);
 }
 
 .cm-login-esqueceu {
   align-self: flex-end;
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--cm-text-soft);
   text-decoration: underline;
 }
 
 .cm-login-esqueceu:hover {
-  color: var(--cm-text);
+  color: #2b2b2b;
 }
 
 .cm-login-success {
@@ -226,6 +254,7 @@
   padding: 0;
   display: grid;
   gap: 4px;
+  text-align: left;
 }
 
 .cm-login-check-item {
@@ -249,7 +278,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--cm-bg);
+  color: #fff;
   flex-shrink: 0;
   transition:
     background-color 200ms ease,
@@ -261,13 +290,16 @@
   border-color: var(--cm-green);
 }
 
+/* Botão principal: mesma pílula preta sólida do CTA "Reservar minha vaga"
+   (ColunaEncontros.jsx / ComunidadeApp.css .cm-btn-primary.cm-encontro-btn)
+   — pedido explícito do cliente pra ter a cara de um único design system. */
 .cm-login-submit {
   width: 100%;
-  height: 48px;
+  height: 52px;
   border: none;
-  border-radius: 12px;
+  border-radius: 999px;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   margin-top: 4px;
   background: var(--cm-border);
   color: var(--cm-text-soft);
@@ -279,13 +311,13 @@
 }
 
 .cm-login-submit.is-ready {
-  background: #000;
+  background: #2b2b2b;
   color: #fff;
   cursor: pointer;
 }
 
 .cm-login-submit.is-ready:hover {
-  background: #1a1a1a;
+  background: #000;
 }
 
 .cm-login-submit:disabled {
@@ -293,7 +325,7 @@
 }
 
 .cm-login-toggle {
-  margin-top: 18px;
+  margin-top: 20px;
   text-align: center;
   font-size: 14px;
 }
@@ -303,6 +335,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--cm-text);
+  font-weight: 500;
+  color: #2b2b2b;
   font-size: 14px;
 }

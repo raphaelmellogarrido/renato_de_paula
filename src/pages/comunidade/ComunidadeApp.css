@@ -278,6 +278,11 @@
 
 .cm-grid-sequencia {
   grid-area: sequencia;
+  /* Mesmo motivo do .cm-grid-desafio logo abaixo: .cm-main tem
+     align-items:stretch, então sem isso o card Sequência estica pra igualar
+     a altura de "Próximo encontro ao vivo" (linha 2, coluna 3) — que é bem
+     mais alto —, deixando um vão em branco enorme embaixo das bolinhas. */
+  align-self: start;
 }
 
 .cm-grid-encontro {
@@ -286,6 +291,11 @@
 
 .cm-grid-progresso {
   grid-area: progresso;
+  /* Defensivo: mesma trava de .cm-grid-sequencia. "Sua Jornada" já costuma
+     ser o item mais alto da linha 3, então isso normalmente não muda nada
+     visualmente, mas evita esticar se "Desafio da Semana" (coluna 3) um dia
+     ficar mais alto. */
+  align-self: start;
 }
 
 .cm-grid-desafio {
@@ -1497,11 +1507,11 @@
   }
 }
 
-/* Bloqueio progressivo (ver AulasMeditacaoRaiz.jsx): vídeo ainda não
-   liberado por ordem — item esmaecido, cadeado no lugar do dot, cursor de
-   "não permitido" no clique, checkbox de concluir desabilitado. */
+/* Bloqueio por dia/calendário (ver AulasMeditacaoRaiz.jsx / progressoDias.js):
+   vídeo ainda não liberado — item esmaecido, cadeado no lugar do dot, cursor
+   de "não permitido" no clique, checkbox de concluir desabilitado. */
 .cm-video-item.is-bloqueado {
-  opacity: 0.5;
+  opacity: 0.6;
 }
 
 .cm-video-item.is-bloqueado .cm-video-item-titulo {
@@ -1602,16 +1612,79 @@
   font-size: 1.05rem;
 }
 
-.cm-jornada-streak {
+.cm-jornada-titulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "Playfair Display", Georgia, serif;
+  font-weight: 700;
+}
+
+.cm-jornada-titulo-icone {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
   flex-shrink: 0;
-  font-size: 0.76rem;
+}
+
+/* Badge de status do dia (ver getStatusJornada em JornadaProgress.jsx) —
+   3 estados: bora-aula (laranja, pulsando de leve), dia-concluido (verde,
+   esperando virar o dia) e curso-concluido (dourado, 48/48). Sem emoji de
+   fogo aqui, só os ícones PNG fornecidos pelo cliente. */
+.cm-jornada-badge {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
   font-weight: 600;
-  color: var(--cm-text);
-  background: var(--cm-beige-soft);
-  border: 1px solid var(--cm-border);
   border-radius: 999px;
-  padding: 4px 10px;
+  padding: 4px 12px;
+  border: 1px solid transparent;
   white-space: nowrap;
+}
+
+.cm-jornada-badge-icone {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.cm-jornada-badge--bora-aula {
+  background: #ffedd5;
+  color: #c2410c;
+  border-color: #fed7aa;
+  animation: cm-jornada-badge-pulso 2.2s ease-in-out infinite;
+}
+
+.cm-jornada-badge--dia-concluido {
+  background: #dcfce7;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+
+.cm-jornada-badge--curso-concluido {
+  background: #fef9c3;
+  color: #854d0e;
+  border-color: #fde047;
+  font-weight: 700;
+}
+
+@keyframes cm-jornada-badge-pulso {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.72;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cm-jornada-badge--bora-aula {
+    animation: none;
+  }
 }
 
 .cm-jornada-anel-wrap {
@@ -2476,33 +2549,18 @@
   color: var(--cm-red);
 }
 
-/* Botão "Entrar na live" / "Em breve" (link_live vindo do admin) — variante
-   outline de .cm-encontro-btn, mesmo tamanho, fundo transparente pra não
-   competir visualmente com o CTA principal "Reservar minha vaga". */
-.cm-encontro-link-btn {
-  display: block;
-  width: 100%;
-  margin-top: 8px;
-  padding: 10px;
-  font-size: 0.84rem;
-  text-align: center;
-  text-decoration: none;
-  background: transparent;
-  color: var(--cm-text);
-  border: 1px solid var(--cm-text);
-  border-radius: 12px;
-  cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease;
-}
-
-.cm-encontro-link-btn:hover:not(:disabled) {
-  background: var(--cm-text);
-  color: #fff;
-}
-
-.cm-encontro-link-btn:disabled {
-  opacity: 0.5;
-  cursor: default;
+/* Botão "Entrar na live" — pedido explícito do cliente pra ficar IDÊNTICO
+   ao "Reservar minha vaga" quando liberado (mesmas classes cm-btn-primary
+   cm-encontro-btn, sem estilo outline próprio). O estado travado abaixo
+   (.is-travado) é a única variação: cinza claro/desabilitado enquanto o
+   professor não libera em /admin (Controle da Live). */
+.cm-encontro-btn.is-travado,
+.cm-encontro-btn.is-travado:hover,
+.cm-encontro-btn.is-travado:disabled {
+  background: #d1d5db;
+  color: #6b7280;
+  opacity: 1;
+  cursor: not-allowed;
 }
 
 .cm-encontro-toast {

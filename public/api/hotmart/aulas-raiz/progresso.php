@@ -25,7 +25,7 @@ if ($method === 'GET') {
     }
 
     $stmt = $mysqli->prepare(
-        "SELECT arquivo, dia, progresso_percent, ultima_posicao, assistida
+        "SELECT arquivo, dia, progresso_percent, ultima_posicao, assistida, completada_em
          FROM progresso_aulas_raiz WHERE email = ?"
     );
     $stmt->bind_param('s', $email);
@@ -39,6 +39,10 @@ if ($method === 'GET') {
             'progresso' => (int)$row['progresso_percent'],
             'posicao' => (int)$row['ultima_posicao'],
             'assistida' => (bool)$row['assistida'],
+            // Usado por progressoDias.js (bloqueio por dia/calendário) pra
+            // calcular a data em que o último dia foi 100% concluído —
+            // string "Y-m-d H:i:s" (mysqli devolve assim) ou null.
+            'completado_em' => $row['completada_em'],
         ];
     }
     $stmt->close();

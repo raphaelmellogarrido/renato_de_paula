@@ -47,6 +47,12 @@ function ColunaEncontros() {
   const [processando, setProcessando] = useState(false);
   const [toast, setToast] = useState(null); // { tipo: "sucesso" | "erro", texto }
 
+  // Travado por padrão até o primeiro fetch resolver — mesmo raciocínio do
+  // default 0 no banco (public/api/hotmart/_conexao.php): nunca libera
+  // sozinho antes do professor confirmar em /admin (seção "Controle da
+  // Live").
+  const [liveLiberada, setLiveLiberada] = useState(false);
+
   // Título/data/horário/linhas/link editáveis pelo admin (/admin,
   // seção "Encontro ao Vivo") — vem de public/api/encontro.php. Valor
   // inicial é o mesmo texto hard-coded de sempre, só reorganizado nesse
@@ -87,6 +93,33 @@ function ColunaEncontros() {
       });
     return () => {
       cancelado = true;
+    };
+  }, []);
+
+  // Controle da Live (público, sem auth) — checa a cada 30s se o professor
+  // liberou o botão "Entrar na live" em /admin. Fetch imediato no mount pra
+  // não esperar 30s pro primeiro render já vir correto.
+  useEffect(() => {
+    let cancelado = false;
+
+    function verificarLive() {
+      fetch("/api/live/status.php")
+        .then((r) => r.json())
+        .then((dados) => {
+          if (!cancelado && dados?.ok) {
+            setLiveLiberada(!!dados.liberada);
+          }
+        })
+        .catch(() => {
+          // Sem PHP disponível (dev local) — mantém o estado travado padrão.
+        });
+    }
+
+    verificarLive();
+    const intervalo = setInterval(verificarLive, 30000);
+    return () => {
+      cancelado = true;
+      clearInterval(intervalo);
     };
   }, []);
 
@@ -207,18 +240,24 @@ function ColunaEncontros() {
           )}
         </button>
 
-        {encontro.link_live ? (
+        {/* Trava separada do link_live: o professor pode deixar o link já
+            configurado e só liberar o botão na hora do encontro (Controle
+            da Live, /admin). Mesma classe do botão "Reservar minha vaga"
+            (cm-btn-primary cm-encontro-btn) pra ficarem visualmente
+            idênticos quando liberado; is-travado sobrescreve pro cinza
+            desabilitado enquanto o professor não libera. */}
+        {liveLiberada && encontro.link_live ? (
           <a
             href={encontro.link_live}
             target="_blank"
             rel="noreferrer"
-            className="cm-encontro-link-btn"
+            className="cm-btn-primary cm-encontro-btn"
           >
             Entrar na live
           </a>
         ) : (
-          <button type="button" className="cm-encontro-link-btn" disabled>
-            Em breve
+          <button type="button" className="cm-btn-primary cm-encontro-btn is-travado" disabled>
+            {liveLiberada ? "Em breve" : "Aguardando liberação do professor"}
           </button>
         )}
 

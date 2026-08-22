@@ -107,6 +107,20 @@ function garantirEstruturaClube(mysqli $mysqli): void
     if ($temApelido && $temApelido->num_rows === 0) {
         $mysqli->query("ALTER TABLE alunos ADD COLUMN apelido VARCHAR(30) NULL AFTER nome");
     }
+
+    // Controle manual da live (seção "Controle da Live" em AdminMeditacao.jsx,
+    // consumida por public/api/live/status.php + public/api/admin/live-controle.php).
+    // Trava o botão "Entrar na live" em ColunaEncontros.jsx até o professor
+    // liberar, independente de link_live já estar preenchido. Mesmo padrão de
+    // ALTER condicional do apelido acima. Default 0 (travado): a coluna nunca
+    // libera sozinha na primeira vez que é criada.
+    $temLiveLiberada = $mysqli->query(
+        "SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'config_encontro' AND COLUMN_NAME = 'live_liberada'"
+    );
+    if ($temLiveLiberada && $temLiveLiberada->num_rows === 0) {
+        $mysqli->query("ALTER TABLE config_encontro ADD COLUMN live_liberada TINYINT(1) NOT NULL DEFAULT 0");
+    }
 }
 
 // Streak real (dias consecutivos até hoje/ontem) calculado a partir das

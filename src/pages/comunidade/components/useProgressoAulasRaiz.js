@@ -58,7 +58,10 @@ export function useProgressoAulasRaiz() {
           for (const item of lista) {
             const chave = item.arquivo;
             if (!chave || mesclado[chave]?.assistida) continue;
-            mesclado[chave] = { assistida: !!item.assistida, progresso: item.progresso || 0 };
+            // completado_em alimenta o cálculo de "dia concluído hoje" do
+            // card Sua Jornada (ver JornadaProgress.jsx + progressoDias.js)
+            // — mesmo campo que AulasMeditacaoRaiz.jsx já consome.
+            mesclado[chave] = { assistida: !!item.assistida, progresso: item.progresso || 0, completado_em: item.completado_em || null };
           }
           salvarProgressoLocal(email, mesclado);
           return mesclado;

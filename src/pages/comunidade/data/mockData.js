@@ -108,7 +108,7 @@ export const PROXIMO_ENCONTRO_VIVO = {
 // aqui: é estado real, salvo em localStorage + sincronizado com o PHP
 // (mesmo padrão do progresso das aulas em AulasMeditacaoRaiz.jsx).
 export const DESAFIO_SEMANA = {
-  tituloWidget: "Desafio da Semana",
+  tituloWidget: "Desafios da semana",
   itens: [
     { id: "manha-sem-celular", titulo: "Uma manhã sem celular", subtitulo: "5 min ao acordar sem pegar no celular" },
     { id: "respiracao-consciente", titulo: "Respiração consciente", subtitulo: "3 respirações profundas antes do almoço" },

@@ -4,6 +4,7 @@ import GuardedVideo from "../../components/GuardedVideo";
 import ComentariosFeed from "./components/ComentariosFeed";
 import JornadaProgress from "./components/JornadaProgress";
 import { useEmailSessao, chaveUsuario, logSalvandoParaUsuario } from "./components/usuarioStorage";
+import { podeAssistir, calcularMaxDiaCompleto, calcularUltimoDiaCompletadoData, isoLocal } from "./components/progressoDias";
 
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:3001" : "");
 
@@ -22,6 +23,21 @@ const LIMIAR_AUTO_CONCLUIDA = 0.9;
 // TITULOS_AULAS_RAIZ por dia.
 function diaDoArquivo(arquivo) {
   return Number(arquivo.match(/^dia(\d+)\./)?.[1]) || 0;
+}
+
+// Texto do toast/placeholder por `motivo` de bloqueio — mensagens exatas
+// pedidas pelo cliente (ver progressoDias.js pra quando cada motivo ocorre).
+function mensagemBloqueio(motivo, dia) {
+  if (motivo === "calendario") {
+    return `Você já completou seu dia hoje! Volte amanhã para liberar o Dia ${dia}.`;
+  }
+  if (motivo === "ordem") {
+    return "Assista o vídeo anterior para liberar.";
+  }
+  if (motivo === "sequencia") {
+    return `Complete os dias anteriores para desbloquear o Dia ${dia}.`;
+  }
+  return "Vídeo bloqueado.";
 }
 
 // Mesma base de chave usada em useProgressoAulasRaiz.js — precisa
@@ -157,7 +173,10 @@ export default function AulasMeditacaoRaiz() {
             if (!chave) continue;
             // Servidor é a fonte de verdade (cobre outro navegador/dispositivo,
             // inclusive uma desmarcação feita lá) — não preserva o valor local.
-            mesclado[chave] = { assistida: !!item.assistida, progresso: item.progresso || 0 };
+            // completado_em alimenta o bloqueio por dia/calendário (ver
+            // progressoDias.js) — precisa da data real em que o vídeo foi
+            // concluído, não só se está concluído.
+            mesclado[chave] = { assistida: !!item.assistida, progresso: item.progresso || 0, completado_em: item.completado_em || null };
           }
           salvarProgressoLocal(email, mesclado);
           return mesclado;
@@ -203,25 +222,51 @@ export default function AulasMeditacaoRaiz() {
     [videos, videoArquivoEfetivo],
   );
 
-  // Bloqueio progressivo: Dia 0 sempre livre (mas conta como pré-requisito
-  // pros dias seguintes); a partir do Dia 1, cada vídeo exige 100% de TODOS
-  // os anteriores na ordem linear real do curso (mesmo achatamento que
-  // alvoResumo já faz acima). Mapa: arquivo -> null (livre) ou
-  // { arquivo, titulo } do primeiro pré-requisito que falta.
+  // Maior dia 100% completo e data (local) em que isso aconteceu — as duas
+  // bases pras regras de calendário do podeAssistir logo abaixo (ver
+  // progressoDias.js pro cálculo em si).
+  const maxDiaCompleto = useMemo(
+    () => calcularMaxDiaCompleto(dias, progressoPorArquivo),
+    [dias, progressoPorArquivo],
+  );
+  const ultimoDiaCompletadoData = useMemo(
+    () => calcularUltimoDiaCompletadoData(dias, progressoPorArquivo, maxDiaCompleto),
+    [dias, progressoPorArquivo, maxDiaCompleto],
+  );
+
+  // Bloqueio por DIA (não por vídeo, ver progressoDias.js): dia inteiro
+  // libera de uma vez (em ordem interna), Dia 0 -> Dia 1 pode ser feito no
+  // mesmo dia, e a partir daí só libera 1 dia novo por dia de calendário.
+  // Mapa: arquivo -> { liberado, motivo }.
   const bloqueioPorArquivo = useMemo(() => {
-    const linear = dias.flatMap((d) => d.videos.map((v) => ({ ...v, dia: d.dia })));
     const mapa = {};
-    for (let i = 0; i < linear.length; i++) {
-      const video = linear[i];
-      if (video.dia === 0) {
-        mapa[video.arquivo] = null;
-        continue;
-      }
-      const faltante = linear.slice(0, i).find((anterior) => !progressoPorArquivo[anterior.arquivo]?.assistida);
-      mapa[video.arquivo] = faltante ? { arquivo: faltante.arquivo, titulo: faltante.titulo } : null;
+    for (const diaObj of dias) {
+      diaObj.videos.forEach((video, videoIndex) => {
+        mapa[video.arquivo] = podeAssistir(diaObj.dia, videoIndex, {
+          dias,
+          progressoPorArquivo,
+          maxDiaCompleto,
+          ultimoDiaCompletadoData,
+        });
+      });
     }
+
+    // Pedido explícito do cliente: "testar com console.log(podeAssistir)" —
+    // loga o resultado calculado pros vídeos do dia atualmente selecionado.
+    const diaObjAtual = dias.find((d) => d.dia === diaEfetivo);
+    diaObjAtual?.videos.forEach((video, videoIndex) => {
+      console.log("[podeAssistir]", {
+        dia: diaEfetivo,
+        videoIndex,
+        arquivo: video.arquivo,
+        maxDiaCompleto,
+        ultimoDiaCompletadoData,
+        resultado: mapa[video.arquivo],
+      });
+    });
+
     return mapa;
-  }, [dias, progressoPorArquivo]);
+  }, [dias, progressoPorArquivo, maxDiaCompleto, ultimoDiaCompletadoData, diaEfetivo]);
 
   const bloqueioVideoAtivo = videoAtivo ? bloqueioPorArquivo[videoAtivo.arquivo] : null;
 
@@ -230,8 +275,10 @@ export default function AulasMeditacaoRaiz() {
     if (!arquivo || !email) return;
 
     // Otimista: atualiza local + localStorage já, sem esperar o PHP responder.
+    // completado_em local (data de hoje) pra o bloqueio por dia liberar o
+    // próximo dia sem precisar esperar a resposta do servidor.
     setProgressoPorArquivo((atual) => {
-      const novo = { ...atual, [arquivo]: { assistida: true, progresso: 100 } };
+      const novo = { ...atual, [arquivo]: { assistida: true, progresso: 100, completado_em: isoLocal(new Date()) } };
       salvarProgressoLocal(email, novo);
       return novo;
     });
@@ -300,8 +347,8 @@ export default function AulasMeditacaoRaiz() {
 
   function selecionarVideo(arquivo) {
     const bloqueio = bloqueioPorArquivo[arquivo];
-    if (bloqueio) {
-      mostrarToast(`Complete o vídeo anterior: ${bloqueio.titulo}`);
+    if (bloqueio && !bloqueio.liberado) {
+      mostrarToast(mensagemBloqueio(bloqueio.motivo, diaEfetivo));
       return; // mantém na tela atual, não abre o player
     }
     setVideoAtivoArquivo(arquivo);
@@ -362,7 +409,7 @@ export default function AulasMeditacaoRaiz() {
       <div className="cm-aula-layout">
         <div>
           <div className="cm-player-wrap">
-            {videoAtivo && !bloqueioVideoAtivo ? (
+            {videoAtivo && bloqueioVideoAtivo?.liberado ? (
               <GuardedVideo
                 key={videoAtivo.arquivo}
                 src={`${API_URL}${videoAtivo.url}`}
@@ -374,7 +421,7 @@ export default function AulasMeditacaoRaiz() {
             ) : videoAtivo ? (
               <div className="cm-video-bloqueado-placeholder">
                 <Lock size={28} />
-                <p>Complete "{bloqueioVideoAtivo.titulo}" para desbloquear este vídeo.</p>
+                <p>{mensagemBloqueio(bloqueioVideoAtivo?.motivo, diaEfetivo)}</p>
               </div>
             ) : (
               <div style={{ color: "white", display: "flex", alignItems: "center", justifyContent: "center", aspectRatio: "16/9" }}>
@@ -402,7 +449,7 @@ export default function AulasMeditacaoRaiz() {
             {videos.map((video) => {
               const concluida = !!progressoPorArquivo[video.arquivo]?.assistida;
               const bloqueio = bloqueioPorArquivo[video.arquivo];
-              const bloqueado = !!bloqueio;
+              const bloqueado = !!bloqueio && !bloqueio.liberado;
               return (
                 <div
                   key={video.arquivo}
