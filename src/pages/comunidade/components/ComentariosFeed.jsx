@@ -4,13 +4,19 @@ import { useEmailSessao, lerNomeSessao } from "./usuarioStorage";
 import { iniciais, formatarDataBr } from "./comentariosUtils";
 
 const COMENTARIOS_URL = "/api/hotmart/comentarios.php";
+// aula_id fixo — antes cada vídeo tinha seu próprio bucket de comentários
+// (prop `aulaId` dinâmica) e trocar de aula fazia a lista toda "sumir"
+// (bug real: sumia porque ia pra outro aula_id, não porque perdia dado).
+// Agora é um mural único, compartilhado entre todos os vídeos. Não confundir
+// com DificuldadeDoDia.jsx, que usa o mesmo backend só que com aula_id
+// PRÓPRIO ("dificuldade_do_dia") — feed diferente de propósito, não mexe
+// aqui.
+const AULA_ID = "geral";
 
-// Feed de comentários por aula: persistido em
-// public/api/hotmart/comentarios.php, paginado de 10 em 10 (mais recentes
-// primeiro). `aulaId` separa os comentários por vídeo (coluna aula_id no
-// banco) — sem prop, cai no bucket "geral". Permanente: nenhum reset
+// Feed de comentários: persistido em public/api/hotmart/comentarios.php,
+// paginado de 10 em 10 (mais recentes primeiro). Permanente: nenhum reset
 // semanal (DesafioSemana etc.) toca essa tabela.
-function ComentariosFeed({ aulaId = "geral" }) {
+function ComentariosFeed() {
   const email = useEmailSessao();
   const [itens, setItens] = useState([]);
   const [total, setTotal] = useState(null); // null = ainda carregando a 1ª vez
@@ -19,27 +25,22 @@ function ComentariosFeed({ aulaId = "geral" }) {
   const [texto, setTexto] = useState("");
   const [enviando, setEnviando] = useState(false);
 
-  const carregar = useCallback(
-    (paginaAlvo) => {
-      fetch(`${COMENTARIOS_URL}?aula_id=${encodeURIComponent(aulaId)}&page=${paginaAlvo}`)
-        .then((r) => r.json())
-        .then((dados) => {
-          setItens(Array.isArray(dados?.itens) ? dados.itens : []);
-          setTotal(Number.isFinite(dados?.total) ? dados.total : 0);
-          setPage(Number.isFinite(dados?.page) ? dados.page : paginaAlvo);
-          setPages(Number.isFinite(dados?.pages) ? Math.max(1, dados.pages) : 1);
-        })
-        .catch((err) => {
-          console.error("[Clube Presença] falha ao carregar comentários:", err);
-          setItens([]);
-          setTotal(0);
-        });
-    },
-    [aulaId]
-  );
+  const carregar = useCallback((paginaAlvo) => {
+    fetch(`${COMENTARIOS_URL}?aula_id=${AULA_ID}&page=${paginaAlvo}`)
+      .then((r) => r.json())
+      .then((dados) => {
+        setItens(Array.isArray(dados?.itens) ? dados.itens : []);
+        setTotal(Number.isFinite(dados?.total) ? dados.total : 0);
+        setPage(Number.isFinite(dados?.page) ? dados.page : paginaAlvo);
+        setPages(Number.isFinite(dados?.pages) ? Math.max(1, dados.pages) : 1);
+      })
+      .catch((err) => {
+        console.error("[Clube Presença] falha ao carregar comentários:", err);
+        setItens([]);
+        setTotal(0);
+      });
+  }, []);
 
-  // Troca de aula (vídeo diferente selecionado) reseta pra página 1 dessa
-  // aula — `carregar` já muda de identidade quando `aulaId` muda.
   useEffect(() => {
     carregar(1);
   }, [carregar]);
@@ -53,7 +54,7 @@ function ComentariosFeed({ aulaId = "geral" }) {
     fetch(COMENTARIOS_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, nome: lerNomeSessao(), aula_id: aulaId, comentario: valor }),
+      body: JSON.stringify({ email, nome: lerNomeSessao(), aula_id: AULA_ID, comentario: valor }),
     })
       .then((r) => r.json())
       .then((data) => {

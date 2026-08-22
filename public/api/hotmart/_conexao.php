@@ -24,6 +24,16 @@ if (file_exists(__DIR__ . '/config.php')) {
     if (!defined('DB_NAME')) define('DB_NAME', getenv('DB_NAME') ?: 'u790959747_clube');
 }
 
+// Chave da área administrativa (ver public/api/admin/encontro.php) — mesmo
+// padrão de fallback getenv() acima, mas FORA do if/else de config.php:
+// precisa valer tanto quando config.php existe (produção normalmente
+// define ADMIN_SECRET lá, junto de DB_*) quanto quando não existe. Se não
+// for configurada em lugar nenhum, fica '' e o endpoint admin recusa tudo
+// (nunca autentica com chave vazia).
+if (!defined('ADMIN_SECRET')) {
+    define('ADMIN_SECRET', getenv('ADMIN_SECRET') ?: '');
+}
+
 $mysqli = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 if ($mysqli->connect_error) {
     http_response_code(500);
@@ -73,6 +83,22 @@ function garantirEstruturaClube(mysqli $mysqli): void
             INDEX(created_at)
         )"
     );
+
+    // Recuperação de senha (esqueceu-senha.php / redefinir-senha.php).
+    // Token é a própria PK (bin2hex(random_bytes(32)) — 64 chars hex, cabe
+    // em 128 mas deixamos folga). expires_at: 1h a partir da geração.
+    $mysqli->query(
+        "CREATE TABLE IF NOT EXISTS password_resets (
+            email VARCHAR(255) NOT NULL,
+            token VARCHAR(128) NOT NULL PRIMARY KEY,
+            expires_at DATETIME NOT NULL,
+            INDEX(email)
+        )"
+    );
+    // Limpeza oportunista de tokens vencidos — sem cron, só aproveita que
+    // toda request já passa por aqui (mesmo espírito idempotente do resto
+    // desta função).
+    $mysqli->query("DELETE FROM password_resets WHERE expires_at < NOW()");
 
     $temApelido = $mysqli->query(
         "SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS

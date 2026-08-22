@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { TITULOS_AULAS_RAIZ } from "../../../lib/titulosAulasRaiz";
 
-const TOTAL_AULAS = Object.keys(TITULOS_AULAS_RAIZ).length; // 49
+const TOTAL_AULAS = Object.keys(TITULOS_AULAS_RAIZ).length; // 48 (dia1.3.mp4 removido, ver ARQUIVOS_OCULTOS_AULAS_RAIZ)
 const TOTAL_DIAS = 16; // Dia 0 a Dia 15
 
 // Agrupa TITULOS_AULAS_RAIZ (chaves "diaN.M.mp4") por número do dia — uma
@@ -47,7 +47,7 @@ function contarSequencia(statusPorDia) {
 
 /**
  * Card "Sua Jornada" da sidebar de /comunidade/aulas-raiz: anel de
- * progresso circular (sobre o total fixo de 49 aulas) + trilha dos 16
+ * progresso circular (sobre o total fixo de 48 aulas) + trilha dos 16
  * dias (Dia 0 a Dia 15) + mensagem motivacional dinâmica.
  *
  * Não busca nada sozinho — recebe `progressoPorArquivo` no mesmo formato

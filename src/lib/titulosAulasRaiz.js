@@ -9,8 +9,7 @@ export const TITULOS_AULAS_RAIZ = {
 
   "dia1.1.mp4": "1a Meditação do dia",
   "dia1.2.mp4": "1o Mito: Meditação é pra relaxar?",
-  "dia1.3.mp4": "2a Meditação do dia (parte 1)",
-  "dia1.4.mp4": "2a Meditação do dia (parte 2)",
+  "dia1.4.mp4": "2a Meditação do dia",
 
   "dia2.1.mp4": "1a Meditação (5 min)",
   "dia2.2.mp4": "2o Mito: É necessário parar de pensar?",
@@ -68,3 +67,12 @@ export const TITULOS_AULAS_RAIZ = {
   "dia15.2.mp4": "Ciclos da mente + dias insuportáveis",
   "dia15.3.mp4": "2a Meditação (25 min)",
 }
+
+// Arquivos que devem sumir do catálogo mesmo que o .mp4 continue existindo
+// em CURSO_RAIZ_DIR no servidor (vídeos são enviados direto por FTP na
+// Hostinger, não vivem neste repo — não dá pra simplesmente apagar o
+// arquivo por aqui). server/index.js pula qualquer arquivo desta lista ao
+// montar o catálogo em GET /api/aulas-raiz.
+export const ARQUIVOS_OCULTOS_AULAS_RAIZ = new Set([
+  "dia1.3.mp4", // "2a Meditação do dia (parte 1)" — parte 2 (dia1.4.mp4) virou "2a Meditação do dia"
+])

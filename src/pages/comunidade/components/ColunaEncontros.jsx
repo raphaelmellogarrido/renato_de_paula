@@ -42,6 +42,21 @@ function ColunaEncontros() {
   const [processando, setProcessando] = useState(false);
   const [toast, setToast] = useState(null); // { tipo: "sucesso" | "erro", texto }
 
+  // Data/horário/linhas/link editáveis pelo admin (/admin-meditacao, seção
+  // "Encontro ao Vivo") — vem de public/api/encontro.php. Valor inicial é
+  // o mesmo texto hard-coded de sempre, só reorganizado nesse formato, pra
+  // o card nunca ficar em branco enquanto o fetch não resolve (ou se a
+  // chamada falhar, ex: `npm run dev` local sem PHP rodando — mesmo motivo
+  // documentado em reservasLive.js).
+  const [encontro, setEncontro] = useState({
+    data_texto: "Qui, 15 Mai",
+    horario: "7:00 - 7:30",
+    linha1: "20 min de prática guiada",
+    linha2: "Perguntas ao vivo no final",
+    linha3: "Replay disponível por 48h",
+    link_live: "",
+  });
+
   useEffect(() => {
     let cancelado = false;
     buscarReservas(eventId, email).then((snap) => {
@@ -51,6 +66,23 @@ function ColunaEncontros() {
       cancelado = true;
     };
   }, [eventId, email]);
+
+  useEffect(() => {
+    let cancelado = false;
+    fetch("/api/encontro.php")
+      .then((r) => r.json())
+      .then((dados) => {
+        if (!cancelado && dados?.ok) {
+          setEncontro((atual) => ({ ...atual, ...dados }));
+        }
+      })
+      .catch(() => {
+        // Sem PHP disponível (dev local) — mantém o conteúdo padrão acima.
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!toast) return;
@@ -88,7 +120,9 @@ function ColunaEncontros() {
         </h3>
         <div className="cm-encontro-caixa">
           <strong className="cm-encontro-titulo">{PROXIMO_ENCONTRO_VIVO.titulo}</strong>
-          <span className="cm-encontro-quando">{PROXIMO_ENCONTRO_VIVO.quando}</span>
+          <span className="cm-encontro-quando">
+            {encontro.data_texto} · {encontro.horario}
+          </span>
           <div className="cm-encontro-anfitriao">
             <img src={PROXIMO_ENCONTRO_VIVO.avatar} alt="" />
             <span>{PROXIMO_ENCONTRO_VIVO.anfitriao}</span>
@@ -97,18 +131,12 @@ function ColunaEncontros() {
           <div className="cm-encontro-divisor" role="separator" />
 
           <ul className="cm-encontro-lista">
-            <li>
-              <Check size={13} strokeWidth={3} className="cm-encontro-check" aria-hidden="true" />
-              20 min de prática guiada
-            </li>
-            <li>
-              <Check size={13} strokeWidth={3} className="cm-encontro-check" aria-hidden="true" />
-              Perguntas ao vivo no final
-            </li>
-            <li>
-              <Check size={13} strokeWidth={3} className="cm-encontro-check" aria-hidden="true" />
-              Replay disponível por 48h
-            </li>
+            {[encontro.linha1, encontro.linha2, encontro.linha3].filter(Boolean).map((linha, i) => (
+              <li key={i}>
+                <Check size={13} strokeWidth={3} className="cm-encontro-check" aria-hidden="true" />
+                {linha}
+              </li>
+            ))}
           </ul>
 
           {reserva.total === 0 ? (
@@ -145,6 +173,21 @@ function ColunaEncontros() {
             "Reservar minha vaga"
           )}
         </button>
+
+        {encontro.link_live ? (
+          <a
+            href={encontro.link_live}
+            target="_blank"
+            rel="noreferrer"
+            className="cm-encontro-link-btn"
+          >
+            Entrar na live
+          </a>
+        ) : (
+          <button type="button" className="cm-encontro-link-btn" disabled>
+            Em breve
+          </button>
+        )}
 
         {toast && (
           <div className={`cm-encontro-toast ${toast.tipo === "erro" ? "is-erro" : "is-sucesso"}`} role="status">

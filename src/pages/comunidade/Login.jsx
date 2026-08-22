@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Check, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { avisarSessaoMudou } from "./components/usuarioStorage";
 import { checarRequisitosSenha } from "./components/senhaForte";
@@ -183,6 +183,11 @@ export default function ComunidadeLogin() {
                 <ChecklistItem ok={requisitosSenha.numero} texto="1 número" />
                 <ChecklistItem ok={requisitosSenha.especial} texto="1 caractere especial (!@#$%)" />
               </ul>
+            )}
+            {modo === "login" && (
+              <Link to="/esqueceu-senha" className="cm-login-esqueceu">
+                Esqueceu sua senha?
+              </Link>
             )}
           </div>
 

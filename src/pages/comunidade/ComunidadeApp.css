@@ -230,15 +230,14 @@
    do .cm-shell — aqui dentro de .cm-content fica o grid de 3 colunas da
    referência (centro flexível + 2 colunas fixas de 360px cada), usando
    `grid-template-areas` com nomes em vez de linha/coluna numérica.
-   O pulo do gato contra o "buraco branco": Hero e Biblioteca (coluna 1)
-   fazem `grid-row-end: span 2`, cobrindo as MESMAS duas linhas onde
-   Sequência+Progresso (coluna 2) e Próximo+Desafio (coluna 3) ficam
-   empilhados — assim a altura extra de cada card se distribui pelas duas
-   linhas, em vez de sobrar tudo numa célula só (o que empurrava uma faixa
-   vazia abaixo do card mais curto). O título "Biblioteca de Meditações" e
-   os filtros vivem DENTRO do mesmo bloco da grade de vídeos (não numa
-   linha própria) — por isso não sobra ar entre o título e os cards.
-   Ranking cobre as mesmas 2 linhas da Biblioteca, na coluna 3. */
+   Coluna 3 continua com 3 linhas de conteúdo empilhadas (Próximo Encontro,
+   Desafio da Semana, Ranking — nada disso é Biblioteca, não mexe). O pulo
+   do gato contra o "buraco branco" depois que a Biblioteca de Meditações
+   foi removida (a pedido do cliente): em vez de deixar a linha 4 da coluna
+   1 vazia, o Hero agora cobre as 3 linhas inteiras (`hero` repetido nas 3
+   linhas da área), preenchendo o espaço que sobrou. Coluna 2 (Sequência +
+   Progresso) só tem 2 widgets mesmo, então a célula da linha 4 fica vazia
+   de propósito (`.`, placeholder válido do grid-template-areas). */
 .cm-main {
   padding: 32px;
   width: 100%;
@@ -246,10 +245,10 @@
   grid-template-columns: minmax(0, 1.6fr) 360px 360px;
   grid-template-rows: auto auto auto auto;
   grid-template-areas:
-    "topbar     topbar     topbar"
-    "hero       sequencia  proximo"
-    "hero       progresso  desafio"
-    "biblioteca biblioteca ranking";
+    "topbar topbar    topbar"
+    "hero   sequencia proximo"
+    "hero   progresso desafio"
+    "hero   .         ranking";
   gap: 24px;
   align-items: stretch;
   background: #f9f7f2;
@@ -300,7 +299,7 @@
 /* Empilha "Desafio da Semana" + o contador de semanas concluídas dentro da
    MESMA célula "desafio" do grid principal (em vez de criar uma linha nova
    em .cm-main) — o contador cai exatamente entre os dois cards existentes
-   sem mexer no espalhamento de hero/biblioteca nem nos breakpoints. */
+   sem mexer no espalhamento do hero nem nos breakpoints. */
 .cm-desafio-coluna {
   display: flex;
   flex-direction: column;
@@ -327,21 +326,13 @@
   opacity: 0.7;
 }
 
-.cm-grid-biblioteca-videos {
-  grid-area: biblioteca;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  min-width: 0;
-}
-
 .cm-grid-ranking {
   grid-area: ranking;
 }
 
-/* View "Comunidade": o feed toma o lugar de hero + biblioteca (coluna 1,
-   linhas 2 a 4) — Sequência/Próximo/Progresso/Desafio/Ranking (colunas 2 e
-   3) continuam visíveis nas duas views. */
+/* View "Comunidade": o feed toma o lugar do Hero (coluna 1, linhas 2 a 4)
+   — Sequência/Próximo/Progresso/Desafio/Ranking (colunas 2 e 3) continuam
+   visíveis nas duas views. */
 .cm-grid-feed {
   grid-column: 1;
   grid-row: 2 / 5;
@@ -351,12 +342,12 @@
   .cm-main {
     grid-template-columns: 1fr 360px;
     grid-template-areas:
-      "topbar     topbar"
-      "hero       sequencia"
-      "hero       progresso"
-      "biblioteca proximo"
-      "biblioteca desafio"
-      "biblioteca ranking";
+      "topbar topbar"
+      "hero   sequencia"
+      "hero   progresso"
+      "hero   proximo"
+      "hero   desafio"
+      "hero   ranking";
   }
 
   .cm-grid-feed {
@@ -376,6 +367,26 @@
     position: static;
   }
 
+  /* Em telas estreitas a sidebar empilha ACIMA do conteúdo (ver .cm-shell
+     acima) — pra não virar uma lista vertical enorme de texto antes do
+     usuário ver a página em si, a nav vira uma linha horizontal só de
+     ícones (nome acessível preservado via aria-label, ver
+     ComunidadeSidebar.jsx) e o copyright some, deixando um header
+     compacto: logo + ícones + card do usuário. */
+  .cm-sidebar-nav {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 4px;
+  }
+
+  .cm-sidebar-nav-item span {
+    display: none;
+  }
+
+  .cm-sidebar-copy {
+    display: none;
+  }
+
   .cm-main {
     grid-template-columns: 1fr;
     grid-template-areas:
@@ -385,7 +396,6 @@
       "proximo"
       "progresso"
       "desafio"
-      "biblioteca"
       "ranking";
   }
 
@@ -648,12 +658,6 @@
   background: var(--cm-sage);
   border-radius: 999px;
   transition: width 0.3s ease;
-}
-
-/* Biblioteca */
-.cm-section-title {
-  font-size: 1.2rem;
-  margin-bottom: 16px;
 }
 
 /* Cards de vídeo/aula — estilo "com imagem" (gradiente + ícone + tag) */
@@ -1396,6 +1400,79 @@
   }
 }
 
+/* Bloqueio progressivo (ver AulasMeditacaoRaiz.jsx): vídeo ainda não
+   liberado por ordem — item esmaecido, cadeado no lugar do dot, cursor de
+   "não permitido" no clique, checkbox de concluir desabilitado. */
+.cm-video-item.is-bloqueado {
+  opacity: 0.5;
+}
+
+.cm-video-item.is-bloqueado .cm-video-item-titulo {
+  cursor: not-allowed;
+}
+
+.cm-video-item-lock {
+  flex-shrink: 0;
+  color: var(--cm-text-soft);
+}
+
+.cm-video-check:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.cm-video-check:disabled:hover {
+  border-color: #ccc;
+}
+
+/* Placeholder no lugar do player quando o vídeo ativo está bloqueado (ex:
+   trocou de dia pelo dropdown e caiu num dia ainda não alcançado) — nunca
+   monta o <video>, só mostra o motivo. */
+.cm-video-bloqueado-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  aspect-ratio: 16 / 9;
+  color: #fff;
+  background: #1f1f1f;
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+}
+
+.cm-video-bloqueado-placeholder p {
+  max-width: 320px;
+  font-size: 0.9rem;
+  color: #d1d5db;
+}
+
+/* Toast de bloqueio — mesma receita visual de .cm-config-toast/.cm-encontro-toast. */
+.cm-aula-toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  background: var(--cm-bg);
+  border: 1px solid var(--cm-border);
+  box-shadow: var(--cm-shadow);
+  font-size: 14px;
+  font-weight: 600;
+  color: #b91c1c;
+  z-index: 60;
+  animation: cm-config-toast-in 220ms ease;
+}
+
+.cm-aula-toast svg {
+  color: var(--cm-red);
+  flex-shrink: 0;
+}
+
 /* Empilha o card "Dia N" (.cm-aula-videos-do-dia) com o card da Jornada
    logo abaixo, os dois na coluna de 280px de .cm-aula-layout. */
 .cm-aula-sidebar {
@@ -1751,6 +1828,19 @@
   cursor: not-allowed;
 }
 
+/* Comentários: input já é flex:1 (w-full); no mobile o botão empilha
+   embaixo e também vira w-full em vez de ficar espremido do lado. */
+@media (max-width: 768px) {
+  .cm-comentario-form {
+    flex-direction: column;
+  }
+
+  .cm-comentario-form button {
+    width: 100%;
+    align-self: stretch;
+  }
+}
+
 .cm-comentarios-vazio {
   color: var(--cm-text-soft);
   font-size: 0.9rem;
@@ -1844,37 +1934,19 @@
   background: linear-gradient(transparent, rgba(0, 0, 0, 0.55));
 }
 
-/* Topbar do Dashboard: busca + switch Curso/Comunidade + botão preto */
+/* Topbar do Dashboard: switch Curso/Comunidade na esquerda, botão preto na
+   direita — flex justify-between em vez do grid de 3 colunas que existia
+   quando tinha busca no meio; o vão do centro fica vazio de propósito. */
 .cm-topbar-nova {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
   gap: 16px;
+  padding: 0;
   margin-bottom: 22px;
 }
 
-.cm-busca-input {
-  justify-self: start;
-  width: 100%;
-  max-width: 340px;
-  background: #fff;
-  border: 1px solid var(--cm-border);
-  border-radius: 999px;
-  padding: 11px 18px;
-  font-size: 0.88rem;
-  color: var(--cm-text);
-}
-
-.cm-busca-input::placeholder {
-  color: var(--cm-text-soft);
-}
-
-.cm-topbar-nova .cm-switch {
-  justify-self: center;
-}
-
 .cm-btn-preto {
-  justify-self: end;
   display: flex;
   align-items: center;
   gap: 7px;
@@ -1933,71 +2005,37 @@
   color: #fff;
 }
 
-/* Biblioteca de Meditações — título + filtros + grid de vídeos vivem juntos
-   num único bloco (`.cm-biblioteca-bloco`, que recebe `cm-grid-biblioteca-
-   -videos` no Dashboard e ocupa a área "biblioteca" do grid principal, ver
-   topo do arquivo). Título/filtros ficarem DENTRO do bloco — em vez de numa
-   linha de grid própria — é o que evita sobrar ar entre eles e os cards. */
-.cm-biblioteca-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 18px;
-}
+/* Mobile: switch "Curso Meditação Raiz | Comunidade" + botão "Meditei
+   hoje" não cabem lado a lado (~420px de conteúdo somado) — empilha e os
+   dois viram w-full, o switch dividindo as duas opções em partes iguais. */
+@media (max-width: 768px) {
+  .cm-topbar-nova {
+    flex-direction: column;
+    align-items: stretch;
+  }
 
-.cm-biblioteca-header .cm-section-title {
-  margin-bottom: 0;
-}
+  .cm-switch {
+    width: 100%;
+  }
 
-.cm-biblioteca-filtros {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
+  .cm-switch-btn {
+    flex: 1;
+    text-align: center;
+  }
 
-.cm-filtro-chip {
-  background: var(--cm-beige);
-  border: none;
-  border-radius: 999px;
-  padding: 8px 16px;
-  font-size: 0.82rem;
-  font-weight: 500;
-  color: var(--cm-text-soft);
-  transition:
-    background 0.15s ease,
-    color 0.15s ease;
-}
-
-.cm-filtro-chip.is-ativo {
-  background: var(--cm-text);
-  color: #fff;
-}
-
-.cm-grid-biblioteca {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-}
-
-@media (max-width: 960px) {
-  .cm-grid-biblioteca {
-    grid-template-columns: repeat(2, 1fr);
+  .cm-btn-preto {
+    width: 100%;
+    justify-content: center;
   }
 }
 
-@media (max-width: 640px) {
-  .cm-grid-biblioteca {
-    grid-template-columns: 1fr;
-  }
-}
-
-.cm-biblioteca-vazio {
-  color: var(--cm-text-soft);
-  font-size: 0.88rem;
-}
-
+/* .cm-card-biblioteca segue existindo pro CardBiblioteca.jsx (não usado no
+   Dashboard hoje — a seção "Biblioteca de Meditações" foi removida a
+   pedido do cliente — mas mantido caso o card volte a ser usado em outra
+   tela). O bloco de título/filtros/grid que só existia pra montar aquela
+   seção (`.cm-biblioteca-header`, `.cm-biblioteca-filtros`,
+   `.cm-filtro-chip`, `.cm-grid-biblioteca`, `.cm-biblioteca-vazio`) foi
+   removido junto, sem uso em nenhum outro lugar. */
 .cm-card-biblioteca {
   display: flex;
   flex-direction: column;
@@ -2348,6 +2386,35 @@
   color: var(--cm-red);
 }
 
+/* Botão "Entrar na live" / "Em breve" (link_live vindo do admin) — variante
+   outline de .cm-encontro-btn, mesmo tamanho, fundo transparente pra não
+   competir visualmente com o CTA principal "Reservar minha vaga". */
+.cm-encontro-link-btn {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px;
+  font-size: 0.84rem;
+  text-align: center;
+  text-decoration: none;
+  background: transparent;
+  color: var(--cm-text);
+  border: 1px solid var(--cm-text);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.cm-encontro-link-btn:hover:not(:disabled) {
+  background: var(--cm-text);
+  color: #fff;
+}
+
+.cm-encontro-link-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .cm-encontro-toast {
   position: fixed;
   right: 24px;
@@ -2535,6 +2602,16 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+/* px-4 md:px-8: no mobile os 32px de padding das páginas viram 16px, pra
+   sobrar mais largura útil de conteúdo em telas estreitas. */
+@media (max-width: 768px) {
+  .cm-main,
+  .cm-aula-page,
+  .cm-config-page {
+    padding: 16px;
+  }
 }
 
 .cm-config-header {

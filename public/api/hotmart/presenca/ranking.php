@@ -1,19 +1,26 @@
 <?php
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit; }
+require_once __DIR__ . '/../_conexao.php';
 
-require __DIR__ . '/../_conexao.php';
-
-// Contrato já lido por useSequenciaMeditacao.js (extrairStreaks): aceita
-// { streaks: [...] } com números. Anônimo de propósito — só a lista de
-// streaks pra calcular um percentil, nenhum email sai daqui.
-$streaks = [];
-$res = $mysqli->query("SELECT DISTINCT email FROM presencas");
-while ($row = $res->fetch_assoc()) {
-    $streaks[] = calcularStreakEmail($mysqli, $row['email']);
+try {
+    // Ranking GLOBAL - todo mundo, não só o logado
+    $sql = "SELECT 
+                a.nome, 
+                p.email, 
+                COUNT(DISTINCT DATE(p.created_at)) as dias,
+                MAX(p.created_at) as ultimo
+            FROM presencas p
+            JOIN alunos a ON a.email = p.email
+            GROUP BY p.email, a.nome
+            ORDER BY dias DESC, ultimo DESC
+            LIMIT 20";
+    
+    $stmt = $pdo->query($sql);
+    $ranking = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    echo json_encode($ranking);
+    
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(['erro' => $e->getMessage()]);
 }
-
-echo json_encode(['ok' => true, 'streaks' => $streaks]);

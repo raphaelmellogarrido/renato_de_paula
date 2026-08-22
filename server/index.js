@@ -14,7 +14,7 @@ import {
   registrarEnvio,
   listarHistorico,
 } from './db.js'
-import { TITULOS_AULAS_RAIZ } from '../src/lib/titulosAulasRaiz.js'
+import { TITULOS_AULAS_RAIZ, ARQUIVOS_OCULTOS_AULAS_RAIZ } from '../src/lib/titulosAulasRaiz.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const DIST_DIR = path.join(__dirname, '..', 'dist')
@@ -271,6 +271,7 @@ app.get('/api/aulas-raiz', (req, res) => {
   const porDia = new Map()
 
   for (const arquivo of arquivos) {
+    if (ARQUIVOS_OCULTOS_AULAS_RAIZ.has(arquivo)) continue
     const match = arquivo.match(REGEX_ARQUIVO_AULA_RAIZ)
     if (!match) continue
     const diaNumero = Number(match[1])

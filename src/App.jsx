@@ -16,10 +16,21 @@ const ComunidadeDashboard = lazy(() => import("./pages/comunidade/Dashboard"));
 const ComunidadeAula = lazy(() => import("./pages/comunidade/Aula"));
 const ComunidadeAulasRaiz = lazy(() => import("./pages/comunidade/AulasMeditacaoRaiz"));
 const ComunidadeConfiguracoes = lazy(() => import("./pages/comunidade/Configuracoes"));
+const EsqueceuSenha = lazy(() => import("./pages/comunidade/EsqueceuSenha"));
+const RedefinirSenha = lazy(() => import("./pages/comunidade/RedefinirSenha"));
+
+// Rotas de recuperação de senha (/esqueceu-senha, /redefinir-senha) ficam
+// fora do prefixo /comunidade (o link do email usa
+// renatodepaula.com/redefinir-senha?token=... direto), mas são a mesma
+// telinha cheia (cm-login-page) do login — por isso entram aqui também pra
+// esconder Navbar/Footer do site.
+const ROTAS_TELA_CHEIA_COMUNIDADE = ["/comunidade", "/esqueceu-senha", "/redefinir-senha"];
 
 function App() {
   const location = useLocation();
-  const isComunidade = location.pathname.startsWith("/comunidade");
+  const isComunidade = ROTAS_TELA_CHEIA_COMUNIDADE.some(
+    (rota) => location.pathname === rota || location.pathname.startsWith(rota + "/")
+  );
 
   return (
     <>
@@ -35,6 +46,8 @@ function App() {
             <Route path="/admin-meditacao" element={<AdminMeditacao />} />
             <Route path="/contato" element={<Contato />} />
             <Route path="/comunidade/login" element={<ComunidadeLogin />} />
+            <Route path="/esqueceu-senha" element={<EsqueceuSenha />} />
+            <Route path="/redefinir-senha" element={<RedefinirSenha />} />
             <Route path="/comunidade" element={<ComunidadeLayout />}>
               <Route index element={<ComunidadeDashboard />} />
               <Route path="aulas-raiz" element={<ComunidadeAulasRaiz />} />

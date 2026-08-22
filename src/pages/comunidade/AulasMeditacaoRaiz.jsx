@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Check } from "lucide-react";
+import { Check, Lock } from "lucide-react";
 import GuardedVideo from "../../components/GuardedVideo";
 import ComentariosFeed from "./components/ComentariosFeed";
 import JornadaProgress from "./components/JornadaProgress";
@@ -15,7 +15,7 @@ const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://l
 // a tela sem esperar rede e pra "Marcar como concluída" nunca travar se o
 // PHP estiver fora do ar.
 const PROGRESSO_AULAS_RAIZ_URL = "/api/hotmart/aulas-raiz/progresso.php";
-const LIMIAR_AUTO_CONCLUIDA = 0.85;
+const LIMIAR_AUTO_CONCLUIDA = 0.9;
 
 // Extrai o número do dia a partir do nome do arquivo ("dia1.2.mp4" -> 1),
 // mesmo padrão de regex que JornadaProgress.jsx já usa pra agrupar
@@ -65,6 +65,19 @@ export default function AulasMeditacaoRaiz() {
 
   const marcados85Ref = useRef(new Set());
   const [emailAnterior, setEmailAnterior] = useState(email);
+  const [toast, setToast] = useState(null);
+
+  // Mesmo padrão de toast local já usado em Configuracoes.jsx e
+  // ColunaEncontros.jsx (sem componente compartilhado no projeto).
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3200);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  function mostrarToast(texto) {
+    setToast(texto);
+  }
 
   // Troca de conta / logout+login: recarrega do zero pra chave do NOVO
   // usuário (mostra tudo desmarcado se for conta nova). Ajusta o estado
@@ -77,7 +90,7 @@ export default function AulasMeditacaoRaiz() {
   }
 
   // Refs não podem ser alterados durante o render (só em efeitos/handlers) —
-  // por isso libera o ref de auto-conclusão em 85% num efeito separado,
+  // por isso libera o ref de auto-conclusão em 90% num efeito separado,
   // senão um vídeo já assistido pela conta anterior não marcaria sozinho de
   // novo pra essa conta nova.
   useEffect(() => {
@@ -159,6 +172,28 @@ export default function AulasMeditacaoRaiz() {
     [videos, videoArquivoEfetivo],
   );
 
+  // Bloqueio progressivo: Dia 0 sempre livre (mas conta como pré-requisito
+  // pros dias seguintes); a partir do Dia 1, cada vídeo exige 100% de TODOS
+  // os anteriores na ordem linear real do curso (mesmo achatamento que
+  // alvoResumo já faz acima). Mapa: arquivo -> null (livre) ou
+  // { arquivo, titulo } do primeiro pré-requisito que falta.
+  const bloqueioPorArquivo = useMemo(() => {
+    const linear = dias.flatMap((d) => d.videos.map((v) => ({ ...v, dia: d.dia })));
+    const mapa = {};
+    for (let i = 0; i < linear.length; i++) {
+      const video = linear[i];
+      if (video.dia === 0) {
+        mapa[video.arquivo] = null;
+        continue;
+      }
+      const faltante = linear.slice(0, i).find((anterior) => !progressoPorArquivo[anterior.arquivo]?.assistida);
+      mapa[video.arquivo] = faltante ? { arquivo: faltante.arquivo, titulo: faltante.titulo } : null;
+    }
+    return mapa;
+  }, [dias, progressoPorArquivo]);
+
+  const bloqueioVideoAtivo = videoAtivo ? bloqueioPorArquivo[videoAtivo.arquivo] : null;
+
   function marcarConcluida(arquivoParam, posicaoParam = 0) {
     const arquivo = arquivoParam || videoAtivo?.arquivo;
     if (!arquivo || !email) return;
@@ -188,7 +223,7 @@ export default function AulasMeditacaoRaiz() {
 
   // Inverso de marcarConcluida: some com a marca local (some do check na
   // lista e some da Jornada, que lê o mesmo estado) e avisa o PHP externo.
-  // Também libera o ref de auto-conclusão em 85%, senão o vídeo nunca mais
+  // Também libera o ref de auto-conclusão em 90%, senão o vídeo nunca mais
   // marcaria sozinho se o aluno assistir de novo.
   function desmarcarConcluida(arquivoParam) {
     const arquivo = arquivoParam || videoAtivo?.arquivo;
@@ -233,13 +268,24 @@ export default function AulasMeditacaoRaiz() {
   }
 
   function selecionarVideo(arquivo) {
+    const bloqueio = bloqueioPorArquivo[arquivo];
+    if (bloqueio) {
+      mostrarToast(`Complete o vídeo anterior: ${bloqueio.titulo}`);
+      return; // mantém na tela atual, não abre o player
+    }
     setVideoAtivoArquivo(arquivo);
   }
 
+  // Avanço automático ao fim do vídeo — não passa pelo gate de
+  // selecionarVideo (mexe direto no estado) pra nunca disparar o toast de
+  // bloqueio numa transição automática. Na prática o próximo vídeo já está
+  // liberado (o atual acabou de bater no limiar de auto-conclusão antes do
+  // onEnded disparar); a guarda no render do player continua como rede de
+  // segurança pra qualquer condição de corrida.
   function irParaProximoVideo() {
     const indiceAtual = videos.findIndex((v) => v.arquivo === videoAtivo?.arquivo);
     if (indiceAtual > -1 && indiceAtual < videos.length - 1) {
-      selecionarVideo(videos[indiceAtual + 1].arquivo);
+      setVideoAtivoArquivo(videos[indiceAtual + 1].arquivo);
       return;
     }
     const indiceDia = dias.findIndex((d) => d.dia === diaEfetivo);
@@ -277,13 +323,15 @@ export default function AulasMeditacaoRaiz() {
     <div className="cm-aula-page">
       <div className="cm-aula-header">
         <h1>Aulas Meditação Raiz</h1>
-        <p style={{ color: "#6b7280" }}>Sua jornada real — progresso salvo no seu perfil {email}</p>
+        <p style={{ color: "#6B6B6B", fontSize: "14px", fontWeight: 400, marginTop: "4px" }}>
+          Continue de onde parou. Sua presença é o que importa.
+        </p>
       </div>
 
       <div className="cm-aula-layout">
         <div>
           <div className="cm-player-wrap">
-            {videoAtivo ? (
+            {videoAtivo && !bloqueioVideoAtivo ? (
               <GuardedVideo
                 key={videoAtivo.arquivo}
                 src={`${API_URL}${videoAtivo.url}`}
@@ -292,6 +340,11 @@ export default function AulasMeditacaoRaiz() {
                 onTimeUpdate={handleTimeUpdatePlayer}
                 permitirAvancar
               />
+            ) : videoAtivo ? (
+              <div className="cm-video-bloqueado-placeholder">
+                <Lock size={28} />
+                <p>Complete "{bloqueioVideoAtivo.titulo}" para desbloquear este vídeo.</p>
+              </div>
             ) : (
               <div style={{ color: "white", display: "flex", alignItems: "center", justifyContent: "center", aspectRatio: "16/9" }}>
                 Sem vídeo
@@ -299,7 +352,7 @@ export default function AulasMeditacaoRaiz() {
             )}
           </div>
 
-          <ComentariosFeed aulaId={videoArquivoEfetivo || "geral"} />
+          <ComentariosFeed />
         </div>
 
         <div className="cm-aula-sidebar">
@@ -317,16 +370,31 @@ export default function AulasMeditacaoRaiz() {
 
             {videos.map((video) => {
               const concluida = !!progressoPorArquivo[video.arquivo]?.assistida;
+              const bloqueio = bloqueioPorArquivo[video.arquivo];
+              const bloqueado = !!bloqueio;
               return (
-                <div key={video.arquivo} className={`cm-video-item ${video.arquivo === videoAtivo?.arquivo ? "is-ativo" : ""}`}>
-                  <button type="button" className="cm-video-item-titulo" onClick={() => selecionarVideo(video.arquivo)}>
-                    <span className={`cm-video-item-dot ${concluida ? "is-concluido" : ""}`} />
+                <div
+                  key={video.arquivo}
+                  className={`cm-video-item ${video.arquivo === videoAtivo?.arquivo ? "is-ativo" : ""} ${bloqueado ? "is-bloqueado" : ""}`}
+                >
+                  <button
+                    type="button"
+                    className="cm-video-item-titulo"
+                    onClick={() => selecionarVideo(video.arquivo)}
+                    aria-disabled={bloqueado}
+                  >
+                    {bloqueado ? (
+                      <Lock size={14} className="cm-video-item-lock" />
+                    ) : (
+                      <span className={`cm-video-item-dot ${concluida ? "is-concluido" : ""}`} />
+                    )}
                     <span>{video.titulo}</span>
                   </button>
                   <button
                     type="button"
                     className={`cm-video-check ${concluida ? "is-concluido" : ""}`}
                     onClick={() => toggleConcluida(video.arquivo)}
+                    disabled={bloqueado}
                     aria-pressed={concluida}
                     aria-label={concluida ? `Desmarcar "${video.titulo}" como concluída` : `Marcar "${video.titulo}" como concluída`}
                   >
@@ -336,12 +404,19 @@ export default function AulasMeditacaoRaiz() {
               );
             })}
 
-            <p className="cm-video-legenda">✓ marcado automaticamente ao atingir 85% do vídeo</p>
+            <p className="cm-video-legenda">✓ marcado automaticamente ao atingir 90% do vídeo</p>
           </div>
 
           <JornadaProgress progressoPorArquivo={progressoPorArquivo} />
         </div>
       </div>
+
+      {toast && (
+        <div className="cm-aula-toast" role="status">
+          <Lock size={16} />
+          {toast}
+        </div>
+      )}
     </div>
   );
 }

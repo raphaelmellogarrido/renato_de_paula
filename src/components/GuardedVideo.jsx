@@ -58,7 +58,7 @@ function GuardedVideo({ src, onEnded, label, autoPlay = false, onTimeUpdate, per
       maxTimeRef.current = v.currentTime
     }
     // Prop opcional (ex: usada em /comunidade/aulas-raiz pra auto-marcar a
-    // aula como concluída aos 85% assistidos) — quem não passar não é afetado.
+    // aula como concluída aos 90% assistidos) — quem não passar não é afetado.
     if (onTimeUpdate) onTimeUpdate(v.currentTime, v.duration)
   }
 

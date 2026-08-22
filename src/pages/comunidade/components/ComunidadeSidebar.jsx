@@ -37,7 +37,7 @@ function ComunidadeSidebar({ session, onSair }) {
 
       <nav className="cm-sidebar-nav">
         {NAV_ITEMS.map((item) => (
-          <NavLink key={item.label} to={item.to} end={item.end} className={({ isActive }) => `cm-sidebar-nav-item ${isActive ? "is-ativo" : ""}`}>
+          <NavLink key={item.label} to={item.to} end={item.end} aria-label={item.label} className={({ isActive }) => `cm-sidebar-nav-item ${isActive ? "is-ativo" : ""}`}>
             <item.icon size={18} strokeWidth={1.8} />
             <span>{item.label}</span>
             {item.comBolinha && <span className="cm-sidebar-dot" aria-hidden="true" />}

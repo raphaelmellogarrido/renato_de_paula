@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:3001" : "");
 
@@ -72,6 +72,93 @@ function AdminMeditacao() {
   const [resultadoEnvio, setResultadoEnvio] = useState(null);
   const [erroEnvio, setErroEnvio] = useState("");
   const [copiado, setCopiado] = useState(false);
+
+  // Seção "Encontro ao Vivo" — edita o card que o aluno vê em /comunidade
+  // (ColunaEncontros.jsx via public/api/encontro.php). Usa a mesma chave
+  // digitada no login acima (`secret`) como header X-Admin-Secret nas
+  // chamadas ao back-end PHP (back-end separado do Node usado no resto
+  // desta página, ver public/api/admin/encontro.php).
+  const [encontroForm, setEncontroForm] = useState({
+    data_texto: "",
+    horario: "",
+    linha1: "",
+    linha2: "",
+    linha3: "",
+    link_live: "",
+  });
+  const [salvandoEncontro, setSalvandoEncontro] = useState(false);
+  const [encontroSucesso, setEncontroSucesso] = useState(false);
+  const [encontroErro, setEncontroErro] = useState("");
+
+  useEffect(() => {
+    if (!autenticado) return;
+    let cancelado = false;
+    fetch("/api/admin/encontro.php", { headers: { "X-Admin-Secret": secret } })
+      .then((r) => r.json())
+      .then((dados) => {
+        if (!cancelado && dados?.ok) {
+          setEncontroForm({
+            data_texto: dados.data_texto || "",
+            horario: dados.horario || "",
+            linha1: dados.linha1 || "",
+            linha2: dados.linha2 || "",
+            linha3: dados.linha3 || "",
+            link_live: dados.link_live || "",
+          });
+        }
+      })
+      .catch(() => {
+        // Endpoint PHP indisponível (ex: dev local sem PHP rodando) — o
+        // formulário fica vazio, mas não trava o resto da página.
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [autenticado, secret]);
+
+  useEffect(() => {
+    if (!encontroSucesso) return;
+    const t = setTimeout(() => setEncontroSucesso(false), 3000);
+    return () => clearTimeout(t);
+  }, [encontroSucesso]);
+
+  function handleEncontroChange(campo) {
+    return (e) => setEncontroForm((atual) => ({ ...atual, [campo]: e.target.value }));
+  }
+
+  async function handleSalvarEncontro(e) {
+    e.preventDefault();
+    setEncontroErro("");
+    setEncontroSucesso(false);
+    setSalvandoEncontro(true);
+
+    try {
+      const res = await fetch("/api/admin/encontro.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Admin-Secret": secret },
+        body: JSON.stringify(encontroForm),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(res.status === 401 ? "Senha incorreta." : data.erro || "Falha ao salvar.");
+      }
+
+      setEncontroForm({
+        data_texto: data.data_texto || "",
+        horario: data.horario || "",
+        linha1: data.linha1 || "",
+        linha2: data.linha2 || "",
+        linha3: data.linha3 || "",
+        link_live: data.link_live || "",
+      });
+      setEncontroSucesso(true);
+    } catch (err) {
+      setEncontroErro(err.message || "Não foi possível salvar.");
+    } finally {
+      setSalvandoEncontro(false);
+    }
+  }
 
   const totalPaginas = Math.max(1, Math.ceil(inscricoes.length / pageSize));
   const paginaAtual = Math.min(page, totalPaginas - 1);
@@ -402,6 +489,107 @@ function AdminMeditacao() {
               </div>
             </>
           )}
+        </div>
+
+        <div className="form-card" style={{ marginTop: 40 }}>
+          <h3>Encontro ao Vivo</h3>
+          <p style={{ marginTop: -8, marginBottom: 16, color: "#666" }}>
+            Edita o card "Próximo encontro ao vivo" que o aluno vê em /comunidade.
+          </p>
+          {encontroSucesso && <div className="success-box">Atualizado</div>}
+          {encontroErro && <div className="error-box">{encontroErro}</div>}
+          <form onSubmit={handleSalvarEncontro} noValidate>
+            <div className="field">
+              <label htmlFor="encontro-data">Data (ex: Qui, 15 Mai)</label>
+              <input
+                id="encontro-data"
+                type="text"
+                value={encontroForm.data_texto}
+                onChange={handleEncontroChange("data_texto")}
+                placeholder="Qui, 15 Mai"
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="encontro-horario">Horário (ex: 7:00 - 7:30)</label>
+              <input
+                id="encontro-horario"
+                type="text"
+                value={encontroForm.horario}
+                onChange={handleEncontroChange("horario")}
+                placeholder="7:00 - 7:30"
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="encontro-linha1">Linha 1</label>
+              <input id="encontro-linha1" type="text" value={encontroForm.linha1} onChange={handleEncontroChange("linha1")} />
+            </div>
+            <div className="field">
+              <label htmlFor="encontro-linha2">Linha 2</label>
+              <input id="encontro-linha2" type="text" value={encontroForm.linha2} onChange={handleEncontroChange("linha2")} />
+            </div>
+            <div className="field">
+              <label htmlFor="encontro-linha3">Linha 3</label>
+              <input id="encontro-linha3" type="text" value={encontroForm.linha3} onChange={handleEncontroChange("linha3")} />
+            </div>
+            <div className="field">
+              <label htmlFor="encontro-link">Link da live</label>
+              <input
+                id="encontro-link"
+                type="text"
+                value={encontroForm.link_live}
+                onChange={handleEncontroChange("link_live")}
+                placeholder="https://..."
+              />
+            </div>
+            <button type="submit" className="btn btn-primary btn-block" disabled={salvandoEncontro}>
+              {salvandoEncontro ? "Salvando..." : "Salvar"}
+            </button>
+          </form>
+
+          {/* Prévia de conteúdo (não é um clone pixel-perfect do card real —
+              essa página não importa o CSS da comunidade de propósito, pra
+              não acoplar/arriscar CSS de uma área na outra). */}
+          <div
+            style={{
+              marginTop: 24,
+              padding: 20,
+              border: "1px solid #ddd",
+              borderRadius: 12,
+              maxWidth: 320,
+            }}
+          >
+            <p style={{ margin: "0 0 4px", fontSize: 12, textTransform: "uppercase", color: "#999" }}>Prévia</p>
+            <strong style={{ display: "block", marginBottom: 4 }}>Próximo encontro ao vivo</strong>
+            <span style={{ display: "block", marginBottom: 12, color: "#555" }}>
+              {encontroForm.data_texto || "—"} · {encontroForm.horario || "—"}
+            </span>
+            <ul style={{ margin: "0 0 16px", padding: 0, listStyle: "none" }}>
+              {[encontroForm.linha1, encontroForm.linha2, encontroForm.linha3].filter(Boolean).map((linha, i) => (
+                <li key={i} style={{ padding: "4px 0", fontSize: 14 }}>
+                  ✓ {linha}
+                </li>
+              ))}
+            </ul>
+            {encontroForm.link_live ? (
+              <span style={{ display: "block", padding: "8px 12px", border: "1px solid #333", borderRadius: 8, textAlign: "center", fontSize: 13 }}>
+                Entrar na live
+              </span>
+            ) : (
+              <span
+                style={{
+                  display: "block",
+                  padding: "8px 12px",
+                  border: "1px solid #ccc",
+                  borderRadius: 8,
+                  textAlign: "center",
+                  fontSize: 13,
+                  color: "#999",
+                }}
+              >
+                Em breve
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </section>
