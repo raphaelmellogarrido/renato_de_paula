@@ -25,15 +25,20 @@ const EMAIL_TESTE = "teste@meditacaoraiz.com";
 // ComunidadeApp.css), então os três `.cm-widget` têm que ser filhos
 // diretos do grid, não agrupados dentro de um `<aside>`.
 function ColunaEncontros() {
-  // Ranking "de teste": só o usuário atual, com os dias vindo do mesmo
-  // streak do botão "Meditei hoje" — marcar presença é o único gatilho que
-  // sobe esse número (o Desafio da Semana não mexe aqui).
+  // Fallback enquanto o ranking.php não respondeu (ou falhou): só o usuário
+  // atual, com os dias vindo do mesmo streak do botão "Meditei hoje".
   const { streak } = useMeditacaoHoje();
   const nome = lerNomeSessao();
 
   const emailSessao = useEmailSessao();
   const email = emailSessao || EMAIL_TESTE;
   const eventId = PROXIMO_ENCONTRO_VIVO.id;
+
+  // Ranking GLOBAL de verdade — vem de ranking.php (todo mundo que já
+  // marcou presença, não só quem está logado agora). `null` = ainda
+  // carregando ou o fetch falhou; nesse caso o widget cai pro fallback
+  // (só a linha do usuário atual) em vez de ficar em branco.
+  const [ranking, setRanking] = useState(null);
 
   // Valor inicial 100% síncrono (cache local), pra não esperar a rede antes
   // do primeiro render — mesmo padrão de useEmailSessao(). O useEffect
@@ -90,6 +95,33 @@ function ColunaEncontros() {
     const t = setTimeout(() => setToast(null), 3200);
     return () => clearTimeout(t);
   }, [toast]);
+
+  // Mesmo padrão de AbortController+8s de useSequenciaMeditacao.js: se
+  // ranking.php demorar ou falhar, desiste e o widget usa o fallback (só a
+  // linha do usuário atual) em vez de travar a página.
+  useEffect(() => {
+    let cancelado = false;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+    fetch("/api/hotmart/presenca/ranking.php", { signal: controller.signal })
+      .then((r) => r.json())
+      .then((dados) => {
+        if (!cancelado && Array.isArray(dados) && dados.length) {
+          setRanking(dados);
+        }
+      })
+      .catch(() => {
+        // ranking.php indisponível/lento — mantém o fallback.
+      })
+      .finally(() => clearTimeout(timeoutId));
+
+    return () => {
+      cancelado = true;
+      controller.abort();
+      clearTimeout(timeoutId);
+    };
+  }, []);
 
   async function handleReservarClique() {
     if (processando) return;
@@ -211,15 +243,33 @@ function ColunaEncontros() {
         <h3>
           <Trophy size={16} /> Ranking de Presença
         </h3>
-        <div className="cm-ranking-item is-voce">
-          <span className="cm-ranking-esquerda">
-            <span className="cm-ranking-pos">#1</span>
-            <span className="cm-ranking-nome">{nome}</span>
-          </span>
-          <span className="cm-ranking-dias">
-            {streak} dia{streak === 1 ? "" : "s"}
-          </span>
-        </div>
+        {ranking
+          ? ranking.map((item, i) => {
+              const souEu = !!item.email && item.email.toLowerCase().trim() === email.toLowerCase().trim();
+              const dias = Number(item.dias) || 0;
+              return (
+                <div className={`cm-ranking-item ${souEu ? "is-voce" : ""}`} key={item.email || i}>
+                  <span className="cm-ranking-esquerda">
+                    <span className="cm-ranking-pos">#{i + 1}</span>
+                    <span className="cm-ranking-nome">{item.nome || item.email}</span>
+                  </span>
+                  <span className="cm-ranking-dias">
+                    {dias} dia{dias === 1 ? "" : "s"}
+                  </span>
+                </div>
+              );
+            })
+          : (
+            <div className="cm-ranking-item is-voce">
+              <span className="cm-ranking-esquerda">
+                <span className="cm-ranking-pos">#1</span>
+                <span className="cm-ranking-nome">{nome}</span>
+              </span>
+              <span className="cm-ranking-dias">
+                {streak} dia{streak === 1 ? "" : "s"}
+              </span>
+            </div>
+          )}
       </div>
     </>
   );

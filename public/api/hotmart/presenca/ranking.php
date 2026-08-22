@@ -4,7 +4,13 @@ header('Content-Type: application/json');
 // Cache de arquivo: ranking é global (não muda por usuário), então um único
 // arquivo compartilhado serve pra todo mundo. Evita bater no MySQL (GROUP BY
 // pesado em cima de presencas/alunos) a cada carregamento de página.
-$cacheFile = sys_get_temp_dir() . '/ranking_cache.json';
+//
+// Nome "_v2": versão anterior do JOIN (sem LOWER/TRIM, INNER JOIN) descartava
+// silenciosamente qualquer email de presencas que não batesse EXATAMENTE
+// (case/espaço) com alunos.email — o cache antigo ficou com esse ranking
+// incompleto gravado em disco. Trocar o nome invalida esse cache velho sem
+// precisar de acesso ao servidor pra apagar o arquivo na mão.
+$cacheFile = sys_get_temp_dir() . '/ranking_cache_v2.json';
 if (file_exists($cacheFile) && time() - filemtime($cacheFile) < 300) {
     echo file_get_contents($cacheFile);
     exit;
@@ -13,19 +19,18 @@ if (file_exists($cacheFile) && time() - filemtime($cacheFile) < 300) {
 require_once __DIR__ . '/../_conexao.php'; // define $mysqli (mysqli), não $pdo
 
 try {
-    // Ranking GLOBAL - todo mundo, não só o logado
-    $sql = "SELECT
-                a.nome,
-                p.email,
-                COUNT(DISTINCT DATE(p.created_at)) as dias,
-                MAX(p.created_at) as ultimo
-            FROM presencas p
-            JOIN alunos a ON a.email = p.email
-            GROUP BY p.email, a.nome
-            ORDER BY dias DESC, ultimo DESC
-            LIMIT 20";
-
-    $resultado = $mysqli->query($sql);
+    // Ranking GLOBAL - todo mundo, não só o logado. LEFT JOIN (não INNER) +
+    // LOWER(TRIM()) dos dois lados: um email de presencas que não bate
+    // EXATAMENTE (maiúscula/minúscula ou espaço) com alunos.email sumia do
+    // ranking inteiro com o INNER JOIN antigo — era o bug real (3 emails
+    // com presença no banco, só 1 aparecia no front).
+    $resultado = $mysqli->query("
+        SELECT a.nome, p.email, COUNT(DISTINCT DATE(p.created_at)) as dias
+        FROM presencas p
+        LEFT JOIN alunos a ON LOWER(TRIM(a.email)) = LOWER(TRIM(p.email))
+        GROUP BY p.email, a.nome
+        ORDER BY dias DESC, a.nome ASC
+    ");
     if ($resultado === false) {
         throw new Exception($mysqli->error);
     }
