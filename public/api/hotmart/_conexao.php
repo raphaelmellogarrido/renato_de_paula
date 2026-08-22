@@ -84,6 +84,23 @@ function garantirEstruturaClube(mysqli $mysqli): void
         )"
     );
 
+    // Feed da Comunidade (Clube Presença) — mural real, consumido por
+    // FeedComunidade.jsx via public/api/comunidade/posts.php. Substitui o
+    // mock fixo (FEED_COMUNIDADE em mockData.js, removido) que mostrava
+    // sempre os mesmos 4 posts fake pra todo mundo — agora tabela vazia =
+    // feed vazio de verdade, sem inventar autor nenhum.
+    $mysqli->query(
+        "CREATE TABLE IF NOT EXISTS posts_comunidade (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            email VARCHAR(255) NOT NULL,
+            nome VARCHAR(255) NOT NULL DEFAULT 'Aluno',
+            texto TEXT NOT NULL,
+            curtidas INT NOT NULL DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            INDEX(created_at)
+        )"
+    );
+
     // Recuperação de senha (esqueceu-senha.php / redefinir-senha.php).
     // Token é a própria PK (bin2hex(random_bytes(32)) — 64 chars hex, cabe
     // em 128 mas deixamos folga). expires_at: 1h a partir da geração.

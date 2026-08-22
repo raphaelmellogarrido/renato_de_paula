@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useEmailSessao, chaveUsuario, logSalvandoParaUsuario } from "./usuarioStorage";
 
-// Botão "Meditei hoje" (ComunidadeTopBar) + Ranking de Presença
+// Botão "Meditei hoje" (BotaoMediteiHoje) + Ranking de Presença
 // (ColunaEncontros) são dois componentes irmãos, sem pai em comum que
 // guarde estado — esse hook é a fonte de verdade compartilhada entre os
 // dois: cada instância lê o MESMO localStorage (por usuário) e se

@@ -2,7 +2,7 @@ import { Flame, Award, Check } from "lucide-react";
 import { useSequenciaMeditacao } from "./useSequenciaMeditacao";
 
 // Card "Sequência" da coluna 3 do dashboard — 100% funcional, não clicável.
-// Toda vez que o botão "Meditei hoje" (ComunidadeTopBar) marca o dia, esse
+// Toda vez que o botão "Meditei hoje" (BotaoMediteiHoje) marca o dia, esse
 // card recalcula sozinho (via evento, ver useSequenciaMeditacao.js): streak
 // real com quebra por dia faltando, as 7 bolinhas Seg-Dom da semana atual,
 // percentual de consistência e a mensagem lúdica do dia que começou.

@@ -74,14 +74,6 @@ export const MOCK_USUARIOS = [
   { email: "visitante@meditacaoraiz.com", nome: "Visitante Teste", expiraEm: "2027-08-20", isAlunoCurso: false },
 ];
 
-export const COMENTARIOS = [
-  { id: 1, autor: "Marina Alves", texto: "Comecei ontem e já sinto diferença na ansiedade! Obrigada pelo curso.", quandoAtras: "2 dias atrás" },
-  { id: 2, autor: "João Pedro Lima", texto: "A explicação do Dia 0 foi ótima, deixou tudo bem claro antes de começar.", quandoAtras: "3 dias atrás" },
-  { id: 3, autor: "Beatriz Santos", texto: "Alguém mais sentiu sono durante a prática? É normal no começo?", quandoAtras: "5 dias atrás" },
-  { id: 4, autor: "Ricardo Nunes", texto: "Terceira vez que tento criar o hábito e essa é a primeira vez que sinto que vou conseguir.", quandoAtras: "1 semana atrás" },
-  { id: 5, autor: "Fernanda Costa", texto: "O áudio de reflexão complementa muito bem o vídeo principal.", quandoAtras: "1 semana atrás" },
-];
-
 export const EVENTOS = [
   { id: 1, titulo: "Live de perguntas e respostas", quando: "Qui, 28 de agosto · 19h" },
   { id: 2, titulo: "Roda de meditação em grupo", quando: "Dom, 31 de agosto · 09h" },
@@ -133,7 +125,7 @@ export const PROGRESSO_SEMANA = {
 
 // Chips de filtro da Biblioteca de Meditações — linguagem humana (não
 // clínica) combinada de propósito com `tag` de cada item de
-// VIDEOS_BIBLIOTECA (ver ComunidadeTopBar/Dashboard). `categoria` (dentro de
+// VIDEOS_BIBLIOTECA (ver Dashboard.jsx). `categoria` (dentro de
 // cada vídeo) é o rótulo clínico curto que aparece no badge sobre a foto —
 // as duas coisas divergem por design: o chip de filtro fala como gente, o
 // badge da capa continua objetivo.
@@ -187,35 +179,6 @@ export const VIDEOS_BIBLIOTECA = [
   },
 ];
 
-// Feed da comunidade (Clube Presença) — mural fake, mostrado só para quem
-// tem acesso liberado (ver featureFlags.js / temAcessoComunidade).
-export const FEED_COMUNIDADE = [
-  {
-    id: 1,
-    autor: "Dr. Renato de Paula",
-    quando: "Hoje",
-    texto: "Bem-vindos ao Clube Presença! Esse é o espaço da nossa comunidade — lives semanais, encontros guiados e trocas entre quem está construindo o hábito da meditação. Comecem se apresentando aqui 🌿",
-    curtidas: 34,
-  },
-  {
-    id: 2,
-    autor: "Marina Alves",
-    quando: "3h atrás",
-    texto: "Primeira live foi incrível, já ficou marcado na agenda pra próxima semana!",
-    curtidas: 12,
-  },
-  {
-    id: 3,
-    autor: "Rafael Lima",
-    quando: "1 dia atrás",
-    texto: "Alguém mais topa um encontro de meditação em grupo pela manhã, além do oficial?",
-    curtidas: 8,
-  },
-  {
-    id: 4,
-    autor: "Clara Mendes",
-    quando: "2 dias atrás",
-    texto: "O encontro de aterramento de quinta mudou minha semana. Recomendo demais.",
-    curtidas: 21,
-  },
-];
+// Feed da comunidade (Clube Presença) — 100% real agora, vem de
+// GET /api/comunidade/posts (ver components/FeedComunidade.jsx). Removido
+// o mock fixo que sempre mostrava os mesmos 4 posts fake pra todo mundo.

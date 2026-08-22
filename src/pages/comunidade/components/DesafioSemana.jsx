@@ -210,10 +210,13 @@ export default function DesafioSemana() {
     <div className="cm-widget cm-grid-desafio">
       <h3>{DESAFIO_SEMANA.tituloWidget}</h3>
 
-      {celebrando ? (
-        <DesafioCelebracao />
-      ) : (
-        <>
+      {/* Checklist continua montado (só fica coberto pela celebração) —
+          é ele quem define a altura do card o tempo todo. Se fosse
+          desmontado e trocado pelo <DesafioCelebracao/>, o conteúdo mais
+          curto da celebração encolhia o card durante a animação e ele
+          "pulava" de volta ao tamanho normal quando ela sumia. */}
+      <div className="cm-desafio-corpo">
+        <div aria-hidden={celebrando || undefined}>
           {itens.map((item) => {
             const concluido = !!concluidos[item.id];
             return (
@@ -232,14 +235,19 @@ export default function DesafioSemana() {
             <div className="cm-desafio-progress-fill" style={{ width: `${percentual}%` }} />
           </div>
           <p className="cm-desafio-status">{statusTexto}</p>
-        </>
-      )}
+        </div>
+
+        {celebrando && <DesafioCelebracao />}
+      </div>
     </div>
   );
 }
 
-// Substitui o checklist por 2.5s quando o aluno completa os 3 itens: os
-// checks "viram" a flor de lótus se abrindo, com o card de celebração.
+// Overlay que cobre o checklist por 2.5s quando o aluno completa os 3
+// itens: os checks "viram" a flor de lótus se abrindo, com o card de
+// celebração. Fica em position:absolute (ver .cm-desafio-celebracao) por
+// cima do checklist — nunca substitui o conteúdo no fluxo, senão o card
+// encolhe/pula de tamanho durante a animação.
 function DesafioCelebracao() {
   return (
     <div className="cm-desafio-celebracao">

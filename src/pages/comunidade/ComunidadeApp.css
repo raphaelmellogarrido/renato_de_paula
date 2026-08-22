@@ -234,10 +234,15 @@
    Desafio da Semana, Ranking — nada disso é Biblioteca, não mexe). O pulo
    do gato contra o "buraco branco" depois que a Biblioteca de Meditações
    foi removida (a pedido do cliente): em vez de deixar a linha 4 da coluna
-   1 vazia, o Hero agora cobre as 3 linhas inteiras (`hero` repetido nas 3
-   linhas da área), preenchendo o espaço que sobrou. Coluna 2 (Sequência +
-   Progresso) só tem 2 widgets mesmo, então a célula da linha 4 fica vazia
-   de propósito (`.`, placeholder válido do grid-template-areas). */
+   1 vazia, o Hero agora cobre as 4 linhas inteiras (`hero` repetido nas 4
+   linhas da área), preenchendo o espaço que sobrou. Linha 1 da coluna 2 é
+   o botão "Já meditei hoje" (antes ficava num topbar de largura cheia,
+   cliente pediu pra encostar em cima do card Sequência — mesma largura de
+   360px, não a página inteira, por isso ele NÃO repete na coluna 3 como o
+   topbar antigo fazia; a célula da coluna 3/linha 1 fica vazia de
+   propósito, `.`). Coluna 2 (botão + Sequência + Progresso) só tem 3
+   widgets mesmo, então a célula da linha 4 fica vazia de propósito
+   também. */
 .cm-main {
   padding: 32px;
   width: 100%;
@@ -245,7 +250,7 @@
   grid-template-columns: minmax(0, 1.6fr) 360px 360px;
   grid-template-rows: auto auto auto auto;
   grid-template-areas:
-    "topbar topbar    topbar"
+    "hero   botao     ."
     "hero   sequencia proximo"
     "hero   progresso desafio"
     "hero   .         ranking";
@@ -254,12 +259,9 @@
   background: #f9f7f2;
 }
 
-.cm-grid-topbar {
-  grid-area: topbar;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+.cm-grid-botao {
+  grid-area: botao;
+  align-self: start;
 }
 
 .cm-grid-sequencia {
@@ -297,12 +299,12 @@
   grid-area: ranking;
 }
 
-/* Coluna 1 (linhas 2 a 4) — sempre a Comunidade agora (switch removido).
-   Sequência/Próximo/Progresso/Desafio/Ranking (colunas 2 e 3) continuam
-   visíveis do lado. */
+/* Coluna 1 (linhas 1 a 4) — sempre a Comunidade agora (switch removido).
+   Botão/Sequência/Próximo/Progresso/Desafio/Ranking (colunas 2 e 3)
+   continuam visíveis do lado. */
 .cm-grid-feed {
   grid-column: 1;
-  grid-row: 2 / 5;
+  grid-row: 1 / 5;
 }
 
 /* "Sua prática hoje" (DificuldadeDoDia) + feed da Comunidade empilhados
@@ -317,17 +319,17 @@
   .cm-main {
     grid-template-columns: 1fr 360px;
     grid-template-areas:
-      "topbar topbar"
-      "hero   sequencia"
-      "hero   progresso"
-      "hero   proximo"
-      "hero   desafio"
-      "hero   ranking";
+      "hero botao"
+      "hero sequencia"
+      "hero progresso"
+      "hero proximo"
+      "hero desafio"
+      "hero ranking";
   }
 
   .cm-grid-feed {
     grid-column: 1;
-    grid-row: 2 / 7;
+    grid-row: 1 / 7;
   }
 }
 
@@ -365,7 +367,7 @@
   .cm-main {
     grid-template-columns: 1fr;
     grid-template-areas:
-      "topbar"
+      "botao"
       "hero"
       "sequencia"
       "proximo"
@@ -1137,14 +1139,28 @@
   animation: cm-check-scale-in 200ms ease;
 }
 
-/* Celebração ao completar os 3 itens: lótus abrindo/brilhando por 2.5s no
-   lugar do checklist, junto do texto de conclusão. */
+/* Corpo do card (checklist + progresso + status): fica relative pra
+   servir de âncora pro overlay de celebração abaixo. Ele nunca some do
+   DOM — é o que mantém a altura do card estável durante a animação. */
+.cm-desafio-corpo {
+  position: relative;
+}
+
+/* Celebração ao completar os 3 itens: lótus abrindo/brilhando por 2.5s
+   por CIMA do checklist (overlay absolute), nunca no fluxo normal — assim
+   ela não empurra/encolhe a altura do card. Anima só opacity + scale
+   (nunca height/margin/padding). */
 .cm-desafio-celebracao {
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   text-align: center;
   padding: 10px 4px 2px;
+  background: #fff;
+  border-radius: 16px;
   animation: cm-desafio-fade-in 250ms ease;
 }
 
@@ -1171,11 +1187,11 @@
 @keyframes cm-desafio-fade-in {
   from {
     opacity: 0;
-    transform: translateY(4px);
+    transform: scale(0.94);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: scale(1);
   }
 }
 
@@ -2062,63 +2078,44 @@
   background: linear-gradient(transparent, rgba(0, 0, 0, 0.55));
 }
 
-/* Topbar do Dashboard: só o botão preto "Meditei hoje", alinhado à
-   direita (switch Curso/Comunidade removido — produto virou um bundle
-   único, sem view alternativa). */
-.cm-topbar-nova {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 16px;
-  padding: 0;
-  margin-bottom: 22px;
-}
-
-.cm-btn-preto {
+/* Botão "Já meditei hoje": primeiro item da coluna 2 do dashboard (ver
+   grid-area "botao" em .cm-main), mesma largura do card Sequência logo
+   abaixo dele — antes era um topbar de largura cheia alinhado à direita,
+   o cliente pediu pra virar um bloco full-width encostado em cima da
+   Sequência, texto centralizado. */
+.cm-btn-meditei {
   display: flex;
   align-items: center;
-  gap: 7px;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
   background: var(--cm-text);
   color: #fff;
   border: none;
-  border-radius: 999px;
-  padding: 11px 20px;
-  font-size: 0.85rem;
+  border-radius: var(--cm-radius);
+  padding: 13px 20px;
+  font-size: 0.9rem;
   font-weight: 600;
-  white-space: nowrap;
+  text-align: center;
   transition:
     background 0.15s ease,
     color 0.15s ease;
 }
 
-.cm-btn-preto:hover {
+.cm-btn-meditei:hover {
   background: #000;
 }
 
 /* Estado "Já meditei hoje ✓" — marcado e travado até a meia-noite local. */
-.cm-btn-preto.is-marcado,
-.cm-btn-preto:disabled {
+.cm-btn-meditei.is-marcado,
+.cm-btn-meditei:disabled {
   background: #e4e1da;
   color: var(--cm-text-soft);
   cursor: not-allowed;
 }
 
-.cm-btn-preto.is-marcado:hover {
+.cm-btn-meditei.is-marcado:hover {
   background: #e4e1da;
-}
-
-/* Mobile: botão "Meditei hoje" vira w-full (switch Curso/Comunidade que
-   dividia esse breakpoint com ele foi removido). */
-@media (max-width: 768px) {
-  .cm-topbar-nova {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .cm-btn-preto {
-    width: 100%;
-    justify-content: center;
-  }
 }
 
 /* .cm-card-biblioteca segue existindo pro CardBiblioteca.jsx (não usado no
@@ -2646,17 +2643,11 @@
   color: var(--cm-text-soft);
 }
 
-.cm-banner-fundador {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: linear-gradient(120deg, #d9b673, #a9803f);
-  color: #fff;
-  font-weight: 600;
-  font-size: 0.86rem;
-  padding: 12px 18px;
-  border-radius: 14px;
-  margin-bottom: 20px;
+.cm-feed-vazio {
+  padding: 32px 8px;
+  text-align: center;
+  color: var(--cm-text-soft);
+  font-size: 0.9rem;
 }
 
 .cm-feed-bloqueado {
