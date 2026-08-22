@@ -1,9 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Trash2, Star } from "lucide-react";
 import { useEmailSessao, lerNomeSessao } from "./usuarioStorage";
 import { iniciais, formatarDataBr } from "./comentariosUtils";
 
 const COMENTARIOS_URL = "/api/hotmart/comentarios.php";
+// 2 contas fixas com destaque visual + poder de apagar qualquer comentário
+// do mural (pedido do cliente). Orientador tem destaque MAIOR que
+// Administrador (borda dourada + brilho + estrela), não é hierarquia de
+// permissão — os dois podem excluir igual. Comparação sempre em
+// minúsculo/trim (mesmo padrão que o backend já usa pra email).
+const EMAIL_ADMINISTRADOR = "raphaelmellogarrido@gmail.com";
+const EMAIL_ORIENTADOR = "rsp.ren@gmail.com";
 // aula_id fixo — antes cada vídeo tinha seu próprio bucket de comentários
 // (prop `aulaId` dinâmica) e trocar de aula fazia a lista toda "sumir"
 // (bug real: sumia porque ia pra outro aula_id, não porque perdia dado).
@@ -24,6 +31,13 @@ function ComentariosFeed() {
   const [pages, setPages] = useState(1);
   const [texto, setTexto] = useState("");
   const [enviando, setEnviando] = useState(false);
+
+  // Quem está logado agora — decide se aparece a lixeira em TODO comentário
+  // (não só nos próprios), igual pedido: admin/orientador apaga qualquer um.
+  const emailAtualNormalizado = (email || "").toLowerCase().trim();
+  const souAdmin = emailAtualNormalizado === EMAIL_ADMINISTRADOR;
+  const souOrientador = emailAtualNormalizado === EMAIL_ORIENTADOR;
+  const podeExcluir = souAdmin || souOrientador;
 
   const carregar = useCallback((paginaAlvo) => {
     fetch(`${COMENTARIOS_URL}?aula_id=${AULA_ID}&page=${paginaAlvo}`)
@@ -68,6 +82,26 @@ function ComentariosFeed() {
       .finally(() => setEnviando(false));
   }
 
+  function handleExcluir(id) {
+    if (!window.confirm("Excluir este comentário?")) return;
+
+    fetch(`${COMENTARIOS_URL}?id=${id}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }), // backend confere se `email` está na lista de admins
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.erro) throw new Error(data.erro);
+        setItens((atual) => atual.filter((c) => c.id !== id));
+        setTotal((atual) => (typeof atual === "number" ? Math.max(0, atual - 1) : atual));
+      })
+      .catch((err) => {
+        console.error("[Clube Presença] falha ao excluir comentário:", err);
+        window.alert("Não foi possível excluir o comentário.");
+      });
+  }
+
   const carregando = total === null;
   const vazio = total === 0;
 
@@ -90,18 +124,42 @@ function ComentariosFeed() {
       </form>
 
       {!carregando &&
-        itens.map((comentario) => (
-          <div className="cm-comentario" key={comentario.id}>
-            <div className="cm-comentario-avatar">{iniciais(comentario.nome)}</div>
-            <div className="cm-comentario-corpo">
-              <strong>
-                {comentario.nome}
-                <span className="cm-comentario-quando">{formatarDataBr(comentario.created_at)}</span>
-              </strong>
-              <p className="cm-comentario-texto">{comentario.comentario}</p>
+        itens.map((comentario) => {
+          const emailAutorNormalizado = (comentario.email || "").toLowerCase().trim();
+          const autorOrientador = emailAutorNormalizado === EMAIL_ORIENTADOR;
+          const autorAdmin = !autorOrientador && emailAutorNormalizado === EMAIL_ADMINISTRADOR;
+          const classeDestaque = autorOrientador ? "cm-comentario-orientador" : autorAdmin ? "cm-comentario-admin" : "";
+
+          return (
+            <div className={`cm-comentario ${classeDestaque}`} key={comentario.id}>
+              <div className="cm-comentario-avatar">{iniciais(comentario.nome)}</div>
+              <div className="cm-comentario-corpo">
+                <strong>
+                  {comentario.nome}
+                  {autorOrientador && (
+                    <span className="cm-badge-orientador">
+                      <Star size={11} strokeWidth={3} fill="currentColor" /> Orientador
+                    </span>
+                  )}
+                  {autorAdmin && <span className="cm-badge-admin">Administrador</span>}
+                  <span className="cm-comentario-quando">{formatarDataBr(comentario.created_at)}</span>
+                </strong>
+                <p className="cm-comentario-texto">{comentario.comentario}</p>
+              </div>
+              {podeExcluir && (
+                <button
+                  type="button"
+                  className="cm-comentario-excluir"
+                  aria-label="Excluir comentário"
+                  title="Excluir comentário"
+                  onClick={() => handleExcluir(comentario.id)}
+                >
+                  <Trash2 size={15} />
+                </button>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
 
       {!carregando && !vazio && (
         <div className="cm-comentarios-paginacao">

@@ -570,10 +570,69 @@
 }
 
 .cm-duvida-comentario {
+  position: relative;
   background: #fff;
   border: 1px solid var(--cm-border);
   border-radius: 14px;
   padding: 12px 16px;
+}
+
+/* Mesmo esquema de badge/destaque de ComentariosFeed.jsx (.cm-badge-admin,
+   .cm-badge-orientador reaproveitados), só que o card aqui é branco por
+   padrão, então as variantes escuras precisam sobrescrever cor do texto
+   também (strong/p), não só fundo/borda. */
+.cm-duvida-comentario-admin,
+.cm-duvida-comentario-orientador {
+  border-color: transparent;
+}
+
+.cm-duvida-comentario-admin {
+  border-left: 3px solid #3b82f6;
+  background: #1e293b;
+}
+
+.cm-duvida-comentario-orientador {
+  border-left: 3px solid #f59e0b;
+  background: #29210a;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+}
+
+.cm-duvida-comentario-admin strong,
+.cm-duvida-comentario-orientador strong {
+  color: #f1f5f9;
+}
+
+.cm-duvida-comentario-admin p,
+.cm-duvida-comentario-orientador p {
+  color: #e2e8f0;
+}
+
+.cm-duvida-comentario-admin .cm-duvida-quando,
+.cm-duvida-comentario-orientador .cm-duvida-quando {
+  color: rgba(241, 245, 249, 0.65);
+}
+
+.cm-duvida-excluir {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  color: var(--cm-text-soft);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  line-height: 0;
+}
+
+.cm-duvida-comentario-admin .cm-duvida-excluir,
+.cm-duvida-comentario-orientador .cm-duvida-excluir {
+  color: rgba(241, 245, 249, 0.65);
+}
+
+.cm-duvida-excluir:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
 }
 
 .cm-duvida-comentario strong {
@@ -1921,6 +1980,93 @@
   margin: 4px 0 0;
   font-size: 0.88rem;
   color: var(--cm-text);
+}
+
+/* Badges de Administrador/Orientador + botão de excluir no mural de
+   comentários (ComentariosFeed.jsx) — Orientador tem destaque MAIOR
+   (borda + brilho + estrela), pedido explícito do cliente. */
+.cm-comentario-admin,
+.cm-comentario-orientador {
+  align-items: flex-start;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 6px 0;
+}
+
+.cm-comentario-admin {
+  border-left: 3px solid #3b82f6;
+  background: #1e293b;
+}
+
+.cm-comentario-orientador {
+  border-left: 3px solid #f59e0b;
+  background: #29210a;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+}
+
+.cm-comentario-admin .cm-comentario-corpo strong,
+.cm-comentario-admin .cm-comentario-texto,
+.cm-comentario-orientador .cm-comentario-corpo strong,
+.cm-comentario-orientador .cm-comentario-texto {
+  color: #f1f5f9;
+}
+
+.cm-comentario-admin .cm-comentario-quando,
+.cm-comentario-orientador .cm-comentario-quando {
+  color: rgba(241, 245, 249, 0.65);
+}
+
+.cm-badge-admin,
+.cm-badge-orientador {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  vertical-align: middle;
+}
+
+.cm-badge-admin {
+  background: rgba(59, 130, 246, 0.22);
+  color: #93c5fd;
+}
+
+.cm-badge-orientador {
+  background: rgba(245, 158, 11, 0.28);
+  color: #fcd34d;
+  font-size: 0.74rem;
+}
+
+.cm-badge-orientador svg {
+  color: #fcd34d;
+}
+
+.cm-comentario-excluir {
+  margin-left: auto;
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: var(--cm-text-soft);
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+.cm-comentario-admin .cm-comentario-excluir,
+.cm-comentario-orientador .cm-comentario-excluir {
+  color: rgba(241, 245, 249, 0.65);
+}
+
+.cm-comentario-excluir:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
 }
 
 /* Reestiliza o GuardedVideo (componente compartilhado) para combinar com

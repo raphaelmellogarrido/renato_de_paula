@@ -1,7 +1,7 @@
 <?php
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit; }
 
@@ -38,7 +38,7 @@ if ($metodo === 'GET') {
     }
 
     $stmt = $mysqli->prepare(
-        "SELECT id, nome, comentario, created_at FROM comentarios
+        "SELECT id, email, nome, comentario, created_at FROM comentarios
          WHERE aula_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?"
     );
     $stmt->bind_param('sii', $aulaId, $porPagina, $offset);
@@ -48,6 +48,9 @@ if ($metodo === 'GET') {
     while ($row = $res->fetch_assoc()) {
         $itens[] = [
             'id' => (int) $row['id'],
+            // email vai no payload só pro front decidir o badge/borda de
+            // admin ou orientador (ComentariosFeed.jsx) — não é exibido cru.
+            'email' => $row['email'],
             'nome' => $row['nome'] !== null && $row['nome'] !== '' ? $row['nome'] : 'Aluno',
             'comentario' => $row['comentario'],
             'created_at' => $row['created_at'], // já em horário de Brasília (SET time_zone em _conexao.php)
@@ -86,6 +89,47 @@ if ($metodo === 'POST') {
     $stmt->close();
 
     echo json_encode(['ok' => true, 'id' => $novoId]);
+    exit;
+}
+
+if ($metodo === 'DELETE') {
+    // Excluir comentário — só admins/orientadores (lista fixa abaixo).
+    // Esta API não tem $_SESSION nem cookie nenhum: o "login" da /comunidade
+    // é 100% client-side (email salvo em localStorage, ver usuarioStorage.js),
+    // não existe autenticação de verdade no servidor em nenhuma outra rota
+    // aqui além do header X-Admin-Secret (que é só pro painel /admin, outro
+    // caso de uso). Então o e-mail de quem está pedindo o DELETE vem do
+    // próprio corpo da requisição, igual ao POST acima já faz — é permissão
+    // de usuário como pedido, não um cofre: quem souber o endpoint e mandar
+    // um desses e-mails no body consegue apagar comentário. Risco aceitável
+    // pro que está em jogo (comentário de comunidade), mas não é uma
+    // barreira de segurança forte — sinalizando aqui pra não confundir com
+    // proteção real tipo ADMIN_SECRET.
+    $admins = ['raphaelmellogarrido@gmail.com', 'rsp.ren@gmail.com'];
+
+    $input = json_decode(file_get_contents('php://input'), true) ?: [];
+    $id = intval($_GET['id'] ?? $input['id'] ?? 0);
+    $emailSolicitante = strtolower(trim($input['email'] ?? $_GET['email'] ?? ''));
+
+    if (!in_array($emailSolicitante, $admins, true)) {
+        http_response_code(403);
+        echo json_encode(['erro' => 'Sem permissão para excluir comentários']);
+        exit;
+    }
+
+    if ($id <= 0) {
+        http_response_code(400);
+        echo json_encode(['erro' => 'id inválido']);
+        exit;
+    }
+
+    $stmt = $mysqli->prepare("DELETE FROM comentarios WHERE id = ?");
+    $stmt->bind_param('i', $id);
+    $stmt->execute();
+    $apagou = $stmt->affected_rows > 0;
+    $stmt->close();
+
+    echo json_encode(['ok' => true, 'apagado' => $apagou]);
     exit;
 }
 

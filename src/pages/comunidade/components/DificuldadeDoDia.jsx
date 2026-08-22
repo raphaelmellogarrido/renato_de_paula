@@ -1,9 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Trash2, Star } from "lucide-react";
 import { useEmailSessao, lerNomeSessao } from "./usuarioStorage";
 import { formatarDataBr } from "./comentariosUtils";
 
 const COMENTARIOS_URL = "/api/hotmart/comentarios.php";
+// Mesmas 2 contas com destaque + poder de excluir de ComentariosFeed.jsx —
+// backend é o mesmo endpoint (só muda aula_id), então a checagem de
+// permissão é idêntica. Ver ComentariosFeed.jsx pro comentário completo
+// sobre a checagem ser client-side (sem $_SESSION nesta API).
+const EMAIL_ADMINISTRADOR = "raphaelmellogarrido@gmail.com";
+const EMAIL_ORIENTADOR = "rsp.ren@gmail.com";
 // aula_id fixo — este card não é sobre um vídeo específico, é uma reflexão
 // livre do dia, compartilhada entre todos os alunos (não reseta por
 // semana/dia, é a mesma tabela permanente de comentarios.php).
@@ -24,6 +30,11 @@ function DificuldadeDoDia() {
   const [pages, setPages] = useState(1);
   const [texto, setTexto] = useState("");
   const [enviando, setEnviando] = useState(false);
+
+  const emailAtualNormalizado = (email || "").toLowerCase().trim();
+  const souAdmin = emailAtualNormalizado === EMAIL_ADMINISTRADOR;
+  const souOrientador = emailAtualNormalizado === EMAIL_ORIENTADOR;
+  const podeExcluir = souAdmin || souOrientador;
 
   const carregar = useCallback((paginaAlvo) => {
     fetch(`${COMENTARIOS_URL}?aula_id=${AULA_ID}&page=${paginaAlvo}&per_page=${POR_PAGINA}`)
@@ -68,6 +79,26 @@ function DificuldadeDoDia() {
       .finally(() => setEnviando(false));
   }
 
+  function handleExcluir(id) {
+    if (!window.confirm("Excluir este comentário?")) return;
+
+    fetch(`${COMENTARIOS_URL}?id=${id}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.erro) throw new Error(data.erro);
+        setItens((atual) => atual.filter((c) => c.id !== id));
+        setTotal((atual) => (typeof atual === "number" ? Math.max(0, atual - 1) : atual));
+      })
+      .catch((err) => {
+        console.error("[Clube Presença] falha ao excluir comentário:", err);
+        window.alert("Não foi possível excluir o comentário.");
+      });
+  }
+
   const carregando = total === null;
   const vazio = total === 0;
 
@@ -92,15 +123,39 @@ function DificuldadeDoDia() {
 
       {!carregando && !vazio && (
         <div className="cm-duvida-lista">
-          {itens.map((comentario) => (
-            <div className="cm-duvida-comentario" key={comentario.id}>
-              <strong>
-                {comentario.nome}
-                <span className="cm-duvida-quando">{formatarDataBr(comentario.created_at)}</span>
-              </strong>
-              <p>{comentario.comentario}</p>
-            </div>
-          ))}
+          {itens.map((comentario) => {
+            const emailAutorNormalizado = (comentario.email || "").toLowerCase().trim();
+            const autorOrientador = emailAutorNormalizado === EMAIL_ORIENTADOR;
+            const autorAdmin = !autorOrientador && emailAutorNormalizado === EMAIL_ADMINISTRADOR;
+            const classeDestaque = autorOrientador ? "cm-duvida-comentario-orientador" : autorAdmin ? "cm-duvida-comentario-admin" : "";
+
+            return (
+              <div className={`cm-duvida-comentario ${classeDestaque}`} key={comentario.id}>
+                <strong>
+                  {comentario.nome}
+                  {autorOrientador && (
+                    <span className="cm-badge-orientador">
+                      <Star size={11} strokeWidth={3} fill="currentColor" /> Orientador
+                    </span>
+                  )}
+                  {autorAdmin && <span className="cm-badge-admin">Administrador</span>}
+                  <span className="cm-duvida-quando">{formatarDataBr(comentario.created_at)}</span>
+                </strong>
+                <p>{comentario.comentario}</p>
+                {podeExcluir && (
+                  <button
+                    type="button"
+                    className="cm-duvida-excluir"
+                    aria-label="Excluir comentário"
+                    title="Excluir comentário"
+                    onClick={() => handleExcluir(comentario.id)}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
