@@ -18,11 +18,11 @@ function lerNomeSessao() {
 // pedido explícito do cliente.
 const EMAIL_TESTE = "teste@meditacaoraiz.com";
 
-// Próximo encontro (linha 1) + Desafio da Semana (linha 2) + Ranking (linha 3)
-// da coluna 4 do dashboard. Fragment (sem wrapper) de propósito: cada
-// widget cai numa linha diferente do grid definido em `.cm-main` (ver
-// ComunidadeApp.css), então os três `.cm-widget` têm que ser filhos
-// diretos do grid, não agrupados dentro de um `<aside>`.
+// Próximo encontro + Desafio da Semana + Ranking da coluna 3 do dashboard.
+// Fragment (sem wrapper) de propósito: quem controla o empilhamento
+// vertical (gap:24px) é o `.cm-coluna-direita` em
+// Dashboard.jsx/ComunidadeApp.css, então os três `.cm-widget` ficam
+// diretos dentro daquele flex column, sem outro wrapper no meio.
 function ColunaEncontros() {
   // Fallback enquanto o ranking.php não respondeu (ou falhou): só o usuário
   // atual, com os dias vindo do mesmo streak do botão "Meditei hoje".

@@ -228,108 +228,62 @@
 
 /* Grid principal: col 1 (sidebar esquerda, 240px) já é resolvida pelo flex
    do .cm-shell — aqui dentro de .cm-content fica o grid de 3 colunas da
-   referência (centro flexível + 2 colunas fixas de 360px cada), usando
-   `grid-template-areas` com nomes em vez de linha/coluna numérica.
-   Coluna 3 continua com 3 linhas de conteúdo empilhadas (Próximo Encontro,
-   Desafio da Semana, Ranking — nada disso é Biblioteca, não mexe). O pulo
-   do gato contra o "buraco branco" depois que a Biblioteca de Meditações
-   foi removida (a pedido do cliente): em vez de deixar a linha 4 da coluna
-   1 vazia, o Hero agora cobre as 4 linhas inteiras (`hero` repetido nas 4
-   linhas da área), preenchendo o espaço que sobrou. Linha 1 da coluna 2 é
-   o botão "Já meditei hoje" (antes ficava num topbar de largura cheia,
-   cliente pediu pra encostar em cima do card Sequência — mesma largura de
-   360px, não a página inteira, por isso ele NÃO repete na coluna 3 como o
-   topbar antigo fazia; a célula da coluna 3/linha 1 fica vazia de
-   propósito, `.`). Coluna 2 (botão + Sequência + Progresso) só tem 3
-   widgets mesmo, então a célula da linha 4 fica vazia de propósito
-   também. */
+   referência (centro flexível + 2 colunas fixas de 360px cada). As 3
+   colunas são 3 filhos diretos do grid, cada um em sua própria track de
+   coluna, SEM linhas compartilhadas entre eles (nada de
+   `grid-template-areas`/`grid-template-rows` — foi removido de propósito:
+   linhas compartilhadas faziam o conteúdo mais alto de uma coluna, ex.
+   "Próximo encontro ao vivo" na coluna 3, empurrar pra baixo o conteúdo
+   de OUTRA coluna que dividia a mesma linha, ex. "Sua Jornada" na coluna
+   2 — resultado: topo desalinhado entre colunas + vão gigante entre
+   Sequência e Sua Jornada). Cada coluna agora empilha seu próprio
+   conteúdo com flexbox (ver .cm-feed-empilhado, .cm-coluna-meio,
+   .cm-coluna-direita) e cresce só com a altura do que ela mesma tem —
+   `align-items: start` garante que as 3 colunas começam sempre na mesma
+   linha Y do topo. */
 .cm-main {
   padding: 32px;
   width: 100%;
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) 360px 360px;
-  grid-template-rows: auto auto auto auto;
-  grid-template-areas:
-    "hero   botao     ."
-    "hero   sequencia proximo"
-    "hero   progresso desafio"
-    "hero   .         ranking";
   gap: 24px;
-  align-items: stretch;
+  align-items: start;
   background: #f9f7f2;
 }
 
-.cm-grid-botao {
-  grid-area: botao;
-  align-self: start;
-}
-
-.cm-grid-sequencia {
-  grid-area: sequencia;
-  /* Mesmo motivo do .cm-grid-desafio logo abaixo: .cm-main tem
-     align-items:stretch, então sem isso o card Sequência estica pra igualar
-     a altura de "Próximo encontro ao vivo" (linha 2, coluna 3) — que é bem
-     mais alto —, deixando um vão em branco enorme embaixo das bolinhas. */
-  align-self: start;
-}
-
-.cm-grid-encontro {
-  grid-area: proximo;
-}
-
-.cm-grid-progresso {
-  grid-area: progresso;
-  /* Defensivo: mesma trava de .cm-grid-sequencia. "Sua Jornada" já costuma
-     ser o item mais alto da linha 3, então isso normalmente não muda nada
-     visualmente, mas evita esticar se "Desafio da Semana" (coluna 3) um dia
-     ficar mais alto. */
-  align-self: start;
-}
-
-.cm-grid-desafio {
-  grid-area: desafio;
-  /* Não estica pra igualar a altura do "Sua Jornada" ao lado (que agora é
-     bem mais alto) — mantém o tamanho natural do card, senão sobra vão
-     em branco dentro dele. */
-  align-self: start;
-}
-
-
-.cm-grid-ranking {
-  grid-area: ranking;
-}
-
-/* Coluna 1 (linhas 1 a 4) — sempre a Comunidade agora (switch removido).
-   Botão/Sequência/Próximo/Progresso/Desafio/Ranking (colunas 2 e 3)
-   continuam visíveis do lado. */
-.cm-grid-feed {
-  grid-column: 1;
-  grid-row: 1 / 5;
-}
-
-/* "Sua prática hoje" (DificuldadeDoDia) + feed da Comunidade empilhados
-   dentro da mesma célula do grid, com espaço entre os dois cards. */
+/* Coluna 1: "Sua prática hoje" (DificuldadeDoDia) + feed da Comunidade
+   empilhados, com espaço entre os dois cards. */
+.cm-grid-feed,
 .cm-feed-empilhado {
   display: flex;
   flex-direction: column;
   gap: 24px;
+  min-width: 0;
+}
+
+/* Coluna 2: botão "Já meditei hoje" + Sequência + Sua Jornada (ver
+   ColunaProgresso.jsx) — mesmo gap:24px das outras colunas, controlando
+   sozinho a distância entre os 3 widgets (sem depender de linha de grid
+   nenhuma). */
+.cm-coluna-meio {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+/* Coluna 3: Próximo encontro ao vivo + Desafio da semana + Ranking (ver
+   ColunaEncontros.jsx). */
+.cm-coluna-direita {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
 }
 
 @media (max-width: 1200px) {
   .cm-main {
     grid-template-columns: 1fr 360px;
-    grid-template-areas:
-      "hero botao"
-      "hero sequencia"
-      "hero progresso"
-      "hero proximo"
-      "hero desafio"
-      "hero ranking";
-  }
-
-  .cm-grid-feed {
-    grid-column: 1;
-    grid-row: 1 / 7;
   }
 }
 
@@ -364,21 +318,12 @@
     display: none;
   }
 
+  /* Mobile: 1 coluna só, empilha tudo em ordem de DOM (hero, depois coluna
+     do meio inteira, depois coluna da direita inteira) — não precisa mais
+     preservar a ordem intercalada antiga (botão antes do hero), a
+     estrutura de flexbox por coluna já resolve sozinha aqui. */
   .cm-main {
     grid-template-columns: 1fr;
-    grid-template-areas:
-      "botao"
-      "hero"
-      "sequencia"
-      "proximo"
-      "progresso"
-      "desafio"
-      "ranking";
-  }
-
-  .cm-grid-feed {
-    grid-column: 1;
-    grid-row: auto;
   }
 }
 
@@ -1821,9 +1766,10 @@
 }
 
 /* "Sua Jornada" compacto — substitui o antigo "Meu Progresso" no dashboard.
-   Mesmo footprint de um `.cm-widget` comum (fica no lugar de cm-grid-progresso),
-   só troca o anel grande + trilha de 16 dias por um anel pequeno ao lado do
-   texto, pra não ficar maior que os widgets vizinhos (Sequência/Desafio). */
+   Mesmo footprint de um `.cm-widget` comum (fica na coluna do meio, ver
+   .cm-coluna-meio em .cm-main), só troca o anel grande + trilha de 16 dias
+   por um anel pequeno ao lado do texto, pra não ficar maior que os widgets
+   vizinhos (Sequência/Desafio). */
 .cm-jornada-compacta {
   background: var(--cm-beige);
 }
@@ -2079,7 +2025,7 @@
 }
 
 /* Botão "Já meditei hoje": primeiro item da coluna 2 do dashboard (ver
-   grid-area "botao" em .cm-main), mesma largura do card Sequência logo
+   .cm-coluna-meio em .cm-main), mesma largura do card Sequência logo
    abaixo dele — antes era um topbar de largura cheia alinhado à direita,
    o cliente pediu pra virar um bloco full-width encostado em cima da
    Sequência, texto centralizado. */

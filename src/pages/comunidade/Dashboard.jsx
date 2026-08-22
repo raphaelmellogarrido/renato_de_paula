@@ -6,19 +6,22 @@ import FeedComunidade from "./components/FeedComunidade";
 import DificuldadeDoDia from "./components/DificuldadeDoDia";
 
 // Dashboard: grid único de 3 colunas (a 4ª, sidebar esquerda, é resolvida
-// por fora em ComunidadeLayout) usando `grid-template-areas` nomeadas (ver
-// ComunidadeApp.css) — cada card ocupa a área com seu nome, não uma célula
-// linha/coluna numérica solta. Coluna 1 é sempre a Comunidade agora (o
-// switch Curso/Comunidade foi removido — produto virou um bundle único
-// pago, sem view alternativa) — "Sua prática hoje" (DificuldadeDoDia) e o
-// feed da Comunidade (FeedComunidade) ficam empilhados na mesma célula
-// "hero", ocupando as 4 linhas inteiras onde o botão "Já meditei hoje"
-// (BotaoMediteiHoje, dentro de ColunaProgresso) + Sequência + Progresso e
-// Próximo+Desafio+Ranking ficam empilhados nas colunas 2 e 3 (Biblioteca
-// de Meditações foi removida a pedido do cliente — a área "biblioteca" do
-// grid não existe mais, ver ComunidadeApp.css). Sem accordion por Dia
-// nesta versão (removido a pedido do cliente); DIAS continua existindo só
-// para abrir a "meditação de hoje" e alimentar /comunidade/aula/:id.
+// por fora em ComunidadeLayout) — cada coluna é um filho direto do grid
+// definido em .cm-main (ver ComunidadeApp.css), empilhando seu próprio
+// conteúdo com flexbox por dentro, SEM linha de grid compartilhada entre
+// colunas (era isso que quebrava o alinhamento: conteúdo alto de uma
+// coluna empurrava pra baixo o conteúdo de outra que "dividia a linha").
+// Coluna 1 é sempre a Comunidade agora (o switch Curso/Comunidade foi
+// removido — produto virou um bundle único pago, sem view alternativa) —
+// "Sua prática hoje" (DificuldadeDoDia) e o feed da Comunidade
+// (FeedComunidade) ficam empilhados na coluna 1. Coluna 2
+// (.cm-coluna-meio) é o botão "Já meditei hoje" (BotaoMediteiHoje, dentro
+// de ColunaProgresso) + Sequência + Sua Jornada. Coluna 3
+// (.cm-coluna-direita) é Próximo encontro + Desafio da semana + Ranking
+// (ColunaEncontros). Biblioteca de Meditações foi removida a pedido do
+// cliente. Sem accordion por Dia nesta versão (removido a pedido do
+// cliente); DIAS continua existindo só para abrir a "meditação de hoje" e
+// alimentar /comunidade/aula/:id.
 function Dashboard() {
   const { session } = useComunidadeAuth();
 
@@ -29,8 +32,13 @@ function Dashboard() {
         <FeedComunidade liberado={temAcessoComunidade(session)} />
       </div>
 
-      <ColunaProgresso />
-      <ColunaEncontros />
+      <div className="cm-coluna-meio">
+        <ColunaProgresso />
+      </div>
+
+      <div className="cm-coluna-direita">
+        <ColunaEncontros />
+      </div>
     </div>
   );
 }
