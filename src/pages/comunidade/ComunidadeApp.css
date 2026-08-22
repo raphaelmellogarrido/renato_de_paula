@@ -615,7 +615,8 @@
   color: rgba(241, 245, 249, 0.65);
 }
 
-.cm-duvida-paginacao {
+.cm-duvida-paginacao,
+.cm-feed-paginacao {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -625,7 +626,8 @@
   color: var(--cm-text-soft);
 }
 
-.cm-duvida-paginacao button {
+.cm-duvida-paginacao button,
+.cm-feed-paginacao button {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -637,11 +639,13 @@
   color: #1a1a1a;
 }
 
-.cm-duvida-paginacao button:hover:not(:disabled) {
+.cm-duvida-paginacao button:hover:not(:disabled),
+.cm-feed-paginacao button:hover:not(:disabled) {
   background: var(--cm-sage-soft);
 }
 
-.cm-duvida-paginacao button:disabled {
+.cm-duvida-paginacao button:disabled,
+.cm-feed-paginacao button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
@@ -2594,6 +2598,19 @@
   text-align: center;
   color: var(--cm-text-soft);
   font-size: 0.9rem;
+}
+
+/* Card do feed liberado — mesma moldura do .cm-duvida acima dele na coluna
+   1 (ver Dashboard.jsx: DificuldadeDoDia + FeedComunidade empilhados).
+   Antes essa section não tinha fundo/borda/padding nenhum, então o post
+   (ou a mensagem de empty state) aparecia solto direto no fundo da página,
+   sem parecer o "segundo card" da coluna. */
+.cm-feed-liberado {
+  background: #f9f7f2;
+  border: 1px solid var(--cm-border);
+  border-radius: var(--cm-radius);
+  box-shadow: var(--cm-shadow);
+  padding: 32px;
 }
 
 .cm-feed-bloqueado {
