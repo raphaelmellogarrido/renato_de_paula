@@ -607,9 +607,12 @@
   color: #e2e8f0;
 }
 
-.cm-duvida-comentario-admin .cm-duvida-quando,
+.cm-duvida-comentario-admin .cm-duvida-quando {
+  color: #94a3b8; /* slate-400 */
+}
+
 .cm-duvida-comentario-orientador .cm-duvida-quando {
-  color: rgba(241, 245, 249, 0.65);
+  color: rgba(253, 230, 138, 0.6); /* amber-200/60 */
 }
 
 .cm-duvida-excluir {
@@ -2011,9 +2014,12 @@
   color: #f1f5f9;
 }
 
-.cm-comentario-admin .cm-comentario-quando,
+.cm-comentario-admin .cm-comentario-quando {
+  color: #94a3b8; /* slate-400 */
+}
+
 .cm-comentario-orientador .cm-comentario-quando {
-  color: rgba(241, 245, 249, 0.65);
+  color: rgba(253, 230, 138, 0.6); /* amber-200/60 */
 }
 
 .cm-badge-admin,
@@ -2032,18 +2038,21 @@
 }
 
 .cm-badge-admin {
-  background: rgba(59, 130, 246, 0.22);
-  color: #93c5fd;
+  /* Sólido (não translúcido) de propósito — pedido explícito pra "badge
+     azul bem visível", não uma sugestão sutil em cima do fundo escuro. */
+  background: #3b82f6;
+  color: #ffffff;
 }
 
 .cm-badge-orientador {
-  background: rgba(245, 158, 11, 0.28);
-  color: #fcd34d;
+  background: #f59e0b;
+  color: #1c1300;
+  font-weight: 800;
   font-size: 0.74rem;
 }
 
 .cm-badge-orientador svg {
-  color: #fcd34d;
+  color: #1c1300;
 }
 
 .cm-comentario-excluir {
