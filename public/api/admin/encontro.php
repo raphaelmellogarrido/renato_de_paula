@@ -23,9 +23,9 @@ if (ADMIN_SECRET === '' || !hash_equals(ADMIN_SECRET, $chaveFornecida)) {
 
 function buscarConfigEncontro(mysqli $mysqli): array
 {
-    $res = $mysqli->query("SELECT data_texto, horario, linha1, linha2, linha3, link_live FROM config_encontro WHERE id = 1");
+    $res = $mysqli->query("SELECT titulo, data_texto, horario, linha1, linha2, linha3, link_live FROM config_encontro WHERE id = 1");
     $linha = $res ? $res->fetch_assoc() : null;
-    return $linha ?: ['data_texto' => '', 'horario' => '', 'linha1' => '', 'linha2' => '', 'linha3' => '', 'link_live' => ''];
+    return $linha ?: ['titulo' => '', 'data_texto' => '', 'horario' => '', 'linha1' => '', 'linha2' => '', 'linha3' => '', 'link_live' => ''];
 }
 
 $metodo = $_SERVER['REQUEST_METHOD'];
@@ -37,6 +37,7 @@ if ($metodo === 'GET') {
 
 if ($metodo === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
+    $titulo = trim($input['titulo'] ?? '');
     $data_texto = trim($input['data_texto'] ?? '');
     $horario = trim($input['horario'] ?? '');
     $linha1 = trim($input['linha1'] ?? '');
@@ -45,9 +46,9 @@ if ($metodo === 'POST') {
     $link_live = trim($input['link_live'] ?? '');
 
     $stmt = $mysqli->prepare(
-        "UPDATE config_encontro SET data_texto = ?, horario = ?, linha1 = ?, linha2 = ?, linha3 = ?, link_live = ? WHERE id = 1"
+        "UPDATE config_encontro SET titulo = ?, data_texto = ?, horario = ?, linha1 = ?, linha2 = ?, linha3 = ?, link_live = ? WHERE id = 1"
     );
-    $stmt->bind_param('ssssss', $data_texto, $horario, $linha1, $linha2, $linha3, $link_live);
+    $stmt->bind_param('sssssss', $titulo, $data_texto, $horario, $linha1, $linha2, $linha3, $link_live);
     $stmt->execute();
     $stmt->close();
 

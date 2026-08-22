@@ -4,6 +4,10 @@ RewriteBase /
 # 1. SE FOR /api/ -> NÃO MEXER, deixa o PHP rodar
 RewriteRule ^api/ - [L]
 
+# 1b. Link antigo do admin: /admin-meditacao -> /admin (301 de verdade,
+# antes do fallback de SPA da regra 3, senão isso nunca dispara).
+RewriteRule ^admin-meditacao/?$ /admin [R=301,L]
+
 # 2. Se o arquivo ou pasta realmente existe, serve ele
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d

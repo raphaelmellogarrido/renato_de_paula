@@ -103,7 +103,14 @@ export default function AulasMeditacaoRaiz() {
   // fica pro efeito de "continuar de onde parou" logo abaixo, que também
   // precisa do progresso carregado antes de escolher.
   useEffect(() => {
-    fetch(`${API_URL}/api/aulas-raiz`)
+    // AbortController com timeout de 8s: se o backend travar, desiste e
+    // libera a tela (com a mensagem de erro) em vez de deixar
+    // "Carregando suas aulas..." pra sempre. finally garante setLoading(false)
+    // em qualquer desfecho (sucesso, erro de rede ou timeout).
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+    fetch(`${API_URL}/api/aulas-raiz`, { signal: controller.signal })
       .then((r) => r.json())
       .then((data) => {
         const listaDias = Array.isArray(data?.dias) ? data.dias : [];
@@ -113,7 +120,15 @@ export default function AulasMeditacaoRaiz() {
         console.error("Erro ao carregar catálogo de aulas-raiz:", err);
         setErroCatalogo(true);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        clearTimeout(timeoutId);
+        setLoading(false);
+      });
+
+    return () => {
+      controller.abort();
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   // Progresso: o estado já nasce carregado do localStorage (garante que uma
@@ -123,7 +138,15 @@ export default function AulasMeditacaoRaiz() {
   useEffect(() => {
     if (!email) return;
 
-    fetch(`${PROGRESSO_AULAS_RAIZ_URL}?email=${encodeURIComponent(email)}`)
+    // Mesmo padrão do fetch do catálogo acima: timeout de 8s via
+    // AbortController, e finally garante setProgressoCarregado(true) mesmo
+    // se o PHP travar — sem isso a tela ficaria presa em "Carregando suas
+    // aulas..." (guarda lá embaixo, no render) esperando um progresso que
+    // nunca chega.
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+    fetch(`${PROGRESSO_AULAS_RAIZ_URL}?email=${encodeURIComponent(email)}`, { signal: controller.signal })
       .then((r) => r.json())
       .then((data) => {
         const lista = Array.isArray(data?.aulas) ? data.aulas : [];
@@ -141,10 +164,18 @@ export default function AulasMeditacaoRaiz() {
         });
       })
       .catch(() => {
-        // PHP indisponível — segue só com o que já está no localStorage,
-        // sem travar a página.
+        // PHP indisponível ou lento (abort do timeout) — segue só com o que
+        // já está no localStorage, sem travar a página.
       })
-      .finally(() => setProgressoCarregado(true));
+      .finally(() => {
+        clearTimeout(timeoutId);
+        setProgressoCarregado(true);
+      });
+
+    return () => {
+      controller.abort();
+      clearTimeout(timeoutId);
+    };
   }, [email]);
 
   // "Continuar de onde parou": primeira aula ainda não concluída, na ordem

@@ -165,7 +165,13 @@ export function useSequenciaMeditacao() {
     if (!email) return;
     let cancelado = false;
 
-    fetch(`${RANKING_URL}?email=${encodeURIComponent(email)}`)
+    // AbortController com timeout de 8s: se o ranking.php demorar (ou
+    // travar) além disso, desiste e segue com a faixa de fallback — nunca
+    // deixa esse fetch pendurado influenciando outro estado da tela.
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+    fetch(`${RANKING_URL}?email=${encodeURIComponent(email)}`, { signal: controller.signal })
       .then((r) => r.json())
       .then((data) => {
         const streaks = extrairStreaks(data);
@@ -176,12 +182,16 @@ export function useSequenciaMeditacao() {
         if (!cancelado) setPercentualApi(Math.max(1, Math.min(100, percentil)));
       })
       .catch(() => {
-        // ranking.php indisponível ou ainda não existe — segue com a faixa
-        // de fallback calculada a partir do streak local.
-      });
+        // ranking.php indisponível, lento (abort do timeout) ou ainda não
+        // existe — segue com a faixa de fallback calculada a partir do
+        // streak local.
+      })
+      .finally(() => clearTimeout(timeoutId));
 
     return () => {
       cancelado = true;
+      controller.abort();
+      clearTimeout(timeoutId);
     };
   }, [email, streak]);
 

@@ -9,6 +9,11 @@ import { useEmailSessao, chaveUsuario, logSalvandoParaUsuario } from "./usuarioS
 // GET ?email=... -> { itens: [{ item_id, concluido }] }
 // POST { email, item_id, concluido } -> marca/desmarca um item.
 const DESAFIO_SEMANA_URL = "https://renatodepaula.com/api/hotmart/desafio-semana.php";
+// Conteúdo (título/descrição) dos 3 itens, editável pelo admin em
+// /admin — não confundir com DESAFIO_SEMANA_URL acima, que é só
+// o progresso de CHECK do aluno. Público, sem auth, mesmo padrão de
+// public/api/encontro.php.
+const DESAFIOS_SEMANA_CONFIG_URL = "/api/desafios-semana.php";
 // Base da chave local — SEMPRE passa por chaveUsuario(CHAVE_BASE, email)
 // antes de ir pro localStorage. ContadorDesafioSemanal.jsx lê essa mesma
 // chave (mesma base + mesmo email) pra saber quando o desafio bateu 3/3;
@@ -54,9 +59,10 @@ function dispararConfete() {
 }
 
 /**
- * "Desafio da Semana" — card da coluna direita do dashboard. Conteúdo vem
- * de DESAFIO_SEMANA.itens (data/mockData.js): pra trocar o desafio toda
- * segunda, só editar aquele array de 3 objetos.
+ * "Desafio da Semana" — card da coluna direita do dashboard. Conteúdo
+ * (título/descrição dos 3 itens) vem de public/api/desafios-semana.php,
+ * editável em /admin; DESAFIO_SEMANA.itens (data/mockData.js) é
+ * só o valor inicial antes do fetch resolver.
  *
  * Progresso é real, não mock: cada check salva em localStorage (chave
  * "desafioSemana_v1") e sincroniza com o PHP externo — mesmo padrão
@@ -64,10 +70,36 @@ function dispararConfete() {
  * depois, e o local sempre manda se o PHP discordar).
  */
 export default function DesafioSemana() {
-  const itens = DESAFIO_SEMANA.itens;
+  // Conteúdo (título/subtítulo de cada item) começa com o mock — mesmo
+  // padrão de "valor inicial só pra não ficar em branco" usado em
+  // ColunaEncontros.jsx — e é substituído pelo conteúdo real assim que o
+  // fetch abaixo resolver.
+  const [itens, setItens] = useState(DESAFIO_SEMANA.itens);
   const email = useEmailSessao();
   const [concluidos, setConcluidos] = useState(() => carregarLocal(email));
   const [celebrando, setCelebrando] = useState(false);
+
+  // Título/descrição editáveis pelo admin (/admin-meditacao, seção
+  // "Desafio da Semana") — vem de public/api/desafios-semana.php. Já
+  // chega ordenado por `ordem` do SQL, não precisa reordenar aqui.
+  useEffect(() => {
+    let cancelado = false;
+    fetch(DESAFIOS_SEMANA_CONFIG_URL)
+      .then((r) => r.json())
+      .then((data) => {
+        const lista = Array.isArray(data?.itens) ? data.itens : [];
+        if (!cancelado && lista.length) {
+          setItens(lista.map((i) => ({ id: i.id, titulo: i.titulo, subtitulo: i.descricao })));
+        }
+      })
+      .catch(() => {
+        // desafios-semana.php indisponível — segue com o mock, sem travar
+        // a página.
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, []);
 
   // Controla a celebração: só dispara na transição pra 3/3, nunca ao
   // recarregar a página já completa, e libera de novo se algum item for

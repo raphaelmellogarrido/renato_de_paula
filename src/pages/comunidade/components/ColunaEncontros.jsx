@@ -42,13 +42,14 @@ function ColunaEncontros() {
   const [processando, setProcessando] = useState(false);
   const [toast, setToast] = useState(null); // { tipo: "sucesso" | "erro", texto }
 
-  // Data/horário/linhas/link editáveis pelo admin (/admin-meditacao, seção
-  // "Encontro ao Vivo") — vem de public/api/encontro.php. Valor inicial é
-  // o mesmo texto hard-coded de sempre, só reorganizado nesse formato, pra
-  // o card nunca ficar em branco enquanto o fetch não resolve (ou se a
-  // chamada falhar, ex: `npm run dev` local sem PHP rodando — mesmo motivo
-  // documentado em reservasLive.js).
+  // Título/data/horário/linhas/link editáveis pelo admin (/admin,
+  // seção "Encontro ao Vivo") — vem de public/api/encontro.php. Valor
+  // inicial é o mesmo texto hard-coded de sempre, só reorganizado nesse
+  // formato, pra o card nunca ficar em branco enquanto o fetch não resolve
+  // (ou se a chamada falhar, ex: `npm run dev` local sem PHP rodando —
+  // mesmo motivo documentado em reservasLive.js).
   const [encontro, setEncontro] = useState({
+    titulo: PROXIMO_ENCONTRO_VIVO.titulo,
     data_texto: "Qui, 15 Mai",
     horario: "7:00 - 7:30",
     linha1: "20 min de prática guiada",
@@ -119,7 +120,7 @@ function ColunaEncontros() {
           <span className="cm-dot-pulse" aria-hidden="true" /> Próximo encontro ao vivo
         </h3>
         <div className="cm-encontro-caixa">
-          <strong className="cm-encontro-titulo">{PROXIMO_ENCONTRO_VIVO.titulo}</strong>
+          <strong className="cm-encontro-titulo">{encontro.titulo}</strong>
           <span className="cm-encontro-quando">
             {encontro.data_texto} · {encontro.horario}
           </span>

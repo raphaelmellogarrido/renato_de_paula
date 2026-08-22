@@ -43,7 +43,13 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/meditacao" element={<Meditacao />} />
             <Route path="/mitos" element={<Meditacao />} />
-            <Route path="/admin-meditacao" element={<AdminMeditacao />} />
+            <Route path="/admin" element={<AdminMeditacao />} />
+            {/* Link antigo: o redirect "de verdade" (301, HTTP) é feito no
+                .htaccess pra navegação direta (digitar/abrir a URL). Esta
+                rota é só um fallback client-side — cobre quem já está com o
+                SPA carregado (ex: veio de outra página da comunidade) e
+                também o dev server (`npm run dev`), que não lê o .htaccess. */}
+            <Route path="/admin-meditacao" element={<Navigate to="/admin" replace />} />
             <Route path="/contato" element={<Contato />} />
             <Route path="/comunidade/login" element={<ComunidadeLogin />} />
             <Route path="/esqueceu-senha" element={<EsqueceuSenha />} />

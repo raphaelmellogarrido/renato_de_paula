@@ -73,12 +73,14 @@ function AdminMeditacao() {
   const [erroEnvio, setErroEnvio] = useState("");
   const [copiado, setCopiado] = useState(false);
 
-  // Seção "Encontro ao Vivo" — edita o card que o aluno vê em /comunidade
-  // (ColunaEncontros.jsx via public/api/encontro.php). Usa a mesma chave
+  // Seção "Encontro ao Vivo" (rota desta página: /admin) — edita o card
+  // que o aluno vê em /comunidade (ColunaEncontros.jsx via
+  // public/api/encontro.php). Usa a mesma chave
   // digitada no login acima (`secret`) como header X-Admin-Secret nas
   // chamadas ao back-end PHP (back-end separado do Node usado no resto
   // desta página, ver public/api/admin/encontro.php).
   const [encontroForm, setEncontroForm] = useState({
+    titulo: "",
     data_texto: "",
     horario: "",
     linha1: "",
@@ -90,6 +92,15 @@ function AdminMeditacao() {
   const [encontroSucesso, setEncontroSucesso] = useState(false);
   const [encontroErro, setEncontroErro] = useState("");
 
+  // Seção "Desafio da Semana" — edita os 3 itens (título + descrição) que
+  // o aluno vê em /comunidade (DesafioSemana.jsx via
+  // public/api/desafios-semana.php). Mesmo padrão de auth (X-Admin-Secret)
+  // e mesmo back-end PHP separado da seção "Encontro ao Vivo" acima.
+  const [desafiosForm, setDesafiosForm] = useState([]);
+  const [salvandoDesafios, setSalvandoDesafios] = useState(false);
+  const [desafiosSucesso, setDesafiosSucesso] = useState(false);
+  const [desafiosErro, setDesafiosErro] = useState("");
+
   useEffect(() => {
     if (!autenticado) return;
     let cancelado = false;
@@ -98,6 +109,7 @@ function AdminMeditacao() {
       .then((dados) => {
         if (!cancelado && dados?.ok) {
           setEncontroForm({
+            titulo: dados.titulo || "",
             data_texto: dados.data_texto || "",
             horario: dados.horario || "",
             linha1: dados.linha1 || "",
@@ -126,6 +138,67 @@ function AdminMeditacao() {
     return (e) => setEncontroForm((atual) => ({ ...atual, [campo]: e.target.value }));
   }
 
+  useEffect(() => {
+    if (!autenticado) return;
+    let cancelado = false;
+    fetch("/api/admin/desafios-semana.php", { headers: { "X-Admin-Secret": secret } })
+      .then((r) => r.json())
+      .then((dados) => {
+        if (!cancelado && dados?.ok && Array.isArray(dados.itens)) {
+          setDesafiosForm(dados.itens.map((i) => ({ id: i.id, titulo: i.titulo || "", descricao: i.descricao || "" })));
+        }
+      })
+      .catch(() => {
+        // Endpoint PHP indisponível (ex: dev local sem PHP rodando) — a
+        // seção fica vazia, mas não trava o resto da página.
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [autenticado, secret]);
+
+  useEffect(() => {
+    if (!desafiosSucesso) return;
+    const t = setTimeout(() => setDesafiosSucesso(false), 3000);
+    return () => clearTimeout(t);
+  }, [desafiosSucesso]);
+
+  function handleDesafioChange(index, campo) {
+    return (e) => {
+      const valor = e.target.value;
+      setDesafiosForm((atual) => atual.map((item, i) => (i === index ? { ...item, [campo]: valor } : item)));
+    };
+  }
+
+  async function handleSalvarDesafios(e) {
+    e.preventDefault();
+    setDesafiosErro("");
+    setDesafiosSucesso(false);
+    setSalvandoDesafios(true);
+
+    try {
+      const res = await fetch("/api/admin/desafios-semana.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Admin-Secret": secret },
+        body: JSON.stringify({ itens: desafiosForm }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(res.status === 401 ? "Senha incorreta." : data.erro || "Falha ao salvar.");
+      }
+
+      if (Array.isArray(data.itens)) {
+        setDesafiosForm(data.itens.map((i) => ({ id: i.id, titulo: i.titulo || "", descricao: i.descricao || "" })));
+      }
+      setDesafiosSucesso(true);
+    } catch (err) {
+      setDesafiosErro(err.message || "Não foi possível salvar.");
+    } finally {
+      setSalvandoDesafios(false);
+    }
+  }
+
   async function handleSalvarEncontro(e) {
     e.preventDefault();
     setEncontroErro("");
@@ -145,6 +218,7 @@ function AdminMeditacao() {
       }
 
       setEncontroForm({
+        titulo: data.titulo || "",
         data_texto: data.data_texto || "",
         horario: data.horario || "",
         linha1: data.linha1 || "",
@@ -500,6 +574,16 @@ function AdminMeditacao() {
           {encontroErro && <div className="error-box">{encontroErro}</div>}
           <form onSubmit={handleSalvarEncontro} noValidate>
             <div className="field">
+              <label htmlFor="encontro-titulo">Título do encontro</label>
+              <input
+                id="encontro-titulo"
+                type="text"
+                value={encontroForm.titulo}
+                onChange={handleEncontroChange("titulo")}
+                placeholder="Aterramento Matinal"
+              />
+            </div>
+            <div className="field">
               <label htmlFor="encontro-data">Data (ex: Qui, 15 Mai)</label>
               <input
                 id="encontro-data"
@@ -559,7 +643,8 @@ function AdminMeditacao() {
             }}
           >
             <p style={{ margin: "0 0 4px", fontSize: 12, textTransform: "uppercase", color: "#999" }}>Prévia</p>
-            <strong style={{ display: "block", marginBottom: 4 }}>Próximo encontro ao vivo</strong>
+            <span style={{ display: "block", marginBottom: 4, fontSize: 12, color: "#999" }}>Próximo encontro ao vivo</span>
+            <strong style={{ display: "block", marginBottom: 4 }}>{encontroForm.titulo || "—"}</strong>
             <span style={{ display: "block", marginBottom: 12, color: "#555" }}>
               {encontroForm.data_texto || "—"} · {encontroForm.horario || "—"}
             </span>
@@ -590,6 +675,54 @@ function AdminMeditacao() {
               </span>
             )}
           </div>
+        </div>
+
+        <div className="form-card" style={{ marginTop: 40 }}>
+          <h3>Desafio da Semana</h3>
+          <p style={{ marginTop: -8, marginBottom: 16, color: "#666" }}>
+            Edita os 3 itens do card "Desafio da Semana" que o aluno vê em /comunidade.
+          </p>
+          {desafiosSucesso && <div className="success-box">Atualizado</div>}
+          {desafiosErro && <div className="error-box">{desafiosErro}</div>}
+          {desafiosForm.length === 0 ? (
+            <p style={{ color: "#999" }}>Carregando desafios...</p>
+          ) : (
+            <form onSubmit={handleSalvarDesafios} noValidate>
+              {desafiosForm.map((item, idx) => (
+                <div
+                  key={item.id}
+                  style={{
+                    marginBottom: 20,
+                    paddingBottom: 20,
+                    borderBottom: idx < desafiosForm.length - 1 ? "1px solid #eee" : "none",
+                  }}
+                >
+                  <p style={{ margin: "0 0 8px", fontWeight: 600 }}>Item {idx + 1}</p>
+                  <div className="field">
+                    <label htmlFor={`desafio-titulo-${item.id}`}>Título</label>
+                    <input
+                      id={`desafio-titulo-${item.id}`}
+                      type="text"
+                      value={item.titulo}
+                      onChange={handleDesafioChange(idx, "titulo")}
+                    />
+                  </div>
+                  <div className="field">
+                    <label htmlFor={`desafio-descricao-${item.id}`}>Descrição</label>
+                    <input
+                      id={`desafio-descricao-${item.id}`}
+                      type="text"
+                      value={item.descricao}
+                      onChange={handleDesafioChange(idx, "descricao")}
+                    />
+                  </div>
+                </div>
+              ))}
+              <button type="submit" className="btn btn-primary btn-block" disabled={salvandoDesafios}>
+                {salvandoDesafios ? "Salvando..." : "Salvar Desafios"}
+              </button>
+            </form>
+          )}
         </div>
       </div>
     </section>
