@@ -10,12 +10,12 @@ const COMENTARIOS_URL = "/api/hotmart/comentarios.php";
 const AULA_ID = "dificuldade_do_dia";
 const POR_PAGINA = 5;
 
-// Card "Sua prática hoje" — ocupa a mesma célula do grid (.cm-grid-hero, ver
-// Dashboard.jsx/ComunidadeApp.css) onde antes ficava o hero de vídeo
-// ("Continue sua jornada", foto + player, removido). Sem foto, sem overlay:
-// pergunta + textarea + os 5 comentários mais recentes de todos os alunos,
-// paginados — mesmo backend de ComentariosFeed.jsx, só com aula_id fixo e
-// per_page=5 em vez de 10.
+// Card "Sua prática hoje" — fica empilhado com o FeedComunidade dentro da
+// mesma célula do grid (.cm-grid-feed/.cm-feed-empilhado, ver
+// Dashboard.jsx/ComunidadeApp.css), sempre visível (não depende mais de
+// nenhum switch/view). Sem foto, sem overlay: pergunta + textarea + os 5
+// comentários mais recentes de todos os alunos, paginados — mesmo backend
+// de ComentariosFeed.jsx, só com aula_id fixo e per_page=5 em vez de 10.
 function DificuldadeDoDia() {
   const email = useEmailSessao();
   const [itens, setItens] = useState([]);

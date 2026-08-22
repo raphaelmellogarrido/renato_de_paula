@@ -115,7 +115,7 @@ export default function ComunidadeLogin() {
     <div className="cm-login-page">
       <div className="cm-login-card">
         <h1 className="cm-login-title">{modo === "criar" ? "Crie sua senha do Clube" : "Entrar no Clube Presença"}</h1>
-        <p className="cm-login-subtitle">{modo === "criar" ? "Detectamos sua compra na Hotmart. Crie uma senha só pro Clube." : "Use o e-mail da sua compra na Hotmart."}</p>
+        <p className="cm-login-subtitle">{modo === "criar" ? "Detectamos sua compra na Hotmart. Crie uma senha só pro Clube." : "Use seu e-mail de acesso."}</p>
 
         {erro && <div className="cm-login-alert cm-login-alert-erro">{erro}</div>}
         {msg && <div className="cm-login-alert cm-login-alert-msg">{msg}</div>}
@@ -147,7 +147,7 @@ export default function ComunidadeLogin() {
           )}
 
           <div className="cm-login-field">
-            <label htmlFor="cm-login-email">E-mail da compra</label>
+            <label htmlFor="cm-login-email">Seu e-mail</label>
             <input id="cm-login-email" type="email" required placeholder="seu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="cm-login-input" />
           </div>
 

@@ -9,9 +9,8 @@ import { useEmailSessao, chaveUsuario, logSalvandoParaUsuario } from "./usuarioS
 // do dia, ou quando a sessão troca de conta.
 const CHAVE_BASE_DATA = "meditacaoHoje_ultimaData";
 const CHAVE_BASE_STREAK = "meditacaoHoje_streak";
-// Mesma base de chave que useSequenciaMeditacao.js lê (mesmo padrão de
-// acoplamento por literal usado entre DesafioSemana.jsx e
-// ContadorDesafioSemanal.jsx) — mudar aqui exige mudar lá também.
+// Mesma base de chave que useSequenciaMeditacao.js lê (acoplamento por
+// literal, não por import) — mudar aqui exige mudar lá também.
 const CHAVE_BASE_HISTORICO = "meditacaoHistorico";
 const PRESENCA_URL = "/api/hotmart/presenca.php";
 const EVENTO_ATUALIZOU = "meditacaoHojeAtualizada";

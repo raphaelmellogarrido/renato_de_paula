@@ -86,10 +86,7 @@ function calcularStatusPorDia(progressoPorArquivo) {
  * dashboard com o "Desafio da Semana" ao lado.
  */
 export default function JornadaProgress({ progressoPorArquivo = {}, compacto = false }) {
-  const { totalAssistidos, statusPorDia, diaAtualIndex } = useMemo(
-    () => calcularStatusPorDia(progressoPorArquivo),
-    [progressoPorArquivo],
-  );
+  const { totalAssistidos, statusPorDia, diaAtualIndex } = useMemo(() => calcularStatusPorDia(progressoPorArquivo), [progressoPorArquivo]);
 
   const percentual = TOTAL_AULAS ? Math.round((totalAssistidos / TOTAL_AULAS) * 100) : 0;
   const jornadaCompleta = totalAssistidos >= TOTAL_AULAS;
@@ -97,25 +94,16 @@ export default function JornadaProgress({ progressoPorArquivo = {}, compacto = f
 
   // Mesmas bases do bloqueio por dia/calendário de AulasMeditacaoRaiz.jsx
   // (ver progressoDias.js), reaproveitadas aqui só pra escolher o badge.
-  const maxDiaCompleto = useMemo(
-    () => calcularMaxDiaCompleto(DIAS_CATALOGO, progressoPorArquivo),
-    [progressoPorArquivo],
-  );
-  const ultimoDiaCompletadoData = useMemo(
-    () => calcularUltimoDiaCompletadoData(DIAS_CATALOGO, progressoPorArquivo, maxDiaCompleto),
-    [progressoPorArquivo, maxDiaCompleto],
-  );
-  const statusJornada = useMemo(
-    () => getStatusJornada({ jornadaCompleta, maxDiaCompleto, ultimoDiaCompletadoData }),
-    [jornadaCompleta, maxDiaCompleto, ultimoDiaCompletadoData],
-  );
+  const maxDiaCompleto = useMemo(() => calcularMaxDiaCompleto(DIAS_CATALOGO, progressoPorArquivo), [progressoPorArquivo]);
+  const ultimoDiaCompletadoData = useMemo(() => calcularUltimoDiaCompletadoData(DIAS_CATALOGO, progressoPorArquivo, maxDiaCompleto), [progressoPorArquivo, maxDiaCompleto]);
+  const statusJornada = useMemo(() => getStatusJornada({ jornadaCompleta, maxDiaCompleto, ultimoDiaCompletadoData }), [jornadaCompleta, maxDiaCompleto, ultimoDiaCompletadoData]);
 
   const restantes = TOTAL_AULAS - totalAssistidos;
   let mensagem;
   if (statusJornada.estado === "curso-concluido") {
     mensagem = "Você completou sua transformação! 🪷";
   } else if (statusJornada.estado === "dia-concluido") {
-    mensagem = "Próximo dia libera à meia-noite ✨";
+    mensagem = "Próxima aula libera à meia-noite ✨";
   } else if (totalAssistidos === 0) {
     mensagem = "🪷 Sua jornada começa agora";
   } else if (percentual < 50) {
@@ -140,14 +128,7 @@ export default function JornadaProgress({ progressoPorArquivo = {}, compacto = f
                 </linearGradient>
               </defs>
               <circle className="cm-jornada-anel-trilho" cx="60" cy="60" r={RAIO_ANEL} />
-              <circle
-                className="cm-jornada-anel-progresso cm-jornada-anel-progresso--compacta"
-                cx="60"
-                cy="60"
-                r={RAIO_ANEL}
-                strokeDasharray={CIRCUNFERENCIA_ANEL}
-                strokeDashoffset={dashoffset}
-              />
+              <circle className="cm-jornada-anel-progresso cm-jornada-anel-progresso--compacta" cx="60" cy="60" r={RAIO_ANEL} strokeDasharray={CIRCUNFERENCIA_ANEL} strokeDashoffset={dashoffset} />
             </svg>
             <span className="cm-jornada-compacta-anel-percentual">{percentual}%</span>
           </div>
@@ -166,12 +147,7 @@ export default function JornadaProgress({ progressoPorArquivo = {}, compacto = f
             const bloqueado = !completo && !atual && dia > diaAtualIndex;
             const classe = completo ? "is-completo" : atual ? "is-atual" : bloqueado ? "is-bloqueado" : "";
             return (
-              <span
-                key={dia}
-                role="listitem"
-                className={`cm-jornada-bolinha cm-jornada-bolinha--compacta ${classe}`}
-                title={`Dia ${dia} - ${concluidas}/${total} concluídas`}
-              >
+              <span key={dia} role="listitem" className={`cm-jornada-bolinha cm-jornada-bolinha--compacta ${classe}`} title={`Dia ${dia} - ${concluidas}/${total} concluídas`}>
                 {completo ? "✓" : dia}
               </span>
             );
@@ -203,14 +179,7 @@ export default function JornadaProgress({ progressoPorArquivo = {}, compacto = f
             </linearGradient>
           </defs>
           <circle className="cm-jornada-anel-trilho" cx="60" cy="60" r={RAIO_ANEL} />
-          <circle
-            className="cm-jornada-anel-progresso"
-            cx="60"
-            cy="60"
-            r={RAIO_ANEL}
-            strokeDasharray={CIRCUNFERENCIA_ANEL}
-            strokeDashoffset={dashoffset}
-          />
+          <circle className="cm-jornada-anel-progresso" cx="60" cy="60" r={RAIO_ANEL} strokeDasharray={CIRCUNFERENCIA_ANEL} strokeDashoffset={dashoffset} />
         </svg>
         <div className="cm-jornada-anel-centro">
           <span className="cm-jornada-anel-numero">
@@ -228,12 +197,7 @@ export default function JornadaProgress({ progressoPorArquivo = {}, compacto = f
           const bloqueado = !completo && !atual && dia > diaAtualIndex;
           const classe = completo ? "is-completo" : atual ? "is-atual" : bloqueado ? "is-bloqueado" : "";
           return (
-            <span
-              key={dia}
-              role="listitem"
-              className={`cm-jornada-bolinha ${classe}`}
-              title={`Dia ${dia} - ${concluidas}/${total} concluídas`}
-            >
+            <span key={dia} role="listitem" className={`cm-jornada-bolinha ${classe}`} title={`Dia ${dia} - ${concluidas}/${total} concluídas`}>
               {completo ? "✓" : dia}
             </span>
           );

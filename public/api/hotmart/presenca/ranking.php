@@ -24,6 +24,15 @@ try {
     // EXATAMENTE (maiúscula/minúscula ou espaço) com alunos.email sumia do
     // ranking inteiro com o INNER JOIN antigo — era o bug real (3 emails
     // com presença no banco, só 1 aparecia no front).
+    //
+    // SEM LIMIT aqui de propósito: este endpoint tem dois consumidores —
+    // ColunaEncontros.jsx (mostra só o Top 5, corta no frontend com
+    // .slice(0,5)) e useSequenciaMeditacao.js (usa a lista INTEIRA pra
+    // calcular o percentil "Você está entre os X% mais consistentes" em
+    // Sequencia.jsx, comparando o streak do usuário contra todo mundo).
+    // Um LIMIT 5 aqui corrigiria o widget de ranking mas quebraria
+    // silenciosamente esse percentil, que passaria a comparar cada usuário
+    // só contra o Top 5.
     $resultado = $mysqli->query("
         SELECT a.nome, p.email, COUNT(DISTINCT DATE(p.created_at)) as dias
         FROM presencas p

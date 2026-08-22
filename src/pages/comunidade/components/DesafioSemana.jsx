@@ -15,9 +15,7 @@ const DESAFIO_SEMANA_URL = "https://renatodepaula.com/api/hotmart/desafio-semana
 // public/api/encontro.php.
 const DESAFIOS_SEMANA_CONFIG_URL = "/api/desafios-semana.php";
 // Base da chave local — SEMPRE passa por chaveUsuario(CHAVE_BASE, email)
-// antes de ir pro localStorage. ContadorDesafioSemanal.jsx lê essa mesma
-// chave (mesma base + mesmo email) pra saber quando o desafio bateu 3/3;
-// mudar esse literal aqui exige mudar lá também.
+// antes de ir pro localStorage.
 function getSemanaBRT() {
   const agora = new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
   const jan1 = new Date(agora.getFullYear(), 0, 1);
@@ -155,6 +153,20 @@ export default function DesafioSemana() {
   const completo = itens.length > 0 && totalConcluidos === itens.length;
   const percentual = itens.length ? Math.round((totalConcluidos / itens.length) * 100) : 0;
 
+  // Mesma contagem que acende os checks acima (totalConcluidos/itens) — nunca
+  // um state separado. Antes disso vinha de outro componente
+  // (ContadorDesafioSemanal.jsx) que lia uma chave de localStorage diferente
+  // (sem o sufixo da semana) e por isso dessincronizava do checklist: os
+  // checks apareciam marcados mas o texto dizia "0 completos".
+  let statusTexto;
+  if (totalConcluidos === 0) {
+    statusTexto = "Você ainda não completou nenhum desafio da semana.";
+  } else if (completo) {
+    statusTexto = "Parabéns! Você completou todos os desafios da semana 🎉";
+  } else {
+    statusTexto = `Você completou ${totalConcluidos} de ${itens.length} desafios da semana.`;
+  }
+
   useEffect(() => {
     if (!montouRef.current) {
       montouRef.current = true;
@@ -219,6 +231,7 @@ export default function DesafioSemana() {
           <div className="cm-desafio-progress">
             <div className="cm-desafio-progress-fill" style={{ width: `${percentual}%` }} />
           </div>
+          <p className="cm-desafio-status">{statusTexto}</p>
         </>
       )}
     </div>

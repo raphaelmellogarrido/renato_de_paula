@@ -30,12 +30,15 @@ function ListaPosts() {
   );
 }
 
-// Mural da comunidade (Clube Presença). `liberado` vem da regra de negócio
-// em featureFlags.js: aluno do curso = fundador liberado durante o beta;
-// senão, mostra o feed borrado + overlay de "Em Construção" com lista de
-// espera (fake, só troca de estado local).
+// Mural da comunidade (Clube Presença), parte do produto único de
+// R$49,90/mês (curso + comunidade). `liberado` vem da regra de negócio em
+// featureFlags.js: hoje é sempre true pra quem está logado (login já é a
+// trava real). Esse branch de blur + CTA fica pronto como placeholder
+// visual pra quando o Stripe recorrente existir (próxima task) e passar a
+// existir de fato sessão sem assinatura ativa — por enquanto não tem
+// cobrança real nenhuma, é só a UI da oferta.
 function FeedComunidade({ liberado, souFundador }) {
-  const [naLista, setNaLista] = useState(false);
+  const [quisAssinar, setQuisAssinar] = useState(false);
 
   if (!liberado) {
     return (
@@ -45,10 +48,10 @@ function FeedComunidade({ liberado, souFundador }) {
         </div>
         <div className="cm-feed-overlay-construcao">
           <Lock size={22} />
-          <h3>Comunidade em construção</h3>
-          <p>O Clube Presença ainda está sendo preparado. Entre na lista de espera para ser avisado assim que abrir.</p>
-          <button type="button" className="cm-btn-primary" onClick={() => setNaLista(true)} disabled={naLista}>
-            {naLista ? "Você está na lista! ✓" : "Entrar na lista de espera"}
+          <h3>Assine para continuar</h3>
+          <p>A Comunidade faz parte do Clube Presença: curso + comunidade por R$49,90/mês.</p>
+          <button type="button" className="cm-btn-primary" onClick={() => setQuisAssinar(true)} disabled={quisAssinar}>
+            {quisAssinar ? "Pedido registrado! ✓" : "Assinar por R$49,90/mês"}
           </button>
         </div>
       </section>
@@ -60,7 +63,7 @@ function FeedComunidade({ liberado, souFundador }) {
       {souFundador && (
         <div className="cm-banner-fundador">
           <PartyPopper size={16} />
-          Você é Membro Fundador — acesso grátis por 90 dias
+          Você é um dos primeiros membros do Clube Presença 🎉
         </div>
       )}
       <ListaPosts />

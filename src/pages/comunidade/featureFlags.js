@@ -1,18 +1,15 @@
-// Flags de lançamento da comunidade (Clube Presença). Fase 1: só liga/desliga
-// comportamento de UI com dados mockados — nada aqui persiste em backend.
-
-// true = durante o beta, todo aluno do curso anual vira "Membro Fundador"
-// da comunidade de graça (usado pra popular o produto novo antes do
-// lançamento público).
-export const COMMUNITY_BETA_ENABLED = true;
-
-// false = quem não é aluno do curso vê a comunidade como "Em Construção"
-// com lista de espera. Quando virar true, todo mundo entra.
-export const COMMUNITY_PUBLIC_LAUNCH = false;
-
-// Regra única de acesso — usada tanto no Dashboard (feed) quanto em
-// qualquer outro lugar que precise decidir se libera a comunidade.
+// Regra de acesso à Comunidade (Clube Presença). Produto virou um bundle
+// único pago (curso + comunidade, R$49,90/mês) — não existe mais curso
+// avulso grátis. A única trava real que existe hoje é o login
+// (`alunos.status='ativo'`, ver public/api/hotmart/login.php): quem
+// consegue logar já comprou o curso antigo na Hotmart, então já é, na
+// prática, um dos primeiros membros do produto novo. Por isso qualquer
+// sessão autenticada libera a Comunidade — não existe mais a flag de beta
+// (`isAlunoCurso`) que nunca era setada pela sessão real e deixava a
+// Comunidade sempre bloqueada pra todo mundo (bug antigo).
+//
+// Quando o Stripe recorrente existir (próxima task), essa função passa a
+// checar a assinatura de verdade em vez de só "está logado".
 export function temAcessoComunidade(session) {
-  if (COMMUNITY_PUBLIC_LAUNCH) return true;
-  return COMMUNITY_BETA_ENABLED && !!session?.isAlunoCurso;
+  return !!session;
 }

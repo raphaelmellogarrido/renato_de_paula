@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Trophy, Check, CheckCircle2, XCircle } from "lucide-react";
 import { PROXIMO_ENCONTRO_VIVO } from "../data/mockData";
 import DesafioSemana from "./DesafioSemana";
-import ContadorDesafioSemanal from "./ContadorDesafioSemanal";
 import useMeditacaoHoje from "./useMeditacaoHoje";
 import { useEmailSessao } from "./usuarioStorage";
 import { snapshotLocalSincrono, buscarReservas, reservarVaga, cancelarReserva } from "./reservasLive";
@@ -269,21 +268,14 @@ function ColunaEncontros() {
         )}
       </div>
 
-      {/* Wrapper ocupa sozinho a célula "desafio" da grade (ver .cm-main em
-          ComunidadeApp.css) empilhando os dois cards — assim o contador cai
-          exatamente entre "Desafio da Semana" e "Ranking de Presença" sem
-          precisar mexer nas linhas/áreas do grid principal. */}
-      <div className="cm-grid-desafio cm-desafio-coluna">
-        <DesafioSemana />
-        <ContadorDesafioSemanal />
-      </div>
+      <DesafioSemana />
 
       <div className="cm-widget cm-widget-escuro cm-grid-ranking">
         <h3>
           <Trophy size={16} /> Ranking de Presença
         </h3>
         {ranking
-          ? ranking.map((item, i) => {
+          ? ranking.slice(0, 5).map((item, i) => {
               const souEu = !!item.email && item.email.toLowerCase().trim() === email.toLowerCase().trim();
               const dias = Number(item.dias) || 0;
               return (

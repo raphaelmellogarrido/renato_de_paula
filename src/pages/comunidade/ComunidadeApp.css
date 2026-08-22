@@ -262,20 +262,6 @@
   gap: 16px;
 }
 
-.cm-grid-hero {
-  grid-area: hero;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  align-self: stretch;
-  margin-bottom: 0;
-}
-
-.cm-grid-hero > div {
-  flex: 1;
-  height: 100%;
-}
-
 .cm-grid-sequencia {
   grid-area: sequencia;
   /* Mesmo motivo do .cm-grid-desafio logo abaixo: .cm-main tem
@@ -306,46 +292,25 @@
   align-self: start;
 }
 
-/* Empilha "Desafio da Semana" + o contador de semanas concluídas dentro da
-   MESMA célula "desafio" do grid principal (em vez de criar uma linha nova
-   em .cm-main) — o contador cai exatamente entre os dois cards existentes
-   sem mexer no espalhamento do hero nem nos breakpoints. */
-.cm-desafio-coluna {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.cm-contador-desafio-semanal {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px 16px;
-  background: var(--cm-beige-soft);
-  border: 1px solid var(--cm-border);
-  border-radius: 16px;
-  color: #5a5a5a;
-  font-size: 14px;
-  text-align: center;
-  line-height: 1.4;
-}
-
-.cm-contador-desafio-semanal svg {
-  flex-shrink: 0;
-  opacity: 0.7;
-}
 
 .cm-grid-ranking {
   grid-area: ranking;
 }
 
-/* View "Comunidade": o feed toma o lugar do Hero (coluna 1, linhas 2 a 4)
-   — Sequência/Próximo/Progresso/Desafio/Ranking (colunas 2 e 3) continuam
-   visíveis nas duas views. */
+/* Coluna 1 (linhas 2 a 4) — sempre a Comunidade agora (switch removido).
+   Sequência/Próximo/Progresso/Desafio/Ranking (colunas 2 e 3) continuam
+   visíveis do lado. */
 .cm-grid-feed {
   grid-column: 1;
   grid-row: 2 / 5;
+}
+
+/* "Sua prática hoje" (DificuldadeDoDia) + feed da Comunidade empilhados
+   dentro da mesma célula do grid, com espaço entre os dois cards. */
+.cm-feed-empilhado {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
 @media (max-width: 1200px) {
@@ -2097,12 +2062,12 @@
   background: linear-gradient(transparent, rgba(0, 0, 0, 0.55));
 }
 
-/* Topbar do Dashboard: switch Curso/Comunidade na esquerda, botão preto na
-   direita — flex justify-between em vez do grid de 3 colunas que existia
-   quando tinha busca no meio; o vão do centro fica vazio de propósito. */
+/* Topbar do Dashboard: só o botão preto "Meditei hoje", alinhado à
+   direita (switch Curso/Comunidade removido — produto virou um bundle
+   único, sem view alternativa). */
 .cm-topbar-nova {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   gap: 16px;
   padding: 0;
@@ -2142,48 +2107,12 @@
   background: #e4e1da;
 }
 
-.cm-switch {
-  display: flex;
-  background: var(--cm-beige);
-  border-radius: 999px;
-  padding: 4px;
-}
-
-.cm-switch-btn {
-  background: transparent;
-  border: none;
-  border-radius: 999px;
-  padding: 9px 18px;
-  font-size: 0.84rem;
-  font-weight: 600;
-  color: var(--cm-text-soft);
-  white-space: nowrap;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease;
-}
-
-.cm-switch-btn.is-ativo {
-  background: var(--cm-text);
-  color: #fff;
-}
-
-/* Mobile: switch "Curso Meditação Raiz | Comunidade" + botão "Meditei
-   hoje" não cabem lado a lado (~420px de conteúdo somado) — empilha e os
-   dois viram w-full, o switch dividindo as duas opções em partes iguais. */
+/* Mobile: botão "Meditei hoje" vira w-full (switch Curso/Comunidade que
+   dividia esse breakpoint com ele foi removido). */
 @media (max-width: 768px) {
   .cm-topbar-nova {
     flex-direction: column;
     align-items: stretch;
-  }
-
-  .cm-switch {
-    width: 100%;
-  }
-
-  .cm-switch-btn {
-    flex: 1;
-    text-align: center;
   }
 
   .cm-btn-preto {
@@ -2613,6 +2542,17 @@
   background: var(--cm-sage);
   border-radius: 999px;
   transition: width 400ms ease;
+}
+
+/* Status textual (0/N, X de N, ou parabéns nos 3/3) — dentro do MESMO card
+   "Desafio da Semana", logo abaixo da barra de progresso. Antes vivia num
+   card separado (ContadorDesafioSemanal.jsx), removido no merge dos dois
+   cards em um só. */
+.cm-desafio-status {
+  margin-top: 10px;
+  font-size: 0.8rem;
+  color: var(--cm-text-soft);
+  text-align: center;
 }
 
 /* Sidebar: variante escura (Ranking de Presença, "fundo preto" do print) */

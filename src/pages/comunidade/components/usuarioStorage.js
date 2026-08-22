@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 
 // Fonte única do "usuário atual" pra todo /comunidade — usada por
-// DesafioSemana, ContadorDesafioSemanal e useMeditacaoHoje pra garantir que
-// TODA chave de localStorage inclua o e-mail de quem está logado, e que
-// trocar de conta recarregue os dados certos sem precisar de refresh.
+// DesafioSemana e useMeditacaoHoje pra garantir que TODA chave de
+// localStorage inclua o e-mail de quem está logado, e que trocar de conta
+// recarregue os dados certos sem precisar de refresh.
 // Exportado (não só interno) porque useComunidadeAuth.js também precisa
 // escutar esse mesmo evento pra sincronizar `session.nome` na sidebar
 // assim que Configuracoes.jsx salva um novo "como quer ser chamado", sem
