@@ -10,6 +10,11 @@ require __DIR__ . '/_conexao.php';
 $input = json_decode(file_get_contents('php://input'), true);
 $email = strtolower(trim($input['email'] ?? ''));
 $senha = $input['senha'] ?? '';
+// Nome completo digitado na tela "Crie sua senha do Clube" (Login.jsx,
+// modo=criar). Antes desse fix o campo era só validado no front e nunca
+// chegava a ser salvo — o nome que sobrava era o bruto do webhook da
+// Hotmart (buyer.name), às vezes só o primeiro nome.
+$nome = trim($input['nome'] ?? '');
 
 if (!$email || !$senha) {
     http_response_code(400);
@@ -53,10 +58,24 @@ $stmt = $mysqli->prepare("UPDATE alunos SET senha_hash = ? WHERE email = ?");
 $stmt->bind_param('ss', $hash, $email);
 $ok = $stmt->execute();
 $stmt->close();
+
+// Primeiro nome = primeira palavra do nome completo, capado em 11 chars pra
+// bater com o maxLength do campo "Primeiro nome" em Configuracoes.jsx. Se
+// for uma palavra só ("Renato"), primeiro_nome fica igual ao nome completo.
+$nomeFinal = $nome !== '' ? $nome : $aluno['nome'];
+$partes = explode(' ', trim($nomeFinal));
+$primeiroNome = mb_substr($partes[0], 0, 11);
+
+if ($ok && $nome !== '') {
+    $stmtNome = $mysqli->prepare("UPDATE alunos SET nome = ?, apelido = ? WHERE email = ?");
+    $stmtNome->bind_param('sss', $nome, $primeiroNome, $email);
+    $stmtNome->execute();
+    $stmtNome->close();
+}
 $mysqli->close();
 
 if ($ok) {
-    echo json_encode(['ok' => true, 'email' => $email, 'nome' => $aluno['nome']]);
+    echo json_encode(['ok' => true, 'email' => $email, 'nome' => $nomeFinal, 'apelido' => $primeiroNome]);
 } else {
     http_response_code(500);
     echo json_encode(['erro' => 'Erro ao salvar senha']);

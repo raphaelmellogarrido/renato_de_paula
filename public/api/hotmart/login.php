@@ -32,9 +32,17 @@ if (empty($hash)) { http_response_code(403); echo json_encode(['erro'=>'Você ai
 
 if (!password_verify($senha, $hash) && $senha !== $hash) { http_response_code(401); echo json_encode(['erro'=>'Senha incorreta']); exit; }
 
+// 'nome' e 'apelido' não podem se confundir: 'nome' é sempre o nome
+// completo (é o que Configuracoes.jsx usa como "Nome e sobrenome" e o que
+// aparece no Ranking/Comunidade). 'apelido' é o "Primeiro nome" — se o
+// aluno nunca salvou um, cai pra primeira palavra do nome completo (sem
+// gravar no banco, só pra não devolver vazio pro front).
+$partes = explode(' ', trim($aluno['nome'] ?? ''));
+$primeiroNomeFallback = mb_substr($partes[0], 0, 11);
+
 echo json_encode([
   'ok'=>true,
   'email'=>$aluno['email'],
-  'nome'=> $aluno['apelido'] ?: $aluno['nome'],
-  'apelido'=> $aluno['apelido'] ?? $aluno['nome']
+  'nome'=> $aluno['nome'],
+  'apelido'=> $aluno['apelido'] ?: $primeiroNomeFallback
 ]);

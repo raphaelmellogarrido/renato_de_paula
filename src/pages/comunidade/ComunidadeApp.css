@@ -3128,3 +3128,146 @@
     transform: translateY(0);
   }
 }
+
+/* ==========================================================================
+   Mobile (<=768px) — reordena o Dashboard pra virar 1 feed único, na ordem
+   pedida pelo cliente: topbar compacto -> "Já meditei hoje" + "Próximo
+   encontro" -> "Sua prática hoje" (comentários já vêm dentro do mesmo card,
+   ver DificuldadeDoDia.jsx) -> Sequência + Sua Jornada -> Meditando junto ->
+   Desafio da semana -> Ranking de Presença. Desktop não muda em nada (tudo
+   aqui dentro do media query).
+
+   Truque central: .cm-grid-feed / .cm-coluna-meio / .cm-coluna-direita (as
+   3 colunas do grid desktop) viram `display: contents` — elas somem do
+   layout mas os widgets de dentro continuam no DOM, agora como filhos
+   DIRETOS de .cm-main. Só assim dá pra intercalar widgets que hoje moram em
+   colunas diferentes (ex: botão "Já meditei hoje", coluna 2, e "Próximo
+   encontro ao vivo", coluna 3, virando os 2 primeiros cards do mobile) sem
+   duplicar nenhum componente nem mexer em nenhum .jsx — a ordem visual vira
+   só CSS (`order`), a ordem real do DOM não muda. ========================== */
+@media (max-width: 768px) {
+  .cm-shell {
+    flex-direction: column;
+  }
+
+  /* Sidebar esquerda de 240px vira topbar: ícones + card do usuário numa
+     linha (grid-template-areas), "Meditação raiz" abaixo, largura cheia. */
+  .cm-sidebar-left {
+    width: 100%;
+    height: auto;
+    position: static;
+    display: grid;
+    grid-template-areas:
+      "nav footer"
+      "brand brand";
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 10px 12px;
+    padding: 14px 16px;
+  }
+
+  .cm-sidebar-nav {
+    grid-area: nav;
+    margin: 0;
+  }
+
+  .cm-sidebar-footer {
+    grid-area: footer;
+    margin-top: 0;
+    padding-top: 0;
+  }
+
+  .cm-sidebar-copy {
+    display: none;
+  }
+
+  .cm-sidebar-brand {
+    grid-area: brand;
+    background: var(--cm-beige-soft);
+    border: 1px solid var(--cm-border);
+    border-radius: 16px;
+    padding: 10px 14px;
+  }
+
+  /* Grid único do conteúdo: 1 ou 2 colunas dependendo do espaço (auto-fit),
+     nunca mais que 2 num container de até 768px — é essa flexibilidade que
+     deixa Sequência/Jornada lado a lado quando cabe e empilhadas quando
+     não cabe, sem precisar de outro breakpoint. */
+  .cm-main {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    padding: 16px;
+  }
+
+  .cm-grid-feed,
+  .cm-coluna-meio,
+  .cm-coluna-direita {
+    display: contents;
+  }
+
+  /* Largura cheia (ocupa as 2 colunas quando elas existem) */
+  .cm-btn-meditei,
+  .cm-encontro-vivo,
+  .cm-duvida,
+  .cm-grid-pulso,
+  .cm-grid-desafio,
+  .cm-grid-ranking {
+    grid-column: 1 / -1;
+  }
+
+  /* Ordem pedida pelo cliente. Sequência (.cm-widget-sequencia) e Jornada
+     (.cm-jornada) ficam de propósito SEM grid-column própria: o
+     auto-placement do grid já resolve "lado a lado se couber" (2 colunas)
+     ou "empilhado" (1 coluna) sozinho, ver .cm-main acima. */
+  .cm-btn-meditei {
+    order: 1;
+  }
+
+  .cm-encontro-vivo {
+    order: 2;
+  }
+
+  .cm-duvida {
+    order: 3;
+    padding: 20px;
+  }
+
+  .cm-widget-sequencia {
+    order: 4;
+  }
+
+  .cm-jornada {
+    order: 5;
+  }
+
+  .cm-grid-pulso {
+    order: 6;
+  }
+
+  .cm-grid-desafio {
+    order: 7;
+    /* min-height:340px do desktop sobrava vazio numa tela estreita — altura
+       100% automática, sem limite/scroll (overflow:visible já é global,
+       ver regra base de .cm-grid-desafio/.cm-desafio-corpo). */
+    min-height: 0;
+    padding: 20px;
+  }
+
+  .cm-desafio-item {
+    padding: 6px 0;
+  }
+
+  /* min-height:318px + justify-content:center (regra base, ver acima) existem
+     só pra igualar a altura desse card à coluna vizinha no grid de 3
+     colunas do desktop — em coluna única no mobile isso sobrava um vão vazio
+     enorme embaixo do último dia do ranking. Mesma especificidade (2
+     classes) + mais abaixo no arquivo pra vencer o !important da regra
+     base. */
+  .cm-widget-escuro.cm-grid-ranking {
+    order: 8;
+    min-height: 0 !important;
+    padding: 22px !important;
+    justify-content: flex-start !important;
+  }
+}

@@ -1,7 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Check, Eye, EyeOff, ShieldCheck } from "lucide-react";
-import { avisarSessaoMudou } from "./components/usuarioStorage";
+import {
+  avisarSessaoMudou,
+  chaveUsuario,
+  extrairPrimeiroNome,
+  CHAVE_BASE_NOME_COMPLETO,
+  CHAVE_BASE_PRIMEIRO_NOME,
+} from "./components/usuarioStorage";
 import { checarRequisitosSenha } from "./components/senhaForte";
 import "./Login.css";
 
@@ -63,10 +69,21 @@ export default function ComunidadeLogin() {
   const podeCriar = nomeOk && emailOk && senhaForte && senhasIguais;
 
   function salvarSessao(dados) {
+    // "nome" é sempre o nome completo (Ranking/Comunidade); "apelido" é o
+    // "Primeiro nome" — cai pra primeira palavra do nome completo se a API
+    // não mandar (login.php/register.php já mandam os dois desacoplados,
+    // mas nome.trim() aqui cobre o caso raro de a resposta vir sem nome).
     const nomeFinal = dados.nome || nome.trim() || "";
+    const primeiroNomeFinal = dados.apelido || extrairPrimeiroNome(nomeFinal);
     localStorage.setItem("user_email", dados.email);
+    // Chave legada global, lida por lerNomeSessao()/RankingPresenca.jsx.
     localStorage.setItem("userName", nomeFinal);
     localStorage.setItem("comunidade_session", JSON.stringify({ email: dados.email, nome: nomeFinal }));
+    // Chaves por-usuário, as mesmas que Configuracoes.jsx lê no card Perfil
+    // — sem isso "Nome e sobrenome"/"Primeiro nome" carregam errado na
+    // primeira visita à tela de Configurações.
+    localStorage.setItem(chaveUsuario(CHAVE_BASE_NOME_COMPLETO, dados.email), nomeFinal);
+    localStorage.setItem(chaveUsuario(CHAVE_BASE_PRIMEIRO_NOME, dados.email), primeiroNomeFinal);
     console.log("[Clube Presença] login → sessão trocada para usuário:", dados.email);
     avisarSessaoMudou();
     navigate("/comunidade");

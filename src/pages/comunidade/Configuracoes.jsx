@@ -1,6 +1,14 @@
 import { useEffect, useState } from "react";
 import { Check, Eye, EyeOff, ShieldCheck, CheckCircle2, XCircle } from "lucide-react";
-import { useEmailSessao, chaveUsuario, avisarSessaoMudou, logSalvandoParaUsuario } from "./components/usuarioStorage";
+import {
+  useEmailSessao,
+  chaveUsuario,
+  avisarSessaoMudou,
+  logSalvandoParaUsuario,
+  extrairPrimeiroNome,
+  CHAVE_BASE_NOME_COMPLETO,
+  CHAVE_BASE_PRIMEIRO_NOME,
+} from "./components/usuarioStorage";
 import { checarRequisitosSenha } from "./components/senhaForte";
 
 // Endpoints assumidos por analogia com os demais deste app (login.php,
@@ -10,9 +18,6 @@ import { checarRequisitosSenha } from "./components/senhaForte";
 // campo/rota, é só ajustar aqui.
 const PERFIL_URL = "/api/hotmart/user.php";
 const SENHA_URL = "/api/hotmart/user/change-password.php";
-
-const CHAVE_BASE_NOME_COMPLETO = "nomeCompleto";
-const CHAVE_BASE_USERNAME = "userName";
 
 // TODO: reativar lembrete quando configurar Resend + Cron Hostinger
 //
@@ -93,14 +98,28 @@ function ChecklistItem({ ok, texto }) {
 // 3 cards pedidos. Cada salvamento é POR USUÁRIO (chaveUsuario com o e-mail
 // da sessão) e some/reaparece sozinho se a conta trocar nesta aba, mesmo
 // padrão já usado no resto do /comunidade.
+// "Nome e sobrenome": rascunho salvo por usuário, senão o nome já usado na
+// sessão atual (comunidade_session.nome).
+function lerNomeSobrenomeInicial(email) {
+  return lerLocal(chaveUsuario(CHAVE_BASE_NOME_COMPLETO, email)) || lerNomeSessaoAtual();
+}
+
+// "Primeiro nome": rascunho salvo por usuário, senão SUGERE a primeira
+// palavra do nome completo em vez de deixar vazio (era o bug: campo ficava
+// vazio com placeholder "Ex: Raphael" e contador 0/11 na primeira visita).
+// É só um valor inicial lido do storage — depois disso o campo vive só no
+// estado do React e só muda quando o usuário digita ou troca de conta;
+// nunca é sobrescrito a partir de "Nome e sobrenome" por um useEffect.
+function lerPrimeiroNomeInicial(email, nomeSobrenomeInicial) {
+  return lerLocal(chaveUsuario(CHAVE_BASE_PRIMEIRO_NOME, email)) || extrairPrimeiroNome(nomeSobrenomeInicial);
+}
+
 function Configuracoes() {
   const email = useEmailSessao();
 
   const [emailAnterior, setEmailAnterior] = useState(email);
-  const [nomeSobrenome, setNomeSobrenome] = useState(
-    () => lerLocal(chaveUsuario(CHAVE_BASE_NOME_COMPLETO, email)) || lerNomeSessaoAtual(),
-  );
-  const [primeiroNome, setPrimeiroNome] = useState(() => lerLocal(chaveUsuario(CHAVE_BASE_USERNAME, email)));
+  const [nomeSobrenome, setNomeSobrenome] = useState(() => lerNomeSobrenomeInicial(email));
+  const [primeiroNome, setPrimeiroNome] = useState(() => lerPrimeiroNomeInicial(email, nomeSobrenome));
 
   // Borda só fica verde enquanto o campo está focado e válido; ao sair do
   // campo (blur) ela volta pra cor neutra (var(--cm-border)), em vez de
@@ -114,8 +133,9 @@ function Configuracoes() {
   // usuário desta área.
   if (email !== emailAnterior) {
     setEmailAnterior(email);
-    setNomeSobrenome(lerLocal(chaveUsuario(CHAVE_BASE_NOME_COMPLETO, email)) || lerNomeSessaoAtual());
-    setPrimeiroNome(lerLocal(chaveUsuario(CHAVE_BASE_USERNAME, email)));
+    const novoNomeSobrenome = lerNomeSobrenomeInicial(email);
+    setNomeSobrenome(novoNomeSobrenome);
+    setPrimeiroNome(lerPrimeiroNomeInicial(email, novoNomeSobrenome));
   }
 
   const [salvandoPerfil, setSalvandoPerfil] = useState(false);
@@ -170,7 +190,7 @@ function Configuracoes() {
       // "Primeiro nome") que vai pra chave legada "userName" e pro
       // comunidade_session.nome.
       localStorage.setItem(chaveUsuario(CHAVE_BASE_NOME_COMPLETO, email), nomeSobrenome.trim());
-      localStorage.setItem(chaveUsuario(CHAVE_BASE_USERNAME, email), primeiroNome.trim());
+      localStorage.setItem(chaveUsuario(CHAVE_BASE_PRIMEIRO_NOME, email), primeiroNome.trim());
       localStorage.setItem("userName", nomeSobrenome.trim());
       const sessaoAntiga = JSON.parse(localStorage.getItem("comunidade_session") || "{}");
       localStorage.setItem("comunidade_session", JSON.stringify({ ...sessaoAntiga, email, nome: nomeSobrenome.trim() }));

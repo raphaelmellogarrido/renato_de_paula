@@ -19,6 +19,27 @@ export function lerEmailSessao() {
   }
 }
 
+// Bases das chaves por-usuário do card Perfil (Configuracoes.jsx) — moradas
+// aqui (e não duplicadas como string literal em Login.jsx) porque foi
+// exatamente uma dessas strings divergindo entre os dois arquivos que
+// causava "Primeiro nome" carregar vazio: Login.jsx só gravava a chave
+// legada global "userName" e nunca a versão por-usuário que Configuracoes.jsx
+// lê. Import os dois lados daqui pra nunca mais dessincronizar.
+export const CHAVE_BASE_NOME_COMPLETO = "nomeCompleto";
+export const CHAVE_BASE_PRIMEIRO_NOME = "userName";
+
+// Primeiro nome = primeira palavra do nome completo, capado em 11 chars
+// (mesmo maxLength do campo "Primeiro nome" em Configuracoes.jsx). Se
+// nomeCompleto tiver uma palavra só ("Renato"), primeiro nome fica igual.
+// Usado por Login.jsx (ao salvar a sessão) e por Configuracoes.jsx (só como
+// sugestão de valor inicial quando o usuário ainda não salvou um "Primeiro
+// nome" próprio — nunca sobrescreve um valor já salvo).
+export function extrairPrimeiroNome(nomeCompleto) {
+  const nome = (nomeCompleto || "").trim();
+  if (!nome) return "";
+  return nome.split(" ")[0].slice(0, 11);
+}
+
 // Nunca deixa uma chave "vazar" pra um bucket global por engano: sem
 // sessão, cai num bucket "anonimo" isolado — nunca no nome puro (que era o
 // bug: `desafioSemana_v1` sem sufixo nenhum, compartilhado por todo mundo
