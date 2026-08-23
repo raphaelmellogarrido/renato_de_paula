@@ -17,3 +17,12 @@ define('DB_NAME', 'u790959747_clube');
 // usa essa outra cópia) — assim continua sendo uma senha só na prática,
 // mesmo sendo checada por dois servidores diferentes (Node e PHP).
 define('ADMIN_SECRET', 'coloque_a_mesma_chave_do_admin_aqui');
+
+// Caixa comunidade@renatodepaula.com no SMTP da Hostinger (smtp.hostinger.com,
+// porta 465/SSL), usada só pra mandar o convite de acesso de teste (ver
+// public/api/admin/teste-emails.php). Crie essa caixa e a senha no hPanel
+// antes de preencher aqui. NÃO usar o painel de variáveis de ambiente da
+// Hostinger pra essa senha se ela tiver caractere especial (#, \, etc.) —
+// tem um bug lá que corrompe o valor (ver HANDOFF.md, "Problema 2").
+define('SMTP_COMUNIDADE_USER', 'comunidade@renatodepaula.com');
+define('SMTP_COMUNIDADE_SENHA', 'coloque_a_senha_criada_no_hpanel_aqui');

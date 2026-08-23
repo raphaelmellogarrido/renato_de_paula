@@ -18,6 +18,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') exit;
 require __DIR__ . '/../hotmart/_conexao.php';
 garantirEstruturaClube($mysqli); // garante a tabela comunidade_teste_emails
 
+// PHPMailer vendorizado manualmente em public/api/lib/PHPMailer (sem
+// composer/vendor neste projeto — ver histórico do HANDOFF.md). Usado só
+// aqui pra mandar o convite via SMTP autenticado da Hostinger, em vez do
+// mail() nativo — mail() sem autenticação SMTP é o motivo do Gmail mostrar
+// "via srv..." no remetente.
+require __DIR__ . '/../lib/PHPMailer/Exception.php';
+require __DIR__ . '/../lib/PHPMailer/SMTP.php';
+require __DIR__ . '/../lib/PHPMailer/PHPMailer.php';
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception as PHPMailerException;
+
 $chaveFornecida = $_SERVER['HTTP_X_ADMIN_SECRET'] ?? '';
 // ADMIN_SECRET vazio (não configurado no servidor) nunca autentica, mesmo
 // que o front mande header vazio também.
@@ -60,14 +71,15 @@ function revogarAcessoAlunos(mysqli $mysqli, string $email): void
 }
 
 // Convite por e-mail disparado ao adicionar um acesso (front:
-// checkbox "Enviar e-mail de convite automaticamente"). Usa mail() nativo
-// do PHP, mesmo mecanismo já comprovado em esqueceu-senha.php — este
-// projeto não tem PHPMailer/composer instalado do lado PHP. O SMTP via
-// nodemailer (server/index.js, app Node separado) tem um bug de
-// autenticação ainda não resolvido (ver HANDOFF.md, Problema 2) e nem
-// entra em jogo aqui: mail() usa o MTA local da Hostinger, sem
-// autenticação SMTP, então não é afetado por aquele problema.
-// Best-effort (@mail, sem lançar exceção) — mesmo padrão do resto do
+// checkbox "Enviar e-mail de convite automaticamente"). Manda via SMTP
+// autenticado (PHPMailer, comunidade@renatodepaula.com) em vez do mail()
+// nativo — mail() sem autenticação SMTP é o motivo do Gmail mostrar "via
+// srv..." no remetente. Credenciais SMTP ficam em config.php (fora do
+// Git, mesmo padrão de DB_*/ADMIN_SECRET em _conexao.php) — de propósito
+// NÃO usa getenv()/painel da Hostinger aqui: o painel deles tem um bug
+// documentado que injeta um "\" espúrio em senha com caractere especial
+// (ver HANDOFF.md, "Problema 2"), então config.php é a via mais segura.
+// Best-effort (try/catch sem relançar) — mesmo padrão do resto do
 // projeto: falha de envio não deve derrubar a liberação de acesso, que já
 // foi salva no banco antes desta função ser chamada.
 function enviarConviteComunidade(string $email, string $nome): bool
@@ -76,8 +88,6 @@ function enviarConviteComunidade(string $email, string $nome): bool
     $saudacaoTexto = $nome !== '' ? "Olá, {$nome}," : 'Olá,';
     $saudacaoHtml = htmlspecialchars($saudacaoTexto, ENT_QUOTES, 'UTF-8');
     $emailHtml = htmlspecialchars($email, ENT_QUOTES, 'UTF-8');
-
-    $assunto = '=?UTF-8?B?' . base64_encode('Você foi convidado para a Comunidade Meditação Raiz 🧘') . '?=';
 
     $textoPlano = "{$saudacaoTexto}\n\n"
         . "Você foi convidado para fazer parte da Comunidade Meditação Raiz, do Dr. Renato de Paula.\n\n"
@@ -100,22 +110,42 @@ function enviarConviteComunidade(string $email, string $nome): bool
 </div>
 HTML;
 
-    $boundary = 'raiz-convite-' . bin2hex(random_bytes(8));
-    $headers = "From: Comunidade Meditação Raiz <contato@renatodepaula.com>\r\n"
-        . "MIME-Version: 1.0\r\n"
-        . "Content-Type: multipart/alternative; boundary=\"{$boundary}\"\r\n";
+    // SMTP_COMUNIDADE_USER/SENHA definidos em config.php (ver
+    // config.example.php). Sem eles configurados, não dá pra autenticar —
+    // falha limpo (retorna false) em vez de deixar o PHPMailer estourar
+    // exception com a config vazia.
+    if (!defined('SMTP_COMUNIDADE_USER') || !defined('SMTP_COMUNIDADE_SENHA') || SMTP_COMUNIDADE_SENHA === '') {
+        error_log('enviarConviteComunidade: SMTP_COMUNIDADE_USER/SENHA não configurados em config.php');
+        return false;
+    }
 
-    $corpo = "--{$boundary}\r\n"
-        . "Content-Type: text/plain; charset=UTF-8\r\n"
-        . "Content-Transfer-Encoding: 8bit\r\n\r\n"
-        . $textoPlano . "\r\n\r\n"
-        . "--{$boundary}\r\n"
-        . "Content-Type: text/html; charset=UTF-8\r\n"
-        . "Content-Transfer-Encoding: 8bit\r\n\r\n"
-        . $html . "\r\n\r\n"
-        . "--{$boundary}--";
+    $mail = new PHPMailer(true);
+    try {
+        $mail->isSMTP();
+        $mail->Host = 'smtp.hostinger.com';
+        $mail->SMTPAuth = true;
+        $mail->Username = SMTP_COMUNIDADE_USER;
+        $mail->Password = SMTP_COMUNIDADE_SENHA;
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+        $mail->Port = 465;
+        $mail->CharSet = 'UTF-8';
 
-    return @mail($email, $assunto, $corpo, $headers);
+        $mail->setFrom(SMTP_COMUNIDADE_USER, 'Comunidade Meditação Raiz');
+        $mail->Sender = SMTP_COMUNIDADE_USER; // envelope sender = From, evita SPF softfail
+        $mail->addReplyTo('contato@renatodepaula.com', 'Renato de Paula');
+        $mail->addAddress($email, $nome ?: '');
+
+        $mail->Subject = 'Você foi convidado para a Comunidade Meditação Raiz 🧘';
+        $mail->isHTML(true);
+        $mail->Body = $html;
+        $mail->AltBody = $textoPlano;
+
+        $mail->send();
+        return true;
+    } catch (PHPMailerException $e) {
+        error_log('enviarConviteComunidade falhou: ' . $mail->ErrorInfo);
+        return false;
+    }
 }
 
 $metodo = $_SERVER['REQUEST_METHOD'];

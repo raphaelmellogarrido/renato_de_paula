@@ -34,6 +34,18 @@ if (!defined('ADMIN_SECRET')) {
     define('ADMIN_SECRET', getenv('ADMIN_SECRET') ?: '');
 }
 
+// SMTP da caixa comunidade@ (ver public/api/admin/teste-emails.php,
+// enviarConviteComunidade). Fallback pra getenv() só por consistência com
+// o resto deste arquivo — mas o painel Hostinger tem um bug documentado
+// que corrompe senha com caractere especial (HANDOFF.md, "Problema 2"),
+// então RECOMENDADO configurar direto em config.php, nunca só no painel.
+if (!defined('SMTP_COMUNIDADE_USER')) {
+    define('SMTP_COMUNIDADE_USER', getenv('SMTP_COMUNIDADE_USER') ?: 'comunidade@renatodepaula.com');
+}
+if (!defined('SMTP_COMUNIDADE_SENHA')) {
+    define('SMTP_COMUNIDADE_SENHA', getenv('SMTP_COMUNIDADE_SENHA') ?: '');
+}
+
 $mysqli = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
 if ($mysqli->connect_error) {
     http_response_code(500);
