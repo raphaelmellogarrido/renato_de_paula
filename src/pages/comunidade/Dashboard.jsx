@@ -25,8 +25,10 @@ import DificuldadeDoDia from "./components/DificuldadeDoDia";
 // do print. Componente continua existindo em FeedComunidade.jsx, só não é
 // mais montado aqui. Coluna 2 (.cm-coluna-meio) é o botão "Já meditei
 // hoje" (BotaoMediteiHoje, dentro de ColunaProgresso) + Sequência + Sua
-// Jornada + Meditando junto. Coluna 3 (.cm-coluna-direita) é Próximo
-// encontro + Desafio da semana + Ranking (ColunaEncontros). Biblioteca de
+// Jornada + Ranking de Presença (RankingPresenca). Coluna 3
+// (.cm-coluna-direita) é Próximo encontro + Desafio da semana + Meditando
+// junto (ColunaEncontros) — Ranking e Meditando junto trocaram de coluna a
+// pedido do cliente. Biblioteca de
 // Meditações foi removida a pedido do cliente. Sem accordion por Dia
 // nesta versão (removido a pedido do cliente); DIAS continua existindo só
 // para abrir a "meditação de hoje" e alimentar /comunidade/aula/:id.

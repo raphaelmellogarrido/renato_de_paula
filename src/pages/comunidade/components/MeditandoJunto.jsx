@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 const PULSO_URL = "/api/comunidade/pulso.php";
 const INTERVALO_MS = 60000; // mesmo TTL do Cache-Control do endpoint
 // Mesmo evento (mesmo literal, não import — mesmo padrão de acoplamento já
-// usado em useSequenciaMeditacao.js e ColunaEncontros.jsx) que
+// usado em useSequenciaMeditacao.js e RankingPresenca.jsx) que
 // useMeditacaoHoje.js dispara ao marcar presença.
 const EVENTO_ATUALIZOU = "meditacaoHojeAtualizada";
 // Mesmo literal disparado por DificuldadeDoDia.jsx ao compartilhar uma
@@ -11,12 +11,13 @@ const EVENTO_ATUALIZOU = "meditacaoHojeAtualizada";
 // polling de 60s (ou num F5).
 const EVENTO_PARTILHA_CRIADA = "comunidadePartilhaCriada";
 
-// Card "Meditando junto" — coluna do meio do dashboard, logo abaixo de
-// "Sua Jornada" (ver ColunaProgresso.jsx), no lugar do quadrado vazio que
-// sobrava ali. 3 linhas 100% reais vindas de public/api/comunidade/pulso.php,
-// nada mockado. Mesmo padrão de polling de ColunaEncontros.jsx
-// (verificarLive): fetch imediato no mount + setInterval de 60s, pra bater
-// com o Cache-Control do PHP.
+// Card "Meditando junto" — coluna 3 (direita) do dashboard, fim de
+// ColunaEncontros.jsx, no lugar que era do Ranking de Presença antes da
+// troca (Ranking foi pra coluna do meio — ver RankingPresenca.jsx). 3
+// linhas 100% reais vindas de public/api/comunidade/pulso.php, nada
+// mockado. Mesmo padrão de polling de ColunaEncontros.jsx (verificarLive):
+// fetch imediato no mount + setInterval de 60s, pra bater com o
+// Cache-Control do PHP.
 function MeditandoJunto() {
   // null = ainda carregando a 1ª vez (ou o fetch falhou) — o card some
   // nesse estado em vez de mostrar zeros que não são reais ainda.
@@ -48,7 +49,7 @@ function MeditandoJunto() {
     return () => clearInterval(intervalo);
   }, [carregar]);
 
-  // Mesmo evento que o Ranking (ColunaEncontros.jsx) escuta. Aqui não
+  // Mesmo evento que o Ranking (RankingPresenca.jsx) escuta. Aqui não
   // precisa filtrar por origem "clique": mesmo na reconciliação de mount
   // (origem "reconciliacao") refazer esse fetch é só redundante, nunca
   // incorreto — o pulso é uma contagem agregada, não um bump por usuário.

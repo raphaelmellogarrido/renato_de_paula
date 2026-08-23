@@ -70,7 +70,7 @@
   font-size: 28px;
   font-weight: 700;
   text-align: center;
-  margin: 0 0 32px;
+  margin: 0 0 40px;
   color: var(--cm-text);
 }
 
@@ -332,9 +332,16 @@
 }
 
 .cm-login-submit:disabled {
+  background: #2b2b2b !important;
+  color: #fff !important;
   opacity: 0.6 !important;
-  cursor: not-allowed;
+  cursor: not-allowed !important;
   display: block !important;
+  visibility: visible !important;
+}
+
+.cm-login-submit.is-ready:hover:not(:disabled) {
+  background: #000 !important;
 }
 
 .cm-login-submit.is-ready:hover {
@@ -360,4 +367,19 @@
   font-weight: 500;
   color: #2b2b2b;
   font-size: 14px;
+}
+
+/* FORÇA CARREGAMENTO */
+.cm-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px !important;
+}
+.cm-login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px !important;
+}
+.cm-login-card {
+  min-height: 420px;
 }

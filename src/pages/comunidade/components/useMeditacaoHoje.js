@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useEmailSessao, chaveUsuario, logSalvandoParaUsuario } from "./usuarioStorage";
 
 // Botão "Meditei hoje" (BotaoMediteiHoje) + Ranking de Presença
-// (ColunaEncontros) são dois componentes irmãos, sem pai em comum que
+// (RankingPresenca) são dois componentes irmãos, sem pai em comum que
 // guarde estado — esse hook é a fonte de verdade compartilhada entre os
 // dois: cada instância lê o MESMO localStorage (por usuário) e se
 // resincroniza via CustomEvent quando qualquer uma delas marca a presença
@@ -135,7 +135,7 @@ export function useMeditacaoHoje() {
         }
 
         // origem "reconciliacao": quem escuta esse evento pra fazer bump
-        // otimista (ex: Ranking em ColunaEncontros.jsx) precisa distinguir
+        // otimista (ex: Ranking em RankingPresenca.jsx) precisa distinguir
         // isso de um clique de verdade — aqui a presença já existia no
         // servidor antes desta página abrir, então o fetch normal do
         // widget já traz o valor certo; um bump aqui duplicaria a contagem.
@@ -175,7 +175,7 @@ export function useMeditacaoHoje() {
     // Avisa qualquer outra instância do hook montada na página (o Ranking e
     // o card Sequência) pra reler o localStorage e atualizar na hora, sem
     // refresh. origem "clique": é o gatilho pro bump otimista do Ranking de
-    // Presença (ver ColunaEncontros.jsx) — só dá +1 na hora quando é isso
+    // Presença (ver RankingPresenca.jsx) — só dá +1 na hora quando é isso
     // aqui, nunca na reconciliação de mount.
     window.dispatchEvent(new CustomEvent(EVENTO_ATUALIZOU, { detail: { origem: "clique" } }));
 

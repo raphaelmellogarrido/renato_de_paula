@@ -10,7 +10,7 @@ const COMENTARIOS_URL = "/api/hotmart/comentarios.php";
 const AULA_ID = "dificuldade_do_dia";
 const POR_PAGINA = 5;
 // Mesmo padrão de acoplamento por evento global (literal, não import) já
-// usado em useMeditacaoHoje.js/ColunaEncontros.jsx/MeditandoJunto.jsx —
+// usado em useMeditacaoHoje.js/RankingPresenca.jsx/MeditandoJunto.jsx —
 // avisa o card "Meditando junto" que uma partilha nova acabou de entrar,
 // pra "💬 partilhas hoje" subir sem esperar o próximo tick do polling nem F5.
 const EVENTO_PARTILHA_CRIADA = "comunidadePartilhaCriada";

@@ -86,7 +86,11 @@ function revogarAcessoAlunos(mysqli $mysqli, string $email): void
 // o que mostrar pro admin — nunca escondido.
 function enviarConviteComunidade(string $email, string $nome, ?string &$erroSaida = null): bool
 {
-    $link = 'https://renatodepaula.com/comunidade';
+    // Vai direto pra tela "Crie sua senha do Clube" (Login.jsx com
+    // modo=criar) em vez de /comunidade puro — que caía em
+    // /comunidade/login sem modo=criar, mostrando "Entrar" pra quem ainda
+    // não tem senha nenhuma.
+    $link = 'https://renatodepaula.com/comunidade/login?modo=criar';
     $saudacaoTexto = $nome !== '' ? "Olá, {$nome}," : 'Olá,';
     $saudacaoHtml = htmlspecialchars($saudacaoTexto, ENT_QUOTES, 'UTF-8');
     $emailHtml = htmlspecialchars($email, ENT_QUOTES, 'UTF-8');

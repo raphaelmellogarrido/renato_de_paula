@@ -281,8 +281,8 @@
   height: 100%;
 }
 
-/* Coluna 2: botão "Já meditei hoje" + Sequência + Sua Jornada + Meditando
-   junto (ver ColunaProgresso.jsx) — mesmo gap:24px das outras colunas,
+/* Coluna 2: botão "Já meditei hoje" + Sequência + Sua Jornada + Ranking de
+   Presença (ver ColunaProgresso.jsx) — mesmo gap:24px das outras colunas,
    controlando sozinho a distância entre os 4 widgets (sem depender de
    linha de grid nenhuma). */
 .cm-coluna-meio {
@@ -292,8 +292,8 @@
   min-width: 0;
 }
 
-/* Coluna 3: Próximo encontro ao vivo + Desafio da semana + Ranking (ver
-   ColunaEncontros.jsx). */
+/* Coluna 3: Próximo encontro ao vivo + Desafio da semana + Meditando junto
+   (ver ColunaEncontros.jsx). */
 .cm-coluna-direita {
   display: flex;
   flex-direction: column;
@@ -301,8 +301,8 @@
   min-width: 0;
 }
 
-/* Cola o último widget de cada coluna (Meditando junto / Ranking de
-   Presença) no rodapé da coluna, caso ela sobre espaço esticada por
+/* Cola o último widget de cada coluna (Ranking de Presença / Meditando
+   junto) no rodapé da coluna, caso ela sobre espaço esticada por
    `align-items: stretch` acima (ex: coluna 1 crescer mais que 2/3) — o
    `gap: 24px` continua garantido como distância mínima até ele, o
    margin-top:auto só consome o que sobrar depois disso. */
@@ -2952,6 +2952,19 @@
 .cm-config-hint {
   font-size: 12px;
   color: var(--cm-text-soft);
+}
+
+.cm-config-field-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cm-config-counter {
+  font-size: 12px;
+  color: var(--cm-text-soft);
+  white-space: nowrap;
 }
 
 .cm-config-checklist {

@@ -55,9 +55,9 @@ function lerLocal(chave) {
 }
 
 // Mesma leitura síncrona usada em ColunaEncontros.jsx: `comunidade_session.nome`
-// já é, hoje, o nome mostrado no Ranking — vira o valor inicial de "Como
-// quer ser chamado" (e, na primeira visita, também o rascunho de "Nome
-// completo", já que os dois nasceram do mesmo campo no cadastro).
+// já é, hoje, o nome mostrado no Ranking — vira o valor inicial de "Nome e
+// sobrenome" (campo que agora é a fonte do Ranking), caso ainda não exista
+// rascunho salvo por usuário.
 function lerNomeSessaoAtual() {
   try {
     const sess = JSON.parse(localStorage.getItem("comunidade_session") || "{}");
@@ -67,13 +67,12 @@ function lerNomeSessaoAtual() {
   }
 }
 
-function nomeCompletoValido(valor) {
-  return valor.trim().length >= 3;
-}
+// Mesmo regex de Login.jsx — só letras (com acentos pt-BR) e espaço, usado
+// nos dois campos porque os dois aparecem no Ranking/Comunidade.
+const REGEX_NOME = /^[A-Za-zÀ-ÖØ-öø-ÿ' ]{2,}$/;
 
-function comoChamarValido(valor) {
-  const t = valor.trim();
-  return t.length >= 2 && t.length <= 20;
+function nomeValido(valor) {
+  return REGEX_NOME.test(valor.trim());
 }
 
 // Item do checklist de força da senha — mesmo visual do cadastro
@@ -98,10 +97,10 @@ function Configuracoes() {
   const email = useEmailSessao();
 
   const [emailAnterior, setEmailAnterior] = useState(email);
-  const [nomeCompleto, setNomeCompleto] = useState(
+  const [nomeSobrenome, setNomeSobrenome] = useState(
     () => lerLocal(chaveUsuario(CHAVE_BASE_NOME_COMPLETO, email)) || lerNomeSessaoAtual(),
   );
-  const [comoChamar, setComoChamar] = useState(lerNomeSessaoAtual);
+  const [primeiroNome, setPrimeiroNome] = useState(() => lerLocal(chaveUsuario(CHAVE_BASE_USERNAME, email)));
 
   // Troca de conta nesta mesma aba: recarrega os campos do usuário novo em
   // vez de deixar os dados do anterior na tela. Ajuste direto no render
@@ -109,8 +108,8 @@ function Configuracoes() {
   // usuário desta área.
   if (email !== emailAnterior) {
     setEmailAnterior(email);
-    setNomeCompleto(lerLocal(chaveUsuario(CHAVE_BASE_NOME_COMPLETO, email)) || lerNomeSessaoAtual());
-    setComoChamar(lerNomeSessaoAtual());
+    setNomeSobrenome(lerLocal(chaveUsuario(CHAVE_BASE_NOME_COMPLETO, email)) || lerNomeSessaoAtual());
+    setPrimeiroNome(lerLocal(chaveUsuario(CHAVE_BASE_USERNAME, email)));
   }
 
   const [salvandoPerfil, setSalvandoPerfil] = useState(false);
@@ -133,9 +132,9 @@ function Configuracoes() {
     setToast({ tipo, texto });
   }
 
-  const nomeOk = nomeCompletoValido(nomeCompleto);
-  const apelidoOk = comoChamarValido(comoChamar);
-  const podeSalvarPerfil = nomeOk && apelidoOk && !salvandoPerfil;
+  const nomeOk = nomeValido(nomeSobrenome);
+  const primeiroNomeOk = nomeValido(primeiroNome);
+  const podeSalvarPerfil = nomeOk && primeiroNomeOk && !salvandoPerfil;
 
   const requisitosSenha = checarRequisitosSenha(novaSenha);
   const novaSenhaForte = Object.values(requisitosSenha).every(Boolean);
@@ -152,7 +151,7 @@ function Configuracoes() {
       const res = await fetch(PERFIL_URL, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, name: nomeCompleto.trim(), display_name: comoChamar.trim() }),
+        body: JSON.stringify({ email, name: nomeSobrenome.trim(), display_name: primeiroNome.trim() }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -161,14 +160,21 @@ function Configuracoes() {
 
       // localStorage por usuário + sessão + sidebar (via avisarSessaoMudou,
       // que useComunidadeAuth.js agora escuta) — tudo na hora, sem reload.
-      localStorage.setItem(chaveUsuario(CHAVE_BASE_NOME_COMPLETO, email), nomeCompleto.trim());
-      localStorage.setItem(chaveUsuario(CHAVE_BASE_USERNAME, email), comoChamar.trim());
-      // Chave legada (sem sufixo de usuário) que Login.jsx também grava —
-      // mantém em sincronia caso algo fora do React ainda leia ela.
-      localStorage.setItem("userName", comoChamar.trim());
-      const sessaoAtual = JSON.parse(localStorage.getItem("comunidade_session") || "{}");
-      localStorage.setItem("comunidade_session", JSON.stringify({ ...sessaoAtual, email, nome: comoChamar.trim() }));
+      // "Nome e sobrenome" é o nome do Ranking/Comunidade, então é ele (não
+      // "Primeiro nome") que vai pra chave legada "userName" e pro
+      // comunidade_session.nome.
+      localStorage.setItem(chaveUsuario(CHAVE_BASE_NOME_COMPLETO, email), nomeSobrenome.trim());
+      localStorage.setItem(chaveUsuario(CHAVE_BASE_USERNAME, email), primeiroNome.trim());
+      localStorage.setItem("userName", nomeSobrenome.trim());
+      const sessaoAntiga = JSON.parse(localStorage.getItem("comunidade_session") || "{}");
+      localStorage.setItem("comunidade_session", JSON.stringify({ ...sessaoAntiga, email, nome: nomeSobrenome.trim() }));
       avisarSessaoMudou();
+      // "storage" não dispara na própria aba nativamente (só em outras abas)
+      // e "perfil-atualizado" é o evento dedicado que RankingPresenca.jsx
+      // escuta pra trocar o nome exibido sem esperar o próximo fetch do
+      // ranking.php — dispara os dois pra cobrir esta aba e as outras.
+      window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(new CustomEvent("perfil-atualizado", { detail: { nome: nomeSobrenome.trim() } }));
 
       mostrarToast("sucesso", "Perfil atualizado");
     } catch (err) {
@@ -216,46 +222,61 @@ function Configuracoes() {
         <h2 className="cm-config-card-title">Perfil</h2>
 
         <div className="cm-config-field">
-          <label htmlFor="cm-config-nome">Nome completo</label>
+          <label htmlFor="cm-config-nome">Nome e sobrenome</label>
           <div className="cm-config-input-wrap">
             <input
               id="cm-config-nome"
               type="text"
               required
-              minLength={3}
-              value={nomeCompleto}
-              onChange={(e) => setNomeCompleto(e.target.value)}
-              className={`cm-config-input ${nomeCompleto ? (nomeOk ? "is-valid" : "is-invalid") : ""}`}
+              maxLength={20}
+              placeholder="Ex: Raphael Mello"
+              value={nomeSobrenome}
+              onChange={(e) => {
+                const valor = e.target.value;
+                if (valor.length <= 20) setNomeSobrenome(valor);
+              }}
+              className={`cm-config-input ${nomeSobrenome ? (nomeOk ? "is-valid" : "is-invalid") : ""}`}
             />
-            {nomeCompleto && nomeOk && (
+            {nomeSobrenome && nomeOk && (
               <span className="cm-config-icon-right" aria-hidden="true">
                 <Check size={18} strokeWidth={3} className="cm-config-icon-valid" />
               </span>
             )}
           </div>
-          {nomeCompleto && !nomeOk && <span className="cm-config-error">Mínimo 3 caracteres</span>}
+          <div className="cm-config-field-footer">
+            <span className="cm-login-hint">É esse nome que aparece no Ranking de Presença e na Comunidade.</span>
+            <span className="cm-config-counter">{nomeSobrenome.length}/20</span>
+          </div>
+          {nomeSobrenome && !nomeOk && <span className="cm-config-error">Use apenas letras e espaço (mínimo 2 caracteres)</span>}
         </div>
 
         <div className="cm-config-field">
-          <label htmlFor="cm-config-apelido">Como quer ser chamado</label>
+          <label htmlFor="cm-config-apelido">Primeiro nome</label>
           <div className="cm-config-input-wrap">
             <input
               id="cm-config-apelido"
               type="text"
               required
-              maxLength={20}
-              placeholder="Ex: Renato"
-              value={comoChamar}
-              onChange={(e) => setComoChamar(e.target.value)}
-              className={`cm-config-input ${comoChamar ? (apelidoOk ? "is-valid" : "is-invalid") : ""}`}
+              maxLength={11}
+              placeholder="Ex: Raphael"
+              value={primeiroNome}
+              onChange={(e) => {
+                const valor = e.target.value;
+                if (valor.length <= 11) setPrimeiroNome(valor);
+              }}
+              className={`cm-config-input ${primeiroNome ? (primeiroNomeOk ? "is-valid" : "is-invalid") : ""}`}
             />
-            {comoChamar && apelidoOk && (
+            {primeiroNome && primeiroNomeOk && (
               <span className="cm-config-icon-right" aria-hidden="true">
                 <Check size={18} strokeWidth={3} className="cm-config-icon-valid" />
               </span>
             )}
           </div>
-          <span className="cm-config-hint">É esse nome que aparece no Ranking de Presença e na Comunidade.</span>
+          <div className="cm-config-field-footer">
+            <span className="cm-config-hint">Nome que vai ser exibido no seu perfil</span>
+            <span className="cm-config-counter">{primeiroNome.length}/11</span>
+          </div>
+          {primeiroNome && !primeiroNomeOk && <span className="cm-config-error">Use apenas letras e espaço (mínimo 2 caracteres)</span>}
         </div>
 
         <button type="submit" disabled={!podeSalvarPerfil} className={`cm-config-btn ${podeSalvarPerfil ? "is-ready" : ""}`}>

@@ -26,7 +26,9 @@ if (!$aluno) { http_response_code(403); echo json_encode(['erro'=>'Email não en
 if (isset($aluno['status']) && !in_array($aluno['status'], ['ativo', 'teste'], true)) { http_response_code(403); echo json_encode(['erro'=>'Compra não ativa']); exit; }
 
 $hash = $aluno['senha_hash'] ?? $aluno['senha'] ?? '';
-if (empty($hash)) { http_response_code(403); echo json_encode(['erro'=>'Você ainda não criou senha']); exit; }
+// precisa_criar_senha: front (Login.jsx) usa isso pra pular direto pra tela
+// "Crie sua senha do Clube" (modo=criar) em vez de só mostrar um erro.
+if (empty($hash)) { http_response_code(403); echo json_encode(['erro'=>'Você ainda não criou senha', 'precisa_criar_senha'=>true]); exit; }
 
 if (!password_verify($senha, $hash) && $senha !== $hash) { http_response_code(401); echo json_encode(['erro'=>'Senha incorreta']); exit; }
 

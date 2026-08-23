@@ -23,7 +23,10 @@ export default function ComunidadeLogin() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [confirmarSenha, setConfirmarSenha] = useState("");
-  const [modo, setModo] = useState("login");
+  const [modo, setModo] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("modo") === "criar" || params.has("primeiro") || params.has("criar") ? "criar" : "login";
+  });
   const [msg, setMsg] = useState("");
   const [erro, setErro] = useState("");
   const [loading, setLoading] = useState(false);
@@ -124,7 +127,17 @@ export default function ComunidadeLogin() {
         body: JSON.stringify({ email, senha }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.erro || "Erro ao processar");
+      if (!res.ok) {
+        // Primeiro acesso (comprou mas nunca criou senha): pula direto pra
+        // tela "Crie sua senha do Clube" em vez de só mostrar erro.
+        if (data.precisa_criar_senha) {
+          setModo("criar");
+          setSenha("");
+          setLoading(false);
+          return;
+        }
+        throw new Error(data.erro || "Erro ao processar");
+      }
       salvarSessao(data);
     } catch (err) {
       setErro(err.message);
@@ -141,7 +154,7 @@ export default function ComunidadeLogin() {
         {erro && <div className="cm-login-alert cm-login-alert-erro">{erro}</div>}
         {msg && <div className="cm-login-alert cm-login-alert-msg">{msg}</div>}
 
-        <form onSubmit={handleSubmit} className="cm-login-form">
+        <form onSubmit={handleSubmit} className="cm-login-form" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           {modo === "criar" && (
             <div className="cm-login-field">
               <label htmlFor="cm-login-nome">Nome completo</label>
@@ -247,7 +260,12 @@ export default function ComunidadeLogin() {
               no DOM. Agora só desabilita por loading; a validação de campo
               vazio/senha fraca continua sendo feita dentro do handleSubmit
               (e o `required` do HTML barra o submit nativo se estiver vazio). */}
-          <button type="submit" disabled={loading} className="cm-login-submit is-ready">
+          <button
+            type="submit"
+            disabled={loading}
+            className="cm-login-submit is-ready"
+            style={{ display: "block", visibility: "visible", opacity: 1, width: "100%", height: "52px", background: "#2b2b2b", color: "#fff", border: "none", borderRadius: "999px", fontSize: "15px", fontWeight: 700, marginTop: "24px", cursor: "pointer" }}
+          >
             {loading ? "Carregando..." : modo === "criar" ? "Criar conta e começar" : "Entrar"}
           </button>
         </form>

@@ -108,7 +108,7 @@ export const DESAFIO_SEMANA = {
   ],
 };
 
-// Ranking de Presença zerado pra teste (ver components/ColunaEncontros.jsx):
+// Ranking de Presença zerado pra teste (ver components/RankingPresenca.jsx):
 // mostra só o usuário atual, com os dias vindos do streak real do botão
 // "Meditei hoje" (localStorage "meditacaoHoje_streak") — sem mocks de
 // outros alunos.
