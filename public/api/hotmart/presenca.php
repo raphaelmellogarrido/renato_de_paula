@@ -63,6 +63,17 @@ if ($metodo === 'POST') {
     $stmt->execute();
     $stmt->close();
 
+    // Invalida os caches em disco que dependem de `presencas` — sem isso o
+    // Ranking de Presença (ranking.php, cache de 5min) e o "Meditando
+    // junto" (pulso.php, cache de 60s) continuavam devolvendo a contagem
+    // velha por até 5min mesmo com o front refazendo o fetch na hora
+    // (era por isso que só um CTRL+F5 bem depois "resolvia": o cache já
+    // tinha expirado sozinho até lá, não porque o F5 limpava algo).
+    // @ silencia warning se o arquivo já não existir (race com outra
+    // requisição invalidando ao mesmo tempo) — não é erro, é só best-effort.
+    @unlink(sys_get_temp_dir() . '/ranking_cache_v2.json');
+    @unlink(sys_get_temp_dir() . '/comunidade_pulso_cache.json');
+
     echo json_encode(['ok' => true, 'streak' => calcularStreakEmail($mysqli, $email)]);
     exit;
 }

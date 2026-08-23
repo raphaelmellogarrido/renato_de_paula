@@ -1,10 +1,16 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Trophy, Check, CheckCircle2, XCircle } from "lucide-react";
 import { PROXIMO_ENCONTRO_VIVO } from "../data/mockData";
 import DesafioSemana from "./DesafioSemana";
 import useMeditacaoHoje from "./useMeditacaoHoje";
 import { useEmailSessao } from "./usuarioStorage";
 import { snapshotLocalSincrono, buscarReservas, reservarVaga, cancelarReserva } from "./reservasLive";
+
+// Mesmo evento (e mesmo literal, não import — mesmo padrão de acoplamento
+// já usado em useSequenciaMeditacao.js) que useMeditacaoHoje.js dispara ao
+// marcar presença. O `detail.origem` diferencia clique real de
+// reconciliação com o servidor no mount (ver comentário no dispatch).
+const EVENTO_ATUALIZOU = "meditacaoHojeAtualizada";
 
 // Mesma leitura síncrona de sessão usada em AulasMeditacaoRaiz.jsx e
 // DesafioSemana.jsx, mas pegando o NOME — o Ranking mostra o nome de quem
@@ -128,15 +134,24 @@ function ColunaEncontros() {
     return () => clearTimeout(t);
   }, [toast]);
 
-  // Mesmo padrão de AbortController+8s de useSequenciaMeditacao.js: se
-  // ranking.php demorar ou falhar, desiste e o widget usa o fallback (só a
-  // linha do usuário atual) em vez de travar a página.
-  useEffect(() => {
+  // Extraído em função (useCallback, sem deps — só usa o setter estável do
+  // useState) porque tem dois gatilhos agora: 1x no mount, e de novo logo
+  // depois de marcar presença (efeito abaixo), pra reconciliar o bump
+  // otimista com o valor real do banco sem precisar de F5. Mesmo padrão de
+  // AbortController+8s de useSequenciaMeditacao.js: se ranking.php demorar
+  // ou falhar, desiste e o widget usa o fallback (só a linha do usuário
+  // atual) em vez de travar a página.
+  const buscarRanking = useCallback(() => {
     let cancelado = false;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-    fetch("/api/hotmart/presenca/ranking.php", { signal: controller.signal })
+    // cache: "no-store" — depois de marcar presença o cache em disco do
+    // ranking.php já foi invalidado no servidor (ver presenca.php), mas
+    // isso evita também que algum cache HTTP intermediário (navegador/CDN)
+    // devolva uma cópia velha bem na hora que a gente mais precisa do
+    // valor fresco.
+    fetch("/api/hotmart/presenca/ranking.php", { signal: controller.signal, cache: "no-store" })
       .then((r) => r.json())
       .then((dados) => {
         if (!cancelado && Array.isArray(dados) && dados.length) {
@@ -144,7 +159,7 @@ function ColunaEncontros() {
         }
       })
       .catch(() => {
-        // ranking.php indisponível/lento — mantém o fallback.
+        // ranking.php indisponível/lento — mantém o que já tinha (ou o fallback).
       })
       .finally(() => clearTimeout(timeoutId));
 
@@ -154,6 +169,47 @@ function ColunaEncontros() {
       clearTimeout(timeoutId);
     };
   }, []);
+
+  useEffect(() => buscarRanking(), [buscarRanking]);
+
+  // Sobe quem clicou em "Já meditei hoje" no Ranking na hora, sem esperar
+  // rede: bump otimista de +1 dia (ou entra no ranking com 1 dia, se ainda
+  // não tinha presença nenhuma) e reordena — cumpre o "menos de 1s"
+  // pedido, já que não depende do round-trip do POST nem do cache de
+  // 5min do ranking.php. Só reage a origem "clique": o mesmo evento também
+  // dispara na reconciliação com o servidor ao montar (useMeditacaoHoje.js)
+  // e ali o fetch de ranking já busca o valor certo — bump ali duplicaria
+  // a contagem.
+  useEffect(() => {
+    function aoAtualizarPresenca(evento) {
+      if (evento?.detail?.origem !== "clique") return;
+
+      setRanking((atual) => {
+        if (!Array.isArray(atual)) return atual; // ainda não carregou — nada pra atualizar, fica no fallback até o fetch do mount resolver
+        const emailLower = email.toLowerCase().trim();
+        const jaEstava = atual.some((item) => (item.email || "").toLowerCase().trim() === emailLower);
+        const atualizado = jaEstava
+          ? atual.map((item) =>
+              (item.email || "").toLowerCase().trim() === emailLower
+                ? { ...item, dias: (Number(item.dias) || 0) + 1 }
+                : item
+            )
+          : [...atual, { email, nome, dias: 1 }];
+
+        return [...atualizado].sort(
+          (a, b) => (Number(b.dias) || 0) - (Number(a.dias) || 0) || String(a.nome || "").localeCompare(String(b.nome || ""))
+        );
+      });
+
+      // Confirma com o valor real do banco pouco depois de o bump otimista
+      // já ter aparecido na tela — dá tempo do POST em presenca.php
+      // terminar (e invalidar o cache do ranking.php) antes de buscar de novo.
+      setTimeout(buscarRanking, 1200);
+    }
+
+    window.addEventListener(EVENTO_ATUALIZOU, aoAtualizarPresenca);
+    return () => window.removeEventListener(EVENTO_ATUALIZOU, aoAtualizarPresenca);
+  }, [email, nome, buscarRanking]);
 
   async function handleReservarClique() {
     if (processando) return;

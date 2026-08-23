@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { Link } from "react-router-dom";
 import { TITULOS_AULAS_RAIZ } from "../../../lib/titulosAulasRaiz";
 import { calcularMaxDiaCompleto, calcularUltimoDiaCompletadoData, isoLocal } from "./progressoDias";
 
@@ -164,10 +165,17 @@ export default function JornadaProgress({ progressoPorArquivo = {}, compacto = f
           <img src={ICONE_TITULO} alt="" className="cm-jornada-titulo-icone" />
           <span>Sua Jornada</span>
         </h2>
-        <span className={`cm-jornada-badge cm-jornada-badge--${statusJornada.estado}`}>
-          <img src={statusJornada.icone} alt="" className="cm-jornada-badge-icone" />
-          {statusJornada.texto}
-        </span>
+        {statusJornada.estado === "bora-aula" ? (
+          <Link to="/comunidade/aulas-raiz" className={`cm-jornada-badge cm-jornada-badge--${statusJornada.estado} cursor-pointer hover:opacity-80`}>
+            <img src={statusJornada.icone} alt="" className="cm-jornada-badge-icone" />
+            {statusJornada.texto} ↗
+          </Link>
+        ) : (
+          <span className={`cm-jornada-badge cm-jornada-badge--${statusJornada.estado}`}>
+            <img src={statusJornada.icone} alt="" className="cm-jornada-badge-icone" />
+            {statusJornada.texto}
+          </span>
+        )}
       </div>
 
       <div className="cm-jornada-anel-wrap">

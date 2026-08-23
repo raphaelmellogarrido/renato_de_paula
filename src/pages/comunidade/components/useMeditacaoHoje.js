@@ -134,7 +134,12 @@ export function useMeditacaoHoje() {
           // segue só em memória, sem travar a tela.
         }
 
-        window.dispatchEvent(new CustomEvent(EVENTO_ATUALIZOU));
+        // origem "reconciliacao": quem escuta esse evento pra fazer bump
+        // otimista (ex: Ranking em ColunaEncontros.jsx) precisa distinguir
+        // isso de um clique de verdade — aqui a presença já existia no
+        // servidor antes desta página abrir, então o fetch normal do
+        // widget já traz o valor certo; um bump aqui duplicaria a contagem.
+        window.dispatchEvent(new CustomEvent(EVENTO_ATUALIZOU, { detail: { origem: "reconciliacao" } }));
       })
       .catch((err) => {
         console.error("[Clube Presença] falha ao carregar presença do servidor:", err);
@@ -169,8 +174,10 @@ export function useMeditacaoHoje() {
     setStreak(novoStreak);
     // Avisa qualquer outra instância do hook montada na página (o Ranking e
     // o card Sequência) pra reler o localStorage e atualizar na hora, sem
-    // refresh.
-    window.dispatchEvent(new CustomEvent(EVENTO_ATUALIZOU));
+    // refresh. origem "clique": é o gatilho pro bump otimista do Ranking de
+    // Presença (ver ColunaEncontros.jsx) — só dá +1 na hora quando é isso
+    // aqui, nunca na reconciliação de mount.
+    window.dispatchEvent(new CustomEvent(EVENTO_ATUALIZOU, { detail: { origem: "clique" } }));
 
     fetch(PRESENCA_URL, {
       method: "POST",

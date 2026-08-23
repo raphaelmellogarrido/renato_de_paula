@@ -1,5 +1,10 @@
 <?php
 header('Content-Type: application/json');
+// Cache já é controlado à mão pelo arquivo em disco abaixo (e invalidado na
+// hora em presenca.php a cada nova presença) — no-store evita que algum
+// cache HTTP intermediário (Cloudflare, navegador) devolva uma cópia velha
+// por cima disso quando o front busca de novo logo após marcar presença.
+header('Cache-Control: no-store');
 
 // Cache de arquivo: ranking é global (não muda por usuário), então um único
 // arquivo compartilhado serve pra todo mundo. Evita bater no MySQL (GROUP BY

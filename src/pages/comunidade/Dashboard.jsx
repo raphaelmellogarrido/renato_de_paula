@@ -16,7 +16,7 @@ import DificuldadeDoDia from "./components/DificuldadeDoDia";
 // "Sua prática hoje" (DificuldadeDoDia) e o feed da Comunidade
 // (FeedComunidade) ficam empilhados na coluna 1. Coluna 2
 // (.cm-coluna-meio) é o botão "Já meditei hoje" (BotaoMediteiHoje, dentro
-// de ColunaProgresso) + Sequência + Sua Jornada. Coluna 3
+// de ColunaProgresso) + Sequência + Sua Jornada + Meditando junto. Coluna 3
 // (.cm-coluna-direita) é Próximo encontro + Desafio da semana + Ranking
 // (ColunaEncontros). Biblioteca de Meditações foi removida a pedido do
 // cliente. Sem accordion por Dia nesta versão (removido a pedido do

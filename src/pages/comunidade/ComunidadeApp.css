@@ -261,10 +261,10 @@
   min-width: 0;
 }
 
-/* Coluna 2: botão "Já meditei hoje" + Sequência + Sua Jornada (ver
-   ColunaProgresso.jsx) — mesmo gap:24px das outras colunas, controlando
-   sozinho a distância entre os 3 widgets (sem depender de linha de grid
-   nenhuma). */
+/* Coluna 2: botão "Já meditei hoje" + Sequência + Sua Jornada + Meditando
+   junto (ver ColunaProgresso.jsx) — mesmo gap:24px das outras colunas,
+   controlando sozinho a distância entre os 4 widgets (sem depender de
+   linha de grid nenhuma). */
 .cm-coluna-meio {
   display: flex;
   flex-direction: column;
@@ -2540,6 +2540,31 @@
 
 .cm-widget-escuro .cm-ranking-item.is-voce .cm-ranking-pos {
   color: var(--cm-text-soft);
+}
+
+/* Card "Meditando junto" (MeditandoJunto.jsx) — mesma variante escura do
+   Ranking (.cm-widget-escuro), coluna do meio, 3 linhas de pulso real da
+   comunidade em vez de itens de ranking. */
+.cm-pulso-linha {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.cm-pulso-linha:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.cm-pulso-sub {
+  display: block;
+  font-size: 0.72rem;
+  opacity: 0.7;
+  margin-top: 2px;
 }
 
 /* Feed da comunidade */
