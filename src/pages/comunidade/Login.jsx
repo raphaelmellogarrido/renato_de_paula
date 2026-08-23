@@ -36,14 +36,19 @@ export default function ComunidadeLogin() {
   // Autofill do Chrome/gerenciador de senha às vezes preenche o input sem
   // disparar onChange do React (o valor muda no DOM, mas o state fica vazio).
   // Isso deixava o botão "Entrar" com aparência de desabilitado até um
-  // refresh forçado. Lendo o valor real do DOM logo após montar cobre esse
-  // caso sem precisar de gambiarra de CSS no botão.
+  // refresh forçado. O autofill pode chegar bem depois do mount (às vezes só
+  // quando o usuário interage com a página), então em vez de checar uma
+  // única vez, poll por alguns segundos — sem gambiarra de CSS no botão, que
+  // agora só desabilita por loading (ver botão de submit abaixo).
   useEffect(() => {
-    const t = setTimeout(() => {
-      if (emailRef.current?.value && !email) setEmail(emailRef.current.value);
-      if (senhaRef.current?.value && !senha) setSenha(senhaRef.current.value);
-    }, 200);
-    return () => clearTimeout(t);
+    let tentativas = 0;
+    const id = setInterval(() => {
+      tentativas += 1;
+      if (emailRef.current?.value && emailRef.current.value !== email) setEmail(emailRef.current.value);
+      if (senhaRef.current?.value && senhaRef.current.value !== senha) setSenha(senhaRef.current.value);
+      if (tentativas >= 10) clearInterval(id); // ~3s cobre autofill tardio
+    }, 300);
+    return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -254,9 +259,16 @@ export default function ComunidadeLogin() {
             </div>
           )}
 
+          {/* Antes o disabled também checava email/senha vazio no state. Com
+              autofill do Chrome (preenche o DOM sem sempre disparar onChange
+              a tempo), o state ficava vazio e o botão travava disabled+cinza
+              claro num card branco — visualmente sumia, mesmo sempre presente
+              no DOM. Agora só desabilita por loading; a validação de campo
+              vazio/senha fraca continua sendo feita dentro do handleSubmit
+              (e o `required` do HTML barra o submit nativo se estiver vazio). */}
           <button
             type="submit"
-            disabled={loading || (modo === "criar" ? !podeCriar : !email.trim() || !senha.trim())}
+            disabled={loading}
             className={`cm-login-submit ${(modo === "login" && email.trim() && senha.trim()) || podeCriar ? "is-ready" : ""}`}
           >
             {loading ? "Carregando..." : modo === "criar" ? "Criar conta e começar" : "Entrar"}

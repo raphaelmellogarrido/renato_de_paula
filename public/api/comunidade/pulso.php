@@ -11,11 +11,15 @@
 //     de "partilhar" hoje é comentar em algum mural (comentarios.php),
 //     então conta a tabela `comentarios` inteira (todos os aula_id: "Sua
 //     prática hoje" e o mural "geral" das Aulas), não só um.
-//   total_dias_somados -> soma do streak atual de CADA aluno (mesmo
-//     algoritmo de calcularStreakEmail em _conexao.php: dias consecutivos
-//     pra trás a partir de hoje/ontem, qualquer buraco quebra) — substitui
-//     o antigo "X em sequência · maior: Y dias / Z com 7+ dias", que ficava
-//     feio quando os alunos tinham sequências de tamanhos muito diferentes.
+//   total_dias_somados -> soma do total de dias de presença de CADA aluno
+//     (não streak consecutivo — total de dias distintos que já meditou,
+//     igual à coluna "dias" do Ranking de Presença em
+//     hotmart/presenca/ranking.php). TINHA que ser essa mesma definição:
+//     é a mesma soma que aparece na direita da tela (Ranking), só que
+//     somada num card só — usar streak consecutivo aqui fazia esse total
+//     divergir do Ranking sempre que alguém tinha dias de presença só que
+//     não emendados (ex: Pedro com 2 dias mas sem meditar hoje/ontem caía
+//     pra streak 0 e sumia da soma, mesmo aparecendo com 2 no Ranking).
 //     Não precisa de CONVERT_TZ em nenhuma dessas queries: a sessão MySQL já
 //     roda fixa em -03:00 (ver `SET time_zone` em _conexao.php), então
 //     CURDATE()/created_at já resolvem em horário de Brasília.
@@ -53,31 +57,22 @@ $partilhasHoje = (int) $mysqli->query(
     "SELECT COUNT(*) AS n FROM comentarios WHERE DATE(created_at) = CURDATE()"
 )->fetch_assoc()['n'];
 
-// Uma query só (não 1 por aluno) pra montar o streak de todo mundo: lê
-// email+data de todas as presenças e agrupa em PHP, igual
-// hotmart/presenca/ranking.php já faz pro ranking global.
+// Uma query só (não 1 por aluno): lê email+data de todas as presenças e
+// agrupa em PHP pra contar dias distintos por aluno — mesma fonte
+// (`presencas`) e mesma unidade ("dias distintos por email") que
+// hotmart/presenca/ranking.php usa pro Ranking, só que sem o JOIN com
+// `alunos` (não precisa de nome aqui, só da soma).
 $res = $mysqli->query("SELECT email, data FROM presencas ORDER BY email, data DESC");
 $datasPorEmail = [];
 while ($row = $res->fetch_assoc()) {
     $datasPorEmail[$row['email']][$row['data']] = true;
 }
 
-$totalDiasSomados = 0; // soma do streak atual de todo mundo (streak 0 só soma zero, sem checagem à parte)
-$hoje = new DateTime('today');
-
-foreach ($datasPorEmail as $marcados) {
-    $cursor = clone $hoje;
-    if (!isset($marcados[$cursor->format('Y-m-d')])) {
-        $cursor->modify('-1 day');
-    }
-    $streak = 0;
-    while (isset($marcados[$cursor->format('Y-m-d')])) {
-        $streak++;
-        $cursor->modify('-1 day');
-    }
-
-    $totalDiasSomados += $streak;
-}
+// Soma do total de dias de presença de todo mundo (não streak consecutivo
+// — ver comentário no topo do arquivo). Cada array em $datasPorEmail já
+// tem só datas distintas (chave do array), então count() é exatamente o
+// mesmo "dias" que o Ranking mostra pra esse aluno.
+$totalDiasSomados = array_sum(array_map('count', $datasPorEmail));
 
 $json = json_encode([
     'ok' => true,

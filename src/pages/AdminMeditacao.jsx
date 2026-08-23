@@ -119,6 +119,7 @@ function AdminMeditacao() {
   const [testeCarregando, setTesteCarregando] = useState(true);
   const [testeInput, setTesteInput] = useState("");
   const [testeNome, setTesteNome] = useState("");
+  const [testeEnviarEmail, setTesteEnviarEmail] = useState(true);
   const [testeSalvando, setTesteSalvando] = useState(false);
   const [testeToast, setTesteToast] = useState("");
   const [testeErro, setTesteErro] = useState("");
@@ -316,7 +317,7 @@ function AdminMeditacao() {
       const res = await fetch("/api/admin/teste-emails.php", {
         method: "POST",
         headers: { "Content-Type": "application/json", "X-Admin-Secret": secret },
-        body: JSON.stringify({ emails, nome: testeNome.trim() }),
+        body: JSON.stringify({ emails, nome: testeNome.trim(), enviar_email: testeEnviarEmail }),
       });
 
       const data = await res.json().catch(() => ({}));
@@ -328,15 +329,28 @@ function AdminMeditacao() {
       setTesteInput("");
       setTesteNome("");
 
-      const qtd = (data.adicionados || []).length;
-      if (qtd > 0) {
-        setTesteToast(qtd === 1 ? "E-mail liberado!" : `${qtd} e-mails liberados!`);
-      } else if ((data.ja_existiam || []).length > 0) {
-        setTesteToast("Esse(s) e-mail(s) já tinham acesso de teste.");
+      const qtdProcessados = (data.adicionados || []).length + (data.ja_existiam || []).length;
+      const enviados = data.convites_enviados || 0;
+      const falharam = data.convites_falharam || [];
+      const erros = [];
+
+      if (testeEnviarEmail && qtdProcessados > 0) {
+        if (enviados > 0) {
+          setTesteToast(enviados === 1 ? "Convite enviado com sucesso!" : `${enviados} convites enviados com sucesso!`);
+        } else {
+          erros.push("E-mail liberado, mas não foi possível enviar o convite. Use \"Copiar link de convite\" pra mandar manualmente.");
+        }
+        if (falharam.length > 0 && enviados > 0) {
+          erros.push(`Falha ao enviar convite para: ${falharam.join(", ")}`);
+        }
+      } else if (qtdProcessados > 0) {
+        setTesteToast(qtdProcessados === 1 ? "E-mail liberado!" : `${qtdProcessados} e-mails liberados!`);
       }
+
       if ((data.invalidos || []).length > 0) {
-        setTesteErro(`Ignorado(s) por formato inválido: ${data.invalidos.join(", ")}`);
+        erros.push(`Ignorado(s) por formato inválido: ${data.invalidos.join(", ")}`);
       }
+      if (erros.length > 0) setTesteErro(erros.join(" "));
     } catch (err) {
       setTesteErro(err.message || "Não foi possível adicionar.");
     } finally {
@@ -370,8 +384,7 @@ function AdminMeditacao() {
   }
 
   async function handleCopiarLinkConvite() {
-    const texto = "Você foi liberado como teste no Clube Presença! Entre em https://renatodepaula.com/comunidade e crie sua senha com o e-mail que eu cadastrei.";
-    await navigator.clipboard.writeText(texto);
+    await navigator.clipboard.writeText("https://renatodepaula.com/comunidade");
     setLinkCopiado(true);
     setTimeout(() => setLinkCopiado(false), 2000);
   }
@@ -950,7 +963,7 @@ function AdminMeditacao() {
         <div className="form-card" style={{ marginTop: 40 }}>
           <h3>Acesso de Teste 🔑</h3>
           <p style={{ marginTop: -8, marginBottom: 16, color: "#666" }}>
-            Convide amigos sem mexer no SQL — libera o e-mail pra entrar em /comunidade como teste, sem precisar de compra na Hotmart.
+            Convidar para a comunidade
           </p>
 
           {testeToast && <div className="success-box">{testeToast}</div>}
@@ -968,7 +981,7 @@ function AdminMeditacao() {
               />
             </div>
             <div className="field">
-              <label htmlFor="teste-nome">Nome (opcional, só se for 1 e-mail)</label>
+              <label htmlFor="teste-nome">Nome</label>
               <input
                 id="teste-nome"
                 type="text"
@@ -977,8 +990,20 @@ function AdminMeditacao() {
                 placeholder="Nome do amigo"
               />
             </div>
+            <div className="field" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <input
+                id="teste-enviar-email"
+                type="checkbox"
+                checked={testeEnviarEmail}
+                onChange={(e) => setTesteEnviarEmail(e.target.checked)}
+                style={{ width: "auto" }}
+              />
+              <label htmlFor="teste-enviar-email" style={{ margin: 0 }}>
+                Enviar e-mail de convite automaticamente
+              </label>
+            </div>
             <button type="submit" className="btn btn-primary btn-block" disabled={!testeInput.trim() || testeSalvando}>
-              {testeSalvando ? "Adicionando..." : "Adicionar"}
+              {testeSalvando ? (testeEnviarEmail ? "Enviando convites..." : "Adicionando...") : "Adicionar"}
             </button>
           </form>
 
