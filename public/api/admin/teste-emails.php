@@ -143,14 +143,6 @@ HTML;
         $mail->Body = $html;
         $mail->AltBody = $textoPlano;
 
-        // Log de debug do SMTP fica só no error_log do servidor (nunca no
-        // corpo da resposta) — o erro que interessa pro admin já volta em
-        // $erroSaida/ErrorInfo abaixo.
-        $mail->SMTPDebug = 2;
-        $mail->Debugoutput = function ($str, $level) {
-            error_log("SMTP DEBUG $level: $str");
-        };
-
         $mail->send();
         return true;
     } catch (PHPMailerException $e) {

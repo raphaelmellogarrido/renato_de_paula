@@ -69,10 +69,10 @@ Invalid login: 535 5.7.8 Error: authentication failed: (reason unavailable)
 Adicionei um diagnóstico no código (`server/index.js`, já commitado) que loga a senha via `JSON.stringify` + os códigos de caractere de cada posição (nunca loga em texto puro sem contexto, mas tecnicamente aparece nos logs privados da Hostinger — remover esse diagnóstico depois de resolver, por boa prática). O log revelou:
 
 ```
-SMTP_PASS: "Gael0202*\\#" — tamanho: 11 — códigos: [71, 97, 101, 108, 48, 50, 48, 50, 42, 92, 35]
+SMTP_PASS: "***REMOVIDO***\\#" — tamanho: 11 — códigos: [redigido, 92, 35]
 ```
 
-A senha real do email é `Gael0202*#` (10 caracteres). Mas o valor efetivamente armazenado nas variáveis de ambiente da Hostinger tem **11 caracteres**, com o código `92` (barra invertida `\`) inserido entre o `*` (42) e o `#` (35) — ou seja, o valor real ficou `Gael0202*\#`, com uma barra invertida indesejada.
+A senha real do email (10 caracteres, ver nota de segurança acima — valor removido deste arquivo) tinha um `#` como último caractere. Mas o valor efetivamente armazenado nas variáveis de ambiente da Hostinger tinha **11 caracteres**, com o código `92` (barra invertida `\`) inserido antes do `#` (35) — ou seja, o valor real ficava com uma barra invertida indesejada logo antes do `#` final.
 
 Isso provavelmente é algum comportamento de auto-escape do campo de variáveis de ambiente da Hostinger em relação ao caractere `#` (que em muitos contextos de shell/config inicia um comentário). Já tentamos apagar e redigitar o campo manualmente uma vez e o problema persistiu.
 
@@ -87,9 +87,9 @@ Isso provavelmente é algum comportamento de auto-escape do campo de variáveis 
 SMTP_HOST=smtp.hostinger.com
 SMTP_PORT=465
 SMTP_USER=contato@renatodepaula.com
-SMTP_PASS=Gael0202*#          <- valor real tem um \ espúrio, ver acima
+SMTP_PASS=***REMOVIDO*** (trocada — ver nota de segurança abaixo)
 MARKETING_SMTP_USER=marketing@renatodepaula.com
-MARKETING_SMTP_PASS=Gael0202*#  <- mesmo problema
+MARKETING_SMTP_PASS=***REMOVIDO*** (trocada — ver nota de segurança abaixo)
 TO_EMAIL=contato@renatodepaula.com
 DB_HOST=127.0.0.1
 DB_PORT=3306

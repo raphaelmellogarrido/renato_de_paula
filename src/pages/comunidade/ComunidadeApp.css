@@ -1123,11 +1123,37 @@
   animation: cm-check-scale-in 200ms ease;
 }
 
+/* Card "Desafio da Semana" (.cm-widget.cm-grid-desafio): altura TRAVADA em
+   340px (medida no estado final "Desafio completo!") pra nunca mudar de
+   tamanho — nem entre marcado/desmarcado, nem se um admin cadastrar menos
+   de 3 itens em /admin. Vira flex column pra o corpo (cm-desafio-corpo)
+   esticar até preencher esse espaço fixo em vez do card esticar até o
+   conteúdo. */
+.cm-grid-desafio {
+  height: 340px;
+  min-height: 340px;
+  max-height: 340px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.cm-grid-desafio h3 {
+  flex-shrink: 0;
+}
+
 /* Corpo do card (checklist + progresso + status): fica relative pra
    servir de âncora pro overlay de celebração abaixo. Ele nunca some do
-   DOM — é o que mantém a altura do card estável durante a animação. */
+   DOM — é o que mantém a altura do card estável durante a animação.
+   flex:1 + min-height:0 faz ele preencher o resto dos 340px do card (em
+   vez de crescer com o conteúdo); overflow-y:auto garante que uma lista
+   maior role por dentro em vez de esticar o card. */
 .cm-desafio-corpo {
   position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* Celebração ao completar os 3 itens: lótus abrindo/brilhando por 2.5s

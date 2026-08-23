@@ -136,7 +136,7 @@ export default function ComunidadeLogin() {
     <div className="cm-login-page">
       <div className="cm-login-card">
         <h1 className="cm-login-title">{modo === "criar" ? "Crie sua senha do Clube" : "Entrar no Clube Presença"}</h1>
-        <p className="cm-login-subtitle">{modo === "criar" ? "Detectamos sua compra na Hotmart. Crie uma senha só pro Clube." : "Use seu e-mail de acesso."}</p>
+        {modo === "criar" && <p className="cm-login-subtitle">Detectamos sua compra na Hotmart. Crie uma senha só pro Clube.</p>}
 
         {erro && <div className="cm-login-alert cm-login-alert-erro">{erro}</div>}
         {msg && <div className="cm-login-alert cm-login-alert-msg">{msg}</div>}
@@ -168,7 +168,7 @@ export default function ComunidadeLogin() {
           )}
 
           <div className="cm-login-field">
-            <label htmlFor="cm-login-email">Seu e-mail</label>
+            <label htmlFor="cm-login-email">E-mail</label>
             <input
               id="cm-login-email"
               ref={emailRef}
@@ -184,7 +184,7 @@ export default function ComunidadeLogin() {
           </div>
 
           <div className="cm-login-field">
-            <label htmlFor="cm-login-senha">{modo === "criar" ? "Crie uma senha forte" : "Sua senha do Clube"}</label>
+            <label htmlFor="cm-login-senha">{modo === "criar" ? "Crie uma senha forte" : "Senha"}</label>
             <div className="cm-login-input-wrap">
               <input
                 id="cm-login-senha"
