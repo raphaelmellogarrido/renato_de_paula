@@ -1158,13 +1158,28 @@
    alinhamento das 3 colunas do dashboard com "Sua prática hoje" (que
    perdeu 1 comentário, ver POR_PAGINA em DificuldadeDoDia.jsx). Só encolhe
    o miolo (padding do card + espaçamento entre os 3 itens) — não mexe no
-   conteúdo/textos. */
+   conteúdo/textos.
+   justify-content:center (era flex-start, herdado da regra base lá em
+   cima) porque .cm-coluna-direita .cm-grid-desafio tem flex:1 1 auto —
+   sem isso o título "Desafios da semana" ficava colado no topo e toda a
+   sobra de altura da coluna virava vão só embaixo do card. */
 .cm-grid-desafio {
   padding: 16px 22px;
+  justify-content: center;
 }
 
 .cm-grid-desafio h3 {
   margin-bottom: 8px;
+  flex-shrink: 0;
+}
+
+/* flex:none (era flex:1 na regra base de .cm-desafio-corpo, acima) —
+   com flex:1 o corpo ocupava sozinho 100% da altura sobrando e o
+   justify-content:center do pai (.cm-grid-desafio) não tinha efeito
+   nenhum (nada "sobrava" pra centralizar). Sem crescer, é o card inteiro
+   que centraliza o bloco h3+corpo, distribuindo a folga em cima/embaixo. */
+.cm-grid-desafio .cm-desafio-corpo {
+  flex: none;
 }
 
 .cm-grid-desafio .cm-desafio-item {
@@ -1616,9 +1631,16 @@
 /* Ajuste fino (23/08): reduz ~70px de altura interna do card pra fechar o
    alinhamento das 3 colunas do dashboard com "Sua prática hoje" (que
    perdeu 1 comentário, ver POR_PAGINA em DificuldadeDoDia.jsx). Só encolhe
-   o miolo (anel + trilha) — não mexe no conteúdo/textos. */
+   o miolo (anel + trilha) — não mexe no conteúdo/textos.
+   display:flex + justify-content:center porque .cm-coluna-meio .cm-jornada
+   tem flex:1 1 auto (cresce pra igualar a altura da coluna) — sem isso o
+   card cresce em bloco normal e a sobra de espaço inteira vira vão embaixo
+   do conteúdo. Centralizando, a sobra fica dividida em cima/embaixo. */
 .cm-jornada {
   padding: 14px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .cm-jornada-anel-wrap {
