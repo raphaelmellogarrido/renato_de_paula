@@ -33,7 +33,10 @@
   justify-content: center;
   padding: 24px;
   background: var(--cm-page-bg);
-  font-family: "Inter", -apple-system, sans-serif;
+  font-family:
+    "Inter",
+    -apple-system,
+    sans-serif;
   color: var(--cm-text);
 }
 
@@ -300,7 +303,7 @@
    (ColunaEncontros.jsx / ComunidadeApp.css .cm-btn-primary.cm-encontro-btn)
    — pedido explícito do cliente pra ter a cara de um único design system. */
 .cm-login-submit {
-  display: block;
+  display: block !important;
   position: relative;
   z-index: 1;
   width: 100%;
@@ -310,9 +313,11 @@
   font-size: 15px;
   font-weight: 700;
   margin-top: 24px;
-  background: var(--cm-border);
-  color: var(--cm-text-soft);
-  cursor: not-allowed;
+  background: #2b2b2b;
+  color: #fff;
+  cursor: pointer;
+  opacity: 1 !important;
+  visibility: visible !important;
   transition:
     background-color 200ms ease,
     color 200ms ease,
@@ -323,6 +328,13 @@
   background: #2b2b2b;
   color: #fff;
   cursor: pointer;
+  opacity: 1;
+}
+
+.cm-login-submit:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed;
+  display: block !important;
 }
 
 .cm-login-submit.is-ready:hover {
