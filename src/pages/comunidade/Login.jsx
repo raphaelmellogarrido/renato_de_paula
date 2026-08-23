@@ -146,15 +146,7 @@ export default function ComunidadeLogin() {
             <div className="cm-login-field">
               <label htmlFor="cm-login-nome">Nome completo</label>
               <div className="cm-login-input-wrap">
-                <input
-                  id="cm-login-nome"
-                  type="text"
-                  required
-                  placeholder="Como você quer ser chamado no Ranking"
-                  value={nome}
-                  onChange={(e) => setNome(e.target.value)}
-                  className={`cm-login-input ${nome ? (nomeOk ? "is-valid" : "is-invalid") : ""}`}
-                />
+                <input id="cm-login-nome" type="text" required placeholder="Como você quer ser chamado no Ranking" value={nome} onChange={(e) => setNome(e.target.value)} className={`cm-login-input ${nome ? (nomeOk ? "is-valid" : "is-invalid") : ""}`} />
                 {nome && nomeOk && (
                   <span className="cm-login-icon-right" aria-hidden="true">
                     <span className="cm-login-icon-valid">
@@ -169,18 +161,7 @@ export default function ComunidadeLogin() {
 
           <div className="cm-login-field">
             <label htmlFor="cm-login-email">E-mail</label>
-            <input
-              id="cm-login-email"
-              ref={emailRef}
-              type="email"
-              required
-              autoComplete="email"
-              placeholder="seu@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onInput={(e) => setEmail(e.target.value)}
-              className="cm-login-input"
-            />
+            <input id="cm-login-email" ref={emailRef} type="email" required autoComplete="email" placeholder="seu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} onInput={(e) => setEmail(e.target.value)} className="cm-login-input" />
           </div>
 
           <div className="cm-login-field">
@@ -266,11 +247,7 @@ export default function ComunidadeLogin() {
               no DOM. Agora só desabilita por loading; a validação de campo
               vazio/senha fraca continua sendo feita dentro do handleSubmit
               (e o `required` do HTML barra o submit nativo se estiver vazio). */}
-          <button
-            type="submit"
-            disabled={loading}
-            className={`cm-login-submit ${(modo === "login" && email.trim() && senha.trim()) || podeCriar ? "is-ready" : ""}`}
-          >
+          <button type="submit" disabled={loading} className="cm-login-submit is-ready">
             {loading ? "Carregando..." : modo === "criar" ? "Criar conta e começar" : "Entrar"}
           </button>
         </form>
