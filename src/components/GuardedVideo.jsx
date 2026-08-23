@@ -21,6 +21,12 @@ function GuardedVideo({ src, onEnded, label, autoPlay = false, onTimeUpdate, per
   const [fullscreen, setFullscreen] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
+  // Estado do botão "girar tela" (mobile). `rotated` controla o toggle
+  // (clicar de novo desfaz); `usarFallbackCss` só liga quando
+  // screen.orientation.lock não existe ou falhou (caso do iOS Safari) — aí
+  // a rotação visual vem da classe .is-rotated-css em vez da orientação real.
+  const [rotated, setRotated] = useState(false)
+  const [usarFallbackCss, setUsarFallbackCss] = useState(false)
 
   useEffect(() => {
     if (!autoPlay) return
@@ -37,8 +43,10 @@ function GuardedVideo({ src, onEnded, label, autoPlay = false, onTimeUpdate, per
       setFullscreen(dentro)
       // Ao sair da tela cheia, libera a orientação — senão a página inteira
       // fica presa em modo paisagem depois que o vídeo fecha.
-      if (!dentro && screen.orientation?.unlock) {
-        screen.orientation.unlock()
+      if (!dentro) {
+        if (screen.orientation?.unlock) screen.orientation.unlock()
+        setRotated(false)
+        setUsarFallbackCss(false)
       }
     }
     document.addEventListener('fullscreenchange', handleFullscreenChange)
@@ -186,9 +194,27 @@ function GuardedVideo({ src, onEnded, label, autoPlay = false, onTimeUpdate, per
 
   // Botão só do mobile: entra em tela cheia e força a orientação paisagem,
   // mesmo que o bloqueio de rotação do celular esteja ativado no sistema.
-  // iOS Safari não suporta screen.orientation.lock — nesse caso a tela
-  // cheia já ajuda, e a rotação física do aparelho funciona normalmente.
+  // Clicar de novo desfaz (unlock + exitFullscreen). iOS Safari não suporta
+  // screen.orientation.lock (e nem sempre requestFullscreen num <div>) —
+  // nesse caso caímos na classe .is-rotated-css, que gira o player só com
+  // CSS (rotate(90deg) + width/height trocados) em vez de orientação real.
   async function handleGirarTela() {
+    if (rotated) {
+      try {
+        screen.orientation?.unlock?.()
+      } catch (err) {
+        console.error('Não foi possível destravar a orientação:', err)
+      }
+      if (document.fullscreenElement || document.webkitFullscreenElement) {
+        if (document.exitFullscreen) document.exitFullscreen()
+        else if (document.webkitExitFullscreen) document.webkitExitFullscreen()
+      }
+      setRotated(false)
+      setUsarFallbackCss(false)
+      return
+    }
+
+    let orientacaoTravada = false
     try {
       const wrapper = wrapperRef.current
       if (!document.fullscreenElement && !document.webkitFullscreenElement) {
@@ -197,15 +223,18 @@ function GuardedVideo({ src, onEnded, label, autoPlay = false, onTimeUpdate, per
       }
       if (screen.orientation?.lock) {
         await screen.orientation.lock('landscape')
+        orientacaoTravada = true
       }
     } catch (err) {
       console.error('Não foi possível girar a tela:', err)
     }
+    setRotated(true)
+    setUsarFallbackCss(!orientacaoTravada)
   }
 
   return (
     <div
-      className="guarded-video"
+      className={`guarded-video ${usarFallbackCss ? 'is-rotated-css' : ''}`}
       ref={wrapperRef}
       tabIndex={permitirAvancar ? 0 : -1}
       onKeyDown={handleKeyDown}
@@ -285,9 +314,10 @@ function GuardedVideo({ src, onEnded, label, autoPlay = false, onTimeUpdate, per
           )}
           <button
             type="button"
-            className="guarded-video-rotate"
+            className={`guarded-video-rotate ${rotated ? 'is-active' : ''}`}
             onClick={handleGirarTela}
-            aria-label="Girar tela para assistir na horizontal"
+            aria-label={rotated ? 'Voltar à orientação normal' : 'Girar tela para assistir na horizontal'}
+            aria-pressed={rotated}
           >
             ⟲
           </button>

@@ -2827,9 +2827,10 @@
 }
 
 .cm-config-subtitle {
+  display: block;
   font-size: 0.92rem;
   font-weight: 600;
-  margin: 0 0 14px;
+  margin: 0 0 20px;
   color: var(--cm-text);
 }
 

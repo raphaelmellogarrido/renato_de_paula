@@ -1178,11 +1178,48 @@
   display: none;
 }
 
-@media (max-width: 860px) {
+/* Botão "girar tela" — só existe no mobile. 40x40, fundo translúcido com
+   blur (diferente dos outros ícones do rodapé, que são só glifo transparente)
+   pra ficar visível como um chip próprio ao lado do botão de fullscreen. */
+@media (max-width: 768px) {
   .guarded-video-rotate {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    font-size: 20px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
   }
+
+  .guarded-video-rotate.is-active {
+    background: rgba(255, 255, 255, 0.3);
+  }
+}
+
+/* Fallback CSS-only pra quando screen.orientation.lock não existe/falha
+   (iOS Safari). Gira o wrapper inteiro 90deg e troca width/height pra
+   simular paisagem, centralizado na viewport — sem depender de fullscreen
+   real nem da API de orientação. */
+.guarded-video.is-rotated-css {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 9999;
+  width: 100vh;
+  height: 100vw;
+  transform: translate(-50%, -50%) rotate(90deg);
+  transform-origin: center center;
+}
+
+.guarded-video.is-rotated-css video {
+  width: 100%;
+  height: 100%;
+  max-height: none;
 }
 
 .btn-restart {

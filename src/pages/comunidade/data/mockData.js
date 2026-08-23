@@ -91,7 +91,7 @@ export const PROXIMO_ENCONTRO_VIVO = {
   titulo: "Aterramento Matinal",
   quando: "Qui, 15 Mai · 7:00 - 7:30 (Brasília)",
   anfitriao: "com Dr. Renato",
-  avatar: "https://i.pravatar.cc/100?img=12",
+  avatar: "/perfil_live.png",
 };
 
 // Desafio da Semana: card da sidebar do dashboard (ver components/DesafioSemana.jsx).

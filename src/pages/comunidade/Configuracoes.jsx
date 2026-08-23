@@ -188,12 +188,18 @@ function Configuracoes() {
       // que useComunidadeAuth.js agora escuta) — tudo na hora, sem reload.
       // "Nome e sobrenome" é o nome do Ranking/Comunidade, então é ele (não
       // "Primeiro nome") que vai pra chave legada "userName" e pro
-      // comunidade_session.nome.
+      // comunidade_session.nome. "Primeiro nome" também entra na sessão
+      // (comunidade_session.primeiroNome) — sem isso a saudação da sidebar
+      // ("Olá, X") continuava presa na primeira palavra de "Nome e
+      // sobrenome" mesmo depois de salvar um "Primeiro nome" diferente.
       localStorage.setItem(chaveUsuario(CHAVE_BASE_NOME_COMPLETO, email), nomeSobrenome.trim());
       localStorage.setItem(chaveUsuario(CHAVE_BASE_PRIMEIRO_NOME, email), primeiroNome.trim());
       localStorage.setItem("userName", nomeSobrenome.trim());
       const sessaoAntiga = JSON.parse(localStorage.getItem("comunidade_session") || "{}");
-      localStorage.setItem("comunidade_session", JSON.stringify({ ...sessaoAntiga, email, nome: nomeSobrenome.trim() }));
+      localStorage.setItem(
+        "comunidade_session",
+        JSON.stringify({ ...sessaoAntiga, email, nome: nomeSobrenome.trim(), primeiroNome: primeiroNome.trim() }),
+      );
       avisarSessaoMudou();
       // "storage" não dispara na própria aba nativamente (só em outras abas)
       // e "perfil-atualizado" é o evento dedicado que RankingPresenca.jsx

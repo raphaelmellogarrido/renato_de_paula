@@ -22,6 +22,11 @@ const NAV_ITEMS = [
 
 function ComunidadeSidebar({ session, onSair }) {
   const nome = session?.nome || "Aluno";
+  // Saudação usa "Primeiro nome" (Configuracoes.jsx) quando salvo — sem
+  // isso a sidebar ficava presa na 1ª palavra de "Nome e sobrenome" mesmo
+  // depois de editar "Primeiro nome" separadamente. Iniciais continuam
+  // vindo do nome completo, que é outro campo.
+  const primeiroNome = session?.primeiroNome || nome.split(" ")[0];
 
   return (
     <aside className="cm-sidebar-left">
@@ -49,7 +54,7 @@ function ComunidadeSidebar({ session, onSair }) {
         <div className="cm-sidebar-user-card">
           <div className="cm-sidebar-avatar">{iniciais(nome)}</div>
           <div className="cm-sidebar-user-info">
-            <strong>Olá, {nome.split(" ")[0]}</strong>
+            <strong>Olá, {primeiroNome}</strong>
             <span className="cm-badge-membro">Membro da comunidade</span>
           </div>
           <button type="button" className="cm-sidebar-logout" onClick={onSair} aria-label="Sair da comunidade" title="Sair da comunidade">
