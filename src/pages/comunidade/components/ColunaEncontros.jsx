@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Check, CheckCircle2, XCircle } from "lucide-react";
 import { PROXIMO_ENCONTRO_VIVO } from "../data/mockData";
 import DesafioSemana from "./DesafioSemana";
-import Desafio3Minutos from "./Desafio3Minutos";
 import MeditandoJunto from "./MeditandoJunto";
 import { useEmailSessao } from "./usuarioStorage";
 import { snapshotLocalSincrono, buscarReservas, reservarVaga, cancelarReserva } from "./reservasLive";
@@ -19,18 +18,13 @@ function lerNomeSessao() {
 // pedido explícito do cliente.
 const EMAIL_TESTE = "teste@meditacaoraiz.com";
 
-// Próximo encontro + Desafio da Semana + Desafio de 3 minutos + Meditando
-// junto da coluna 3 do dashboard (Ranking de Presença trocou de lugar com
-// Meditando junto, pedido do cliente — ver
-// RankingPresenca.jsx/ColunaProgresso.jsx). Fragment (sem wrapper) de
-// propósito: quem controla o empilhamento vertical (gap:24px) é o
-// `.cm-coluna-direita` em Dashboard.jsx/ComunidadeApp.css, então os
-// quatro `.cm-widget` ficam diretos dentro daquele flex column, sem outro
-// wrapper no meio. Desafio3Minutos.jsx entra com `flex:1` (ver
-// .cm-desafio3min em ComunidadeApp.css) pra crescer e preencher
-// exatamente o espaço que sobra entre "Desafio da semana" e "Meditando
-// junto", alinhando a base desta coluna com a base da coluna do meio
-// (Ranking de Presença) — pedido do cliente.
+// Próximo encontro + Desafio da Semana + Meditando junto da coluna 3 do
+// dashboard (Ranking de Presença trocou de lugar com Meditando junto,
+// pedido do cliente — ver RankingPresenca.jsx/ColunaProgresso.jsx).
+// Fragment (sem wrapper) de propósito: quem controla o empilhamento
+// vertical (gap:20px) é o `.cm-coluna-direita` em
+// Dashboard.jsx/ComunidadeApp.css, então os três `.cm-widget` ficam
+// diretos dentro daquele flex column, sem outro wrapper no meio.
 function ColunaEncontros() {
   const nome = lerNomeSessao();
 
@@ -241,8 +235,6 @@ function ColunaEncontros() {
       </div>
 
       <DesafioSemana />
-
-      <Desafio3Minutos />
 
       <MeditandoJunto />
     </>

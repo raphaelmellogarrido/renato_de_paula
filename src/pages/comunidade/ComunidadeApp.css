@@ -292,13 +292,13 @@
   min-width: 0;
 }
 
-/* Coluna 3: Próximo encontro ao vivo + Desafio da semana + Desafio de 3
-   minutos + Meditando junto (ver ColunaEncontros.jsx). */
+/* Coluna 3: Próximo encontro ao vivo + Desafio da semana + Meditando
+   junto (ver ColunaEncontros.jsx). */
 .cm-coluna-direita {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  min-width: 0;
+  gap: 20px;
+  height: auto;
 }
 
 /* Cola o último widget de cada coluna (Ranking de Presença / Meditando
@@ -309,27 +309,6 @@
 .cm-coluna-meio > *:last-child,
 .cm-coluna-direita > *:last-child {
   margin-top: auto;
-}
-
-/* "Desafio de 3 minutos" (Desafio3Minutos.jsx): em vez de deixar o vão
-   sobrando ir todo pro margin-top:auto do último widget (Meditando junto)
-   acima, é ESTE card quem cresce (flex:1) pra preencher o espaço exato
-   entre "Desafio da semana" e "Meditando junto" — resultado: a base da
-   coluna 3 (Meditando junto) termina alinhada com a base da coluna 2
-   (Ranking de Presença), com gap:24px normal dos dois lados do card em
-   vez de um vão gigante concentrado num só lugar. O flex:1 é resolvido
-   ANTES do margin-top:auto do último filho (ver regra acima) na ordem de
-   distribuição de espaço livre do flexbox, então os dois convivem sem
-   conflito: quando este card já consumiu o espaço livre, sobra 0 pro
-   margin-top:auto fazer. min/max-height evitam ele esticar demais (ex:
-   coluna 1 muito alta) ou espremer demais (ex: telas baixas). */
-.cm-coluna-direita .cm-desafio3min {
-  flex: 1;
-  min-height: 160px;
-  max-height: 210px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
 }
 
 @media (max-width: 1200px) {
@@ -1023,7 +1002,10 @@
   text-transform: uppercase;
 }
 
-.cm-sequencia-badge {
+/* Texto fixo "A consistência é o segredo!" — substitui o antigo badge
+   dinâmico de percentual (pedido do cliente: sempre o mesmo texto, sem
+   cálculo). É o último elemento do card. */
+.cm-consistencia-box {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -1032,44 +1014,11 @@
   background: var(--cm-sage-soft);
   border-radius: 12px;
   padding: 9px 12px;
+  margin-bottom: 0 !important;
 }
 
-/* Mensagem lúdica do dia que começou — só aparece com streak 1 ou 2. Tom
-   laranja reaproveitado do ícone de chama do cabeçalho do card. */
-.cm-sequencia-ludico {
-  margin-top: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  animation: cm-sequencia-ludico-pop 220ms ease;
-}
-
-.cm-sequencia-ludico-tag {
-  align-self: flex-start;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: #e67e22;
-  background: #fff1e0;
-  padding: 4px 10px;
-  border-radius: 999px;
-}
-
-.cm-sequencia-ludico-texto {
-  margin: 0;
-  font-size: 0.8rem;
-  color: var(--cm-text-soft);
-  line-height: 1.4;
-}
-
-@keyframes cm-sequencia-ludico-pop {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.cm-widget-sequencia {
+  padding-bottom: 16px !important;
 }
 
 /* Widget Meu Progresso — verde sálvia sólido, igual referência */
@@ -1272,150 +1221,6 @@
   .cm-desafio-celebracao {
     animation: none;
   }
-}
-
-/* "Desafio de 3 minutos" (Desafio3Minutos.jsx) — card retangular horizontal
-   (não quadrado) entre "Desafio da semana" e "Meditando junto", coluna 3.
-   O flex:1/min/max-height que faz ele preencher a altura certa está em
-   `.cm-coluna-direita .cm-desafio3min` (perto de `.cm-coluna-direita`, no
-   topo do arquivo) — aqui só o visual. Border própria (sage 20%) em vez de
-   herdar --cm-border (padrão dos outros .cm-widget) porque o design pedido
-   usa um tom mais verde/destacado que o cinza-padrão dos outros cards. */
-.cm-desafio3min {
-  border-color: rgba(138, 154, 140, 0.2);
-  border-radius: 24px;
-  padding: 18px;
-  gap: 0;
-}
-
-.cm-desafio3min-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.cm-desafio3min-eyebrow {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--cm-text-soft);
-}
-
-.cm-desafio3min-badge {
-  font-size: 11px;
-  font-weight: 600;
-  color: #fff;
-  background: var(--cm-sage);
-  padding: 2px 10px;
-  border-radius: 999px;
-  flex-shrink: 0;
-}
-
-/* Especificidade `.cm-desafio3min .cm-desafio3min-titulo` (2 classes) de
-   propósito, maior que `.cm-widget h3` (1 classe + 1 elemento) do card
-   base — senão font-size/margin-bottom genéricos do h3 padrão (1.02rem/
-   14px) ganhariam do 18px/Playfair pedido aqui. */
-.cm-desafio3min .cm-desafio3min-titulo {
-  font-family: "Playfair Display", Georgia, serif;
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--cm-text);
-  margin: 10px 0 2px;
-}
-
-.cm-desafio3min-sub {
-  font-size: 13px;
-  color: var(--cm-text-soft);
-  margin: 0 0 14px;
-}
-
-.cm-desafio3min-player {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.cm-desafio3min-play {
-  width: 48px;
-  height: 48px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--cm-text);
-  color: #fff;
-  cursor: pointer;
-}
-
-.cm-desafio3min-play svg {
-  /* Play (▶) tem um "peso" visual pra direita por ser um triângulo — 1px
-     de deslocamento óptico pra parecer centralizado no círculo, mesmo
-     truque comum em botões de play redondos. */
-  transform: translateX(1px);
-}
-
-.cm-desafio3min-corpo {
-  flex: 1;
-  min-width: 0;
-}
-
-.cm-desafio3min-waveform {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  height: 28px;
-}
-
-.cm-desafio3min-barra {
-  flex: 1;
-  min-width: 2px;
-  border-radius: 999px;
-  background: var(--cm-sage);
-  opacity: 0.35;
-}
-
-.cm-desafio3min-barra.is-ativa {
-  opacity: 1;
-}
-
-.cm-desafio3min-rodape-player {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 4px;
-}
-
-.cm-desafio3min-timer {
-  font-size: 11px;
-  font-variant-numeric: tabular-nums;
-  color: var(--cm-text-soft);
-}
-
-.cm-desafio3min-progress {
-  height: 4px;
-  border-radius: 999px;
-  background: #f0ebe3;
-  margin-top: 6px;
-  overflow: hidden;
-}
-
-.cm-desafio3min-progress-fill {
-  height: 100%;
-  border-radius: 999px;
-  background: var(--cm-sage);
-  transition: width 1s linear;
-}
-
-.cm-desafio3min-footer {
-  font-size: 11px;
-  color: var(--cm-text-soft);
-  margin: 12px 0 0;
 }
 
 .cm-ranking-item {
@@ -3378,7 +3183,6 @@ h3.cm-config-subtitle {
   .cm-duvida,
   .cm-grid-pulso,
   .cm-grid-desafio,
-  .cm-desafio3min,
   .cm-grid-ranking {
     grid-column: 1 / -1;
   }
@@ -3410,23 +3214,6 @@ h3.cm-config-subtitle {
 
   .cm-grid-pulso {
     order: 6;
-  }
-
-  /* Entre "Meditando junto" (order:6) e "Desafio da semana" (order:8
-     abaixo) — mesma posição relativa "entre os dois" pedida pro desktop
-     (ver DOM em ColunaEncontros.jsx), só que aqui esses dois cards já
-     trocam de posição visual entre si (ordem pedida pelo cliente, ver
-     comentário acima), então o card fica entre eles nessa ordem também.
-     flex:1/min/max-height do desktop (`.cm-coluna-direita .cm-desafio3min`)
-     não fazem sentido aqui: a coluna virou `display:contents` (grid direto
-     em `.cm-main`), então é ele mesmo quem sobrescreve pra altura
-     automática, sem cap nem crescimento forçado. */
-  .cm-desafio3min {
-    order: 7;
-    flex: none;
-    min-height: 160px;
-    max-height: none;
-    justify-content: flex-start;
   }
 
   .cm-grid-desafio {

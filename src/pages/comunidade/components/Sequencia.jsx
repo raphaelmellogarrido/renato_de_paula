@@ -1,13 +1,14 @@
-import { Flame, Award, Check } from "lucide-react";
+import { Flame, Check } from "lucide-react";
 import { useSequenciaMeditacao } from "./useSequenciaMeditacao";
 
 // Card "Sequência" da coluna 3 do dashboard — 100% funcional, não clicável.
 // Toda vez que o botão "Meditei hoje" (BotaoMediteiHoje) marca o dia, esse
 // card recalcula sozinho (via evento, ver useSequenciaMeditacao.js): streak
-// real com quebra por dia faltando, as 7 bolinhas Seg-Dom da semana atual,
-// percentual de consistência e a mensagem lúdica do dia que começou.
+// real com quebra por dia faltando e as 7 bolinhas Seg-Dom da semana atual.
+// Percentual/mensagem lúdica saíram do card (pedido do cliente) — o hook
+// ainda calcula esses campos, só não são mais usados aqui.
 function Sequencia() {
-  const { streak, bolinhas, percentual, ludico } = useSequenciaMeditacao();
+  const { streak, bolinhas } = useSequenciaMeditacao();
 
   return (
     <div className="cm-widget cm-widget-sequencia cm-grid-sequencia">
@@ -40,17 +41,9 @@ function Sequencia() {
         ))}
       </div>
 
-      <div className="cm-sequencia-badge">
-        <Award size={14} />
-        {streak === 0 ? "Comece hoje e entre no ranking" : `Você está entre os ${percentual}% mais consistentes`}
+      <div className="cm-consistencia-box">
+        <span>🧘</span> A consistência é o segredo!
       </div>
-
-      {ludico && (
-        <div className="cm-sequencia-ludico">
-          <span className="cm-sequencia-ludico-tag">{ludico.badge}</span>
-          <p className="cm-sequencia-ludico-texto">{ludico.texto}</p>
-        </div>
-      )}
     </div>
   );
 }
