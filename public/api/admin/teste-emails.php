@@ -81,8 +81,10 @@ function revogarAcessoAlunos(mysqli $mysqli, string $email): void
 // (ver HANDOFF.md, "Problema 2"), então config.php é a via mais segura.
 // Best-effort (try/catch sem relançar) — mesmo padrão do resto do
 // projeto: falha de envio não deve derrubar a liberação de acesso, que já
-// foi salva no banco antes desta função ser chamada.
-function enviarConviteComunidade(string $email, string $nome): bool
+// foi salva no banco antes desta função ser chamada. O erro real do
+// PHPMailer (ErrorInfo) é devolvido em $erroSaida pra quem chamou decidir
+// o que mostrar pro admin — nunca escondido.
+function enviarConviteComunidade(string $email, string $nome, ?string &$erroSaida = null): bool
 {
     $link = 'https://renatodepaula.com/comunidade';
     $saudacaoTexto = $nome !== '' ? "Olá, {$nome}," : 'Olá,';
@@ -115,7 +117,8 @@ HTML;
     // falha limpo (retorna false) em vez de deixar o PHPMailer estourar
     // exception com a config vazia.
     if (!defined('SMTP_COMUNIDADE_USER') || !defined('SMTP_COMUNIDADE_SENHA') || SMTP_COMUNIDADE_SENHA === '') {
-        error_log('enviarConviteComunidade: SMTP_COMUNIDADE_USER/SENHA não configurados em config.php');
+        $erroSaida = 'SMTP_COMUNIDADE_USER/SENHA não configurados em config.php';
+        error_log('enviarConviteComunidade: ' . $erroSaida);
         return false;
     }
 
@@ -140,7 +143,9 @@ HTML;
         $mail->Body = $html;
         $mail->AltBody = $textoPlano;
 
-        // DEBUG TEMPORÁRIO — remover depois de descobrir o erro do SMTP.
+        // Log de debug do SMTP fica só no error_log do servidor (nunca no
+        // corpo da resposta) — o erro que interessa pro admin já volta em
+        // $erroSaida/ErrorInfo abaixo.
         $mail->SMTPDebug = 2;
         $mail->Debugoutput = function ($str, $level) {
             error_log("SMTP DEBUG $level: $str");
@@ -149,23 +154,33 @@ HTML;
         $mail->send();
         return true;
     } catch (PHPMailerException $e) {
-        error_log("SMTP ERRO: " . $mail->ErrorInfo);
-        // DEBUG TEMPORÁRIO — expõe o erro real do SMTP na resposta em vez da
-        // mensagem genérica, pra dar pra ver no Network tab sem acesso ao
-        // error_log do servidor. Reverter pra `return false;` depois.
-        echo json_encode([
-            'ok' => false,
-            'msg' => 'ERRO SMTP: ' . $mail->ErrorInfo . ' | USER: ' . SMTP_COMUNIDADE_USER,
-        ]);
-        exit;
+        $erroSaida = $mail->ErrorInfo ?: $e->getMessage();
+        error_log("SMTP ERRO: " . $erroSaida);
+        return false;
     }
 }
 
 $metodo = $_SERVER['REQUEST_METHOD'];
 
+// Garante resposta JSON sempre, mesmo se algo (DB, PHPMailer, etc.) lançar
+// um erro inesperado no meio do caminho — antes disso um erro aqui podia
+// virar uma resposta 200 vazia/HTML, que o front não conseguia interpretar
+// nem como sucesso nem como erro (ver bug "Adicionar não mostra nada").
+try {
+    despacharTesteEmails($metodo, $mysqli);
+} catch (\Throwable $e) {
+    error_log('teste-emails.php erro inesperado: ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['ok' => false, 'success' => false, 'erro' => $e->getMessage(), 'error' => $e->getMessage()]);
+}
+exit;
+
+function despacharTesteEmails(string $metodo, mysqli $mysqli): void
+{
+
 if ($metodo === 'GET') {
     echo json_encode(['ok' => true, 'itens' => listarTesteEmails($mysqli)]);
-    exit;
+    return;
 }
 
 if ($metodo === 'POST') {
@@ -229,22 +244,55 @@ if ($metodo === 'POST') {
     // esbarrar no limite de execução do PHP; ok pro volume esperado aqui
     // (convite manual, não disparo em massa).
     $convitesEnviados = [];
-    $convitesFalharam = [];
+    $convitesFalharam = []; // [{email, erro}] — erro = ErrorInfo exato do PHPMailer, nunca escondido do admin
     if ($enviarEmail && $emailsParaConvite) {
         $primeiro = true;
         foreach ($emailsParaConvite as $emailConvite => $nomeConvite) {
             if (!$primeiro) sleep(1);
             $primeiro = false;
-            if (enviarConviteComunidade($emailConvite, $nomeConvite)) {
+            $erroEnvio = null;
+            if (enviarConviteComunidade($emailConvite, $nomeConvite, $erroEnvio)) {
                 $convitesEnviados[] = $emailConvite;
             } else {
-                $convitesFalharam[] = $emailConvite;
+                $convitesFalharam[] = ['email' => $emailConvite, 'erro' => $erroEnvio ?: 'Falha desconhecida ao enviar e-mail'];
             }
         }
     }
 
+    // Contrato simples pro front (botão "Adicionar" em AdminMeditacao.jsx):
+    // success/message/sent_via no caminho feliz, success/error (texto exato
+    // do PHPMailer) quando o convite falha. `ok`/demais campos continuam
+    // aqui só por compatibilidade, o front atual usa os novos.
+    $success = true;
+    $message = null;
+    $sentVia = null;
+    $error = null;
+    $liberados = count($adicionados) + count($jaExistiam);
+
+    if ($enviarEmail && count($emailsParaConvite) > 0) {
+        if (count($convitesFalharam) === 0) {
+            $sentVia = SMTP_COMUNIDADE_USER;
+            $message = count($convitesEnviados) === 1 ? 'E-mail enviado' : count($convitesEnviados) . ' e-mails enviados';
+        } else {
+            $detalheFalhas = implode('; ', array_map(fn($f) => "{$f['email']}: {$f['erro']}", $convitesFalharam));
+            $success = false;
+            $error = count($convitesEnviados) > 0
+                ? "E-mail liberado, mas falha ao enviar convite para: {$detalheFalhas}"
+                : $detalheFalhas;
+        }
+    } elseif ($liberados > 0) {
+        $message = 'E-mail liberado';
+    } elseif (count($invalidos) > 0) {
+        $success = false;
+        $error = 'Nenhum e-mail válido informado.';
+    }
+
     echo json_encode([
-        'ok' => true,
+        'ok' => $success,
+        'success' => $success,
+        'message' => $message,
+        'sent_via' => $sentVia,
+        'error' => $error,
         'adicionados' => $adicionados,
         'ja_existiam' => $jaExistiam,
         'invalidos' => $invalidos,
@@ -252,7 +300,7 @@ if ($metodo === 'POST') {
         'convites_falharam' => $convitesFalharam,
         'itens' => listarTesteEmails($mysqli),
     ]);
-    exit;
+    return;
 }
 
 if ($metodo === 'DELETE') {
@@ -275,7 +323,7 @@ if ($metodo === 'DELETE') {
     if (!$email) {
         http_response_code(400);
         echo json_encode(['erro' => 'Informe id ou email']);
-        exit;
+        return;
     }
 
     if ($id > 0) {
@@ -291,8 +339,9 @@ if ($metodo === 'DELETE') {
     revogarAcessoAlunos($mysqli, $email);
 
     echo json_encode(['ok' => true, 'itens' => listarTesteEmails($mysqli)]);
-    exit;
+    return;
 }
 
 http_response_code(405);
 echo json_encode(['erro' => 'Método não permitido']);
+}

@@ -272,23 +272,29 @@ function AdminMeditacao() {
     }
   }
 
+  // Extraído do useEffect abaixo pra também poder ser chamado depois de
+  // Adicionar/Remover — assim a tabela atualiza sozinha (novo e-mail no
+  // topo, já com a data de agora, direto do ORDER BY criado_em DESC do
+  // backend) sem precisar de F5.
+  async function recarregarTesteEmails() {
+    try {
+      const res = await fetch("/api/admin/teste-emails.php", { headers: { "X-Admin-Secret": secret } });
+      const dados = await res.json();
+      if (dados?.ok && Array.isArray(dados.itens)) {
+        setTesteEmails(dados.itens);
+      }
+    } catch {
+      // Endpoint PHP indisponível (ex: dev local sem PHP rodando) — mantém
+      // a lista como está, mas não trava o resto da página.
+    }
+  }
+
   useEffect(() => {
     if (!autenticado) return;
     let cancelado = false;
-    fetch("/api/admin/teste-emails.php", { headers: { "X-Admin-Secret": secret } })
-      .then((r) => r.json())
-      .then((dados) => {
-        if (!cancelado && dados?.ok && Array.isArray(dados.itens)) {
-          setTesteEmails(dados.itens);
-        }
-      })
-      .catch(() => {
-        // Endpoint PHP indisponível (ex: dev local sem PHP rodando) — a
-        // lista fica vazia, mas não trava o resto da página.
-      })
-      .finally(() => {
-        if (!cancelado) setTesteCarregando(false);
-      });
+    recarregarTesteEmails().finally(() => {
+      if (!cancelado) setTesteCarregando(false);
+    });
     return () => {
       cancelado = true;
     };
@@ -312,6 +318,7 @@ function AdminMeditacao() {
     if (emails.length === 0) return;
 
     setTesteErro("");
+    setTesteToast("");
     setTesteSalvando(true);
     try {
       const res = await fetch("/api/admin/teste-emails.php", {
@@ -320,37 +327,44 @@ function AdminMeditacao() {
         body: JSON.stringify({ emails, nome: testeNome.trim(), enviar_email: testeEnviarEmail }),
       });
 
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        throw new Error(res.status === 401 ? "Senha incorreta." : data.erro || "Falha ao adicionar.");
+      const data = await res.json().catch(() => null);
+      if (!data) {
+        throw new Error("O servidor não respondeu em JSON. Tente novamente em instantes.");
+      }
+      if (!res.ok && res.status === 401) {
+        throw new Error("Senha incorreta.");
       }
 
-      setTesteEmails(data.itens || []);
-      setTesteInput("");
-      setTesteNome("");
+      const alvo = emails.length === 1 ? emails[0] : `${emails.length} e-mails`;
 
-      const qtdProcessados = (data.adicionados || []).length + (data.ja_existiam || []).length;
-      const enviados = data.convites_enviados || 0;
-      const falharam = data.convites_falharam || [];
-      const erros = [];
-
-      if (testeEnviarEmail && qtdProcessados > 0) {
-        if (enviados > 0) {
-          setTesteToast(enviados === 1 ? "Convite enviado com sucesso!" : `${enviados} convites enviados com sucesso!`);
-        } else {
-          erros.push("E-mail liberado, mas não foi possível enviar o convite. Use \"Copiar link de convite\" pra mandar manualmente.");
-        }
-        if (falharam.length > 0 && enviados > 0) {
-          erros.push(`Falha ao enviar convite para: ${falharam.join(", ")}`);
-        }
-      } else if (qtdProcessados > 0) {
-        setTesteToast(qtdProcessados === 1 ? "E-mail liberado!" : `${qtdProcessados} e-mails liberados!`);
+      if (data.success === false) {
+        // Mostra o erro exato que veio do backend (ErrorInfo do PHPMailer
+        // quando é falha de envio) — nunca esconder.
+        setTesteErro(data.error || "Falha ao adicionar.");
+      } else {
+        setTesteToast(
+          data.sent_via
+            ? `✅ Convite enviado para ${alvo} e e-mail disparado via ${data.sent_via}`
+            : `✅ ${data.message || "E-mail liberado"} para ${alvo}`
+        );
+        // Envio parcial em lote: liberou mas algum convite falhou — ainda é
+        // sucesso (data.success !== false), mas o admin precisa saber quais.
+        if (data.error) setTesteErro(data.error);
+        setTesteInput("");
+        setTesteNome("");
       }
 
       if ((data.invalidos || []).length > 0) {
-        erros.push(`Ignorado(s) por formato inválido: ${data.invalidos.join(", ")}`);
+        setTesteErro((atual) => {
+          const aviso = `Ignorado(s) por formato inválido: ${data.invalidos.join(", ")}`;
+          return atual ? `${atual} ${aviso}` : aviso;
+        });
       }
-      if (erros.length > 0) setTesteErro(erros.join(" "));
+
+      // Busca a lista atualizada em vez de confiar só no que o POST
+      // devolveu — o novo e-mail aparece no topo (ORDER BY criado_em DESC)
+      // sem precisar de F5.
+      await recarregarTesteEmails();
     } catch (err) {
       setTesteErro(err.message || "Não foi possível adicionar.");
     } finally {
