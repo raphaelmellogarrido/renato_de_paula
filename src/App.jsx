@@ -6,6 +6,7 @@ import ScrollToTop from "./components/ScrollToTop";
 import MetaPixelTracker from "./components/MetaPixelTracker";
 import Home from "./pages/Home";
 import "./App.css";
+// import "./pages/comunidade/Login.css";
 
 const Contato = lazy(() => import("./pages/Contato"));
 const Meditacao = lazy(() => import("./pages/Meditacao"));
@@ -28,9 +29,7 @@ const ROTAS_TELA_CHEIA_COMUNIDADE = ["/comunidade", "/esqueceu-senha", "/redefin
 
 function App() {
   const location = useLocation();
-  const isComunidade = ROTAS_TELA_CHEIA_COMUNIDADE.some(
-    (rota) => location.pathname === rota || location.pathname.startsWith(rota + "/")
-  );
+  const isComunidade = ROTAS_TELA_CHEIA_COMUNIDADE.some((rota) => location.pathname === rota || location.pathname.startsWith(rota + "/"));
 
   return (
     <>

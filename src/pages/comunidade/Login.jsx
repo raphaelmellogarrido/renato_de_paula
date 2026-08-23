@@ -148,7 +148,7 @@ export default function ComunidadeLogin() {
   return (
     <div className="cm-login-page">
       <div className="cm-login-card">
-        <h1 className="cm-login-title">{modo === "criar" ? "Crie sua senha do Clube" : "Entrar no Clube Presença"}</h1>
+        <h1 className="cm-login-title">{modo === "criar" ? "Crie sua senha do Clube" : "Entrar na comunidade"}</h1>
         {modo === "criar" && <p className="cm-login-subtitle">Detectamos sua compra na Hotmart. Crie uma senha só pro Clube.</p>}
 
         {erro && <div className="cm-login-alert cm-login-alert-erro">{erro}</div>}
@@ -252,20 +252,7 @@ export default function ComunidadeLogin() {
               {confirmarSenha && !senhasIguais && <span className="cm-login-error">Senhas não coincidem</span>}
             </div>
           )}
-
-          {/* Antes o disabled também checava email/senha vazio no state. Com
-              autofill do Chrome (preenche o DOM sem sempre disparar onChange
-              a tempo), o state ficava vazio e o botão travava disabled+cinza
-              claro num card branco — visualmente sumia, mesmo sempre presente
-              no DOM. Agora só desabilita por loading; a validação de campo
-              vazio/senha fraca continua sendo feita dentro do handleSubmit
-              (e o `required` do HTML barra o submit nativo se estiver vazio). */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="cm-login-submit is-ready"
-            style={{ display: "block", visibility: "visible", opacity: 1, width: "100%", height: "52px", background: "#2b2b2b", color: "#fff", border: "none", borderRadius: "999px", fontSize: "15px", fontWeight: 700, marginTop: "24px", cursor: "pointer" }}
-          >
+          <button type="submit" disabled={loading} className="cm-login-submit">
             {loading ? "Carregando..." : modo === "criar" ? "Criar conta e começar" : "Entrar"}
           </button>
         </form>
