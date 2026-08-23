@@ -1154,6 +1154,31 @@
   overflow-y: visible !important;
 }
 
+/* Ajuste fino (23/08): reduz ~70px de altura interna do card pra fechar o
+   alinhamento das 3 colunas do dashboard com "Sua prática hoje" (que
+   perdeu 1 comentário, ver POR_PAGINA em DificuldadeDoDia.jsx). Só encolhe
+   o miolo (padding do card + espaçamento entre os 3 itens) — não mexe no
+   conteúdo/textos. */
+.cm-grid-desafio {
+  padding: 16px 22px;
+}
+
+.cm-grid-desafio h3 {
+  margin-bottom: 8px;
+}
+
+.cm-grid-desafio .cm-desafio-item {
+  padding: 4px 0;
+}
+
+.cm-grid-desafio .cm-desafio-progress {
+  margin-top: 8px;
+}
+
+.cm-grid-desafio .cm-desafio-status {
+  margin-top: 6px;
+}
+
 /* Celebração ao completar os 3 itens: lótus abrindo/brilhando por 2.5s
    por CIMA do checklist (overlay absolute), nunca no fluxo normal — assim
    ela não empurra/encolhe a altura do card. Anima só opacity + scale
@@ -1586,6 +1611,24 @@
   border-radius: var(--cm-radius);
   padding: 20px;
   text-align: center;
+}
+
+/* Ajuste fino (23/08): reduz ~70px de altura interna do card pra fechar o
+   alinhamento das 3 colunas do dashboard com "Sua prática hoje" (que
+   perdeu 1 comentário, ver POR_PAGINA em DificuldadeDoDia.jsx). Só encolhe
+   o miolo (anel + trilha) — não mexe no conteúdo/textos. */
+.cm-jornada {
+  padding: 14px 20px;
+}
+
+.cm-jornada-anel-wrap {
+  width: 110px;
+  height: 110px;
+  margin: 2px auto 10px;
+}
+
+.cm-jornada-trilha {
+  margin-bottom: 10px;
 }
 
 .cm-jornada-topo {

@@ -8,7 +8,7 @@ const COMENTARIOS_URL = "/api/hotmart/comentarios.php";
 // livre do dia, compartilhada entre todos os alunos (não reseta por
 // semana/dia, é a mesma tabela permanente de comentarios.php).
 const AULA_ID = "dificuldade_do_dia";
-const POR_PAGINA = 7;
+const POR_PAGINA = 6; // era 7 — ajuste fino de altura (23/08) pra alinhar o final das 3 colunas de /comunidade
 // Limite visual do textarea: card tem ~700px de largura, fonte 14px (~8px/char,
 // ~87 chars/linha) — 2 linhas dariam ~174 chars, mas 140 garante que também
 // caiba em 2 linhas no mobile (card mais estreito). Mesmo limite do
@@ -28,7 +28,7 @@ const EVENTO_PARTILHA_CRIADA = "comunidadePartilhaCriada";
 // aula_id fixo e per_page=7 em vez de 10. Vazio (nenhum comentário ainda)
 // mostra "Seja o primeiro..." DENTRO deste mesmo card, nunca como card
 // separado (era isso que o FeedComunidade fazia, empilhado embaixo deste —
-// removido de Dashboard.jsx a pedido do cliente). Paginado de 7 em 7.
+// removido de Dashboard.jsx a pedido do cliente). Paginado de 6 em 6.
 function DificuldadeDoDia() {
   const email = useEmailSessao();
   const [itens, setItens] = useState([]);
