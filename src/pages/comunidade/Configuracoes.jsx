@@ -102,6 +102,12 @@ function Configuracoes() {
   );
   const [primeiroNome, setPrimeiroNome] = useState(() => lerLocal(chaveUsuario(CHAVE_BASE_USERNAME, email)));
 
+  // Borda só fica verde enquanto o campo está focado e válido; ao sair do
+  // campo (blur) ela volta pra cor neutra (var(--cm-border)), em vez de
+  // ficar verde permanentemente depois da primeira validação.
+  const [focoNome, setFocoNome] = useState(false);
+  const [focoPrimeiro, setFocoPrimeiro] = useState(false);
+
   // Troca de conta nesta mesma aba: recarrega os campos do usuário novo em
   // vez de deixar os dados do anterior na tela. Ajuste direto no render
   // (não em efeito), mesmo padrão já usado nos outros hooks/páginas por
@@ -235,16 +241,18 @@ function Configuracoes() {
                 const valor = e.target.value;
                 if (valor.length <= 20) setNomeSobrenome(valor);
               }}
-              className={`cm-config-input ${nomeSobrenome ? (nomeOk ? "is-valid" : "is-invalid") : ""}`}
+              onFocus={() => setFocoNome(true)}
+              onBlur={() => setFocoNome(false)}
+              className={`cm-config-input ${focoNome && nomeSobrenome ? (nomeOk ? "is-valid" : "is-invalid") : ""}`}
             />
-            {nomeSobrenome && nomeOk && (
+            {focoNome && nomeSobrenome && nomeOk && (
               <span className="cm-config-icon-right" aria-hidden="true">
                 <Check size={18} strokeWidth={3} className="cm-config-icon-valid" />
               </span>
             )}
           </div>
           <div className="cm-config-field-footer">
-            <span className="cm-login-hint">É esse nome que aparece no Ranking de Presença e na Comunidade.</span>
+            <span className="cm-config-hint">É esse nome que aparece no Ranking de Presença e na Comunidade.</span>
             <span className="cm-config-counter">{nomeSobrenome.length}/20</span>
           </div>
           {nomeSobrenome && !nomeOk && <span className="cm-config-error">Use apenas letras e espaço (mínimo 2 caracteres)</span>}
@@ -264,9 +272,11 @@ function Configuracoes() {
                 const valor = e.target.value;
                 if (valor.length <= 11) setPrimeiroNome(valor);
               }}
-              className={`cm-config-input ${primeiroNome ? (primeiroNomeOk ? "is-valid" : "is-invalid") : ""}`}
+              onFocus={() => setFocoPrimeiro(true)}
+              onBlur={() => setFocoPrimeiro(false)}
+              className={`cm-config-input ${focoPrimeiro && primeiroNome ? (primeiroNomeOk ? "is-valid" : "is-invalid") : ""}`}
             />
-            {primeiroNome && primeiroNomeOk && (
+            {focoPrimeiro && primeiroNome && primeiroNomeOk && (
               <span className="cm-config-icon-right" aria-hidden="true">
                 <Check size={18} strokeWidth={3} className="cm-config-icon-valid" />
               </span>

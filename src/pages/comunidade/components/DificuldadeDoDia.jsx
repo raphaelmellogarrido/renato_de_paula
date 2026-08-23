@@ -8,7 +8,12 @@ const COMENTARIOS_URL = "/api/hotmart/comentarios.php";
 // livre do dia, compartilhada entre todos os alunos (não reseta por
 // semana/dia, é a mesma tabela permanente de comentarios.php).
 const AULA_ID = "dificuldade_do_dia";
-const POR_PAGINA = 5;
+const POR_PAGINA = 7;
+// Limite visual do textarea: card tem ~700px de largura, fonte 14px (~8px/char,
+// ~87 chars/linha) — 2 linhas dariam ~174 chars, mas 140 garante que também
+// caiba em 2 linhas no mobile (card mais estreito). Mesmo limite do
+// -webkit-line-clamp:2 em cm-comentario-card-texto (ComunidadeApp.css).
+const LIMITE_TEXTO = 140;
 // Mesmo padrão de acoplamento por evento global (literal, não import) já
 // usado em useMeditacaoHoje.js/RankingPresenca.jsx/MeditandoJunto.jsx —
 // avisa o card "Meditando junto" que uma partilha nova acabou de entrar,
@@ -18,12 +23,12 @@ const EVENTO_PARTILHA_CRIADA = "comunidadePartilhaCriada";
 // Card "Sua prática hoje" — único conteúdo da coluna 1 do dashboard
 // (.cm-grid-feed/.cm-feed-empilhado, ver Dashboard.jsx/ComunidadeApp.css),
 // sempre visível (não depende mais de nenhum switch/view). Sem foto, sem
-// overlay: pergunta + textarea + os 5 comentários mais recentes de todos
+// overlay: pergunta + textarea + os 7 comentários mais recentes de todos
 // os alunos, paginados — mesmo backend de ComentariosFeed.jsx, só com
-// aula_id fixo e per_page=5 em vez de 10. Vazio (nenhum comentário ainda)
+// aula_id fixo e per_page=7 em vez de 10. Vazio (nenhum comentário ainda)
 // mostra "Seja o primeiro..." DENTRO deste mesmo card, nunca como card
 // separado (era isso que o FeedComunidade fazia, empilhado embaixo deste —
-// removido de Dashboard.jsx a pedido do cliente).
+// removido de Dashboard.jsx a pedido do cliente). Paginado de 7 em 7.
 function DificuldadeDoDia() {
   const email = useEmailSessao();
   const [itens, setItens] = useState([]);
@@ -112,8 +117,17 @@ function DificuldadeDoDia() {
       <p className="cm-duvida-sub">Compartilhe aqui. Sua experiência pode acolher outra pessoa.</p>
 
       <form className="cm-duvida-form" onSubmit={handleEnviar}>
-        <textarea placeholder="Hoje eu senti..." value={texto} onChange={(e) => setTexto(e.target.value)} rows={3} />
+        <textarea
+          placeholder="Hoje eu senti..."
+          value={texto}
+          onChange={(e) => setTexto(e.target.value)}
+          rows={3}
+          maxLength={LIMITE_TEXTO}
+        />
         <div className="cm-duvida-form-acoes">
+          <span className="cm-duvida-contador">
+            {texto.length}/{LIMITE_TEXTO}
+          </span>
           <button type="submit" disabled={!texto.trim() || !email || enviando}>
             {enviando ? "Enviando..." : "Compartilhar"}
           </button>

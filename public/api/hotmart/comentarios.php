@@ -13,7 +13,7 @@ garantirEstruturaClube($mysqli); // cria a tabela comentarios se ainda não exis
 // POST { email, nome, aula_id, comentario } -> INSERT
 // Permanente: não é afetado por nenhum reset semanal (DesafioSemana etc.).
 // `per_page` é opcional (default 10) — o widget "Dificuldade do dia"
-// (DificuldadeDoDia.jsx) pede 5; ComentariosFeed.jsx não manda, fica em 10.
+// (DificuldadeDoDia.jsx) pede 7; ComentariosFeed.jsx não manda, fica em 10.
 $metodo = $_SERVER['REQUEST_METHOD'];
 
 if ($metodo === 'GET') {
