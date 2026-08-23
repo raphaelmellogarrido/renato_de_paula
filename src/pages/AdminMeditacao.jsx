@@ -111,6 +111,21 @@ function AdminMeditacao() {
   const [desafiosSucesso, setDesafiosSucesso] = useState(false);
   const [desafiosErro, setDesafiosErro] = useState("");
 
+  // Seção "Acesso de Teste" — libera amigos na comunidade sem compra
+  // Hotmart, sem precisar mexer no SQL manualmente
+  // (public/api/admin/teste-emails.php). Mesmo padrão de auth
+  // (X-Admin-Secret) e mesmo back-end PHP separado das seções acima.
+  const [testeEmails, setTesteEmails] = useState([]);
+  const [testeCarregando, setTesteCarregando] = useState(true);
+  const [testeInput, setTesteInput] = useState("");
+  const [testeNome, setTesteNome] = useState("");
+  const [testeSalvando, setTesteSalvando] = useState(false);
+  const [testeToast, setTesteToast] = useState("");
+  const [testeErro, setTesteErro] = useState("");
+  const [testeBusca, setTesteBusca] = useState("");
+  const [testeRemovendo, setTesteRemovendo] = useState(null);
+  const [linkCopiado, setLinkCopiado] = useState(false);
+
   useEffect(() => {
     if (!autenticado) return;
     let cancelado = false;
@@ -255,6 +270,117 @@ function AdminMeditacao() {
       setSalvandoDesafios(false);
     }
   }
+
+  useEffect(() => {
+    if (!autenticado) return;
+    let cancelado = false;
+    fetch("/api/admin/teste-emails.php", { headers: { "X-Admin-Secret": secret } })
+      .then((r) => r.json())
+      .then((dados) => {
+        if (!cancelado && dados?.ok && Array.isArray(dados.itens)) {
+          setTesteEmails(dados.itens);
+        }
+      })
+      .catch(() => {
+        // Endpoint PHP indisponível (ex: dev local sem PHP rodando) — a
+        // lista fica vazia, mas não trava o resto da página.
+      })
+      .finally(() => {
+        if (!cancelado) setTesteCarregando(false);
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [autenticado, secret]);
+
+  useEffect(() => {
+    if (!testeToast) return;
+    const t = setTimeout(() => setTesteToast(""), 3000);
+    return () => clearTimeout(t);
+  }, [testeToast]);
+
+  // Aceita colar vários e-mails separados por vírgula, espaço ou quebra de
+  // linha — o campo "nome" só se aplica quando sobra exatamente 1 e-mail.
+  function parseEmailsColados(texto) {
+    return [...new Set(texto.split(/[\s,]+/).map((e) => e.trim().toLowerCase()).filter(Boolean))];
+  }
+
+  async function handleAdicionarTeste(e) {
+    e.preventDefault();
+    const emails = parseEmailsColados(testeInput);
+    if (emails.length === 0) return;
+
+    setTesteErro("");
+    setTesteSalvando(true);
+    try {
+      const res = await fetch("/api/admin/teste-emails.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Admin-Secret": secret },
+        body: JSON.stringify({ emails, nome: testeNome.trim() }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(res.status === 401 ? "Senha incorreta." : data.erro || "Falha ao adicionar.");
+      }
+
+      setTesteEmails(data.itens || []);
+      setTesteInput("");
+      setTesteNome("");
+
+      const qtd = (data.adicionados || []).length;
+      if (qtd > 0) {
+        setTesteToast(qtd === 1 ? "E-mail liberado!" : `${qtd} e-mails liberados!`);
+      } else if ((data.ja_existiam || []).length > 0) {
+        setTesteToast("Esse(s) e-mail(s) já tinham acesso de teste.");
+      }
+      if ((data.invalidos || []).length > 0) {
+        setTesteErro(`Ignorado(s) por formato inválido: ${data.invalidos.join(", ")}`);
+      }
+    } catch (err) {
+      setTesteErro(err.message || "Não foi possível adicionar.");
+    } finally {
+      setTesteSalvando(false);
+    }
+  }
+
+  async function handleRemoverTeste(item) {
+    if (!window.confirm(`Remover ${item.email} do acesso de teste? Essa pessoa não consegue mais logar sem compra.`)) return;
+
+    setTesteErro("");
+    setTesteRemovendo(item.id);
+    try {
+      const res = await fetch(`/api/admin/teste-emails.php?id=${item.id}`, {
+        method: "DELETE",
+        headers: { "X-Admin-Secret": secret },
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(res.status === 401 ? "Senha incorreta." : data.erro || "Falha ao remover.");
+      }
+
+      setTesteEmails(data.itens || []);
+      setTesteToast("E-mail removido");
+    } catch (err) {
+      setTesteErro(err.message || "Não foi possível remover.");
+    } finally {
+      setTesteRemovendo(null);
+    }
+  }
+
+  async function handleCopiarLinkConvite() {
+    const texto = "Você foi liberado como teste no Clube Presença! Entre em https://renatodepaula.com/comunidade e crie sua senha com o e-mail que eu cadastrei.";
+    await navigator.clipboard.writeText(texto);
+    setLinkCopiado(true);
+    setTimeout(() => setLinkCopiado(false), 2000);
+  }
+
+  const testeEmailsFiltrados = testeEmails.filter((item) => {
+    const busca = testeBusca.trim().toLowerCase();
+    if (!busca) return true;
+    return item.email.toLowerCase().includes(busca) || (item.nome || "").toLowerCase().includes(busca);
+  });
 
   async function handleSalvarEncontro(e) {
     e.preventDefault();
@@ -818,6 +944,108 @@ function AdminMeditacao() {
                 {salvandoDesafios ? "Salvando..." : "Salvar Desafios"}
               </button>
             </form>
+          )}
+        </div>
+
+        <div className="form-card" style={{ marginTop: 40 }}>
+          <h3>Acesso de Teste 🔑</h3>
+          <p style={{ marginTop: -8, marginBottom: 16, color: "#666" }}>
+            Convide amigos sem mexer no SQL — libera o e-mail pra entrar em /comunidade como teste, sem precisar de compra na Hotmart.
+          </p>
+
+          {testeToast && <div className="success-box">{testeToast}</div>}
+          {testeErro && <div className="error-box">{testeErro}</div>}
+
+          <form onSubmit={handleAdicionarTeste} noValidate>
+            <div className="field">
+              <label htmlFor="teste-emails">E-mail(s)</label>
+              <textarea
+                id="teste-emails"
+                rows={3}
+                value={testeInput}
+                onChange={(e) => setTesteInput(e.target.value)}
+                placeholder="amigo@teste.com, outro@teste.com&#10;(cole vários separados por vírgula, espaço ou linha)"
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="teste-nome">Nome (opcional, só se for 1 e-mail)</label>
+              <input
+                id="teste-nome"
+                type="text"
+                value={testeNome}
+                onChange={(e) => setTesteNome(e.target.value)}
+                placeholder="Nome do amigo"
+              />
+            </div>
+            <button type="submit" className="btn btn-primary btn-block" disabled={!testeInput.trim() || testeSalvando}>
+              {testeSalvando ? "Adicionando..." : "Adicionar"}
+            </button>
+          </form>
+
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginTop: 24, marginBottom: 12 }}>
+            <strong>{testeEmails.length} e-mail(s) com acesso de teste</strong>
+            <button type="button" className="btn btn-secondary" onClick={handleCopiarLinkConvite}>
+              {linkCopiado ? "Link copiado!" : "Copiar link de convite"}
+            </button>
+          </div>
+
+          <div className="field">
+            <input
+              type="text"
+              value={testeBusca}
+              onChange={(e) => setTesteBusca(e.target.value)}
+              placeholder="Buscar por e-mail ou nome..."
+            />
+          </div>
+
+          {testeCarregando ? (
+            <p style={{ color: "#999" }}>Carregando...</p>
+          ) : testeEmailsFiltrados.length === 0 ? (
+            <p style={{ color: "#999" }}>{testeEmails.length === 0 ? "Nenhum e-mail de teste ainda." : "Nada encontrado pra essa busca."}</p>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ textAlign: "left", borderBottom: "2px solid #ddd" }}>
+                    <th style={{ padding: "8px 12px" }}>Email</th>
+                    <th style={{ padding: "8px 12px" }}>Nome</th>
+                    <th style={{ padding: "8px 12px" }}>Adicionado em</th>
+                    <th style={{ padding: "8px 12px" }}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {testeEmailsFiltrados.map((item) => (
+                    <tr key={item.id} style={{ borderBottom: "1px solid #eee" }}>
+                      <td style={{ padding: "8px 12px" }}>{item.email}</td>
+                      <td style={{ padding: "8px 12px" }}>{item.nome || "-"}</td>
+                      <td style={{ padding: "8px 12px" }}>{formatarData(item.criado_em)}</td>
+                      <td style={{ padding: "8px 12px" }}>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoverTeste(item)}
+                          disabled={testeRemovendo === item.id}
+                          aria-label={`Remover ${item.email}`}
+                          title="Remover"
+                          style={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: "50%",
+                            border: "1px solid #d33",
+                            color: "#d33",
+                            background: "transparent",
+                            cursor: "pointer",
+                            lineHeight: 1,
+                            fontWeight: 700,
+                          }}
+                        >
+                          ×
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>

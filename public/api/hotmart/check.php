@@ -15,5 +15,7 @@ if (!$email) { echo json_encode(['tem_acesso'=>false]); exit; }
 require __DIR__ . '/_conexao.php';
 
 $email_safe = $mysqli->real_escape_string($email);
-$res = $mysqli->query("SELECT 1 FROM alunos WHERE email='$email_safe' AND status='ativo' LIMIT 1");
+// 'teste' = acesso liberado manualmente pelo admin sem compra (ver
+// public/api/admin/teste-emails.php), tratado igual a 'ativo' aqui.
+$res = $mysqli->query("SELECT 1 FROM alunos WHERE email='$email_safe' AND status IN ('ativo','teste') LIMIT 1");
 echo json_encode(['tem_acesso' => $res && $res->num_rows > 0]);

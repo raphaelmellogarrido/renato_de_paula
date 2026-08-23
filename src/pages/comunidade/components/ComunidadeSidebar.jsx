@@ -50,10 +50,11 @@ function ComunidadeSidebar({ session, onSair }) {
           <div className="cm-sidebar-avatar">{iniciais(nome)}</div>
           <div className="cm-sidebar-user-info">
             <strong>Olá, {nome.split(" ")[0]}</strong>
-            <span className="cm-badge-membro">Membro Presença</span>
+            <span className="cm-badge-membro">Membro da comunidade</span>
           </div>
-          <button type="button" className="cm-sidebar-logout" onClick={onSair} aria-label="Sair">
+          <button type="button" className="cm-sidebar-logout" onClick={onSair} aria-label="Sair da comunidade" title="Sair da comunidade">
             <LogOut size={15} />
+            <span>Sair</span>
           </button>
         </div>
         <p className="cm-sidebar-copy">© 2026 Comunidade meditação raiz</p>

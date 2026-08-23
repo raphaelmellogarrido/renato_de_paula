@@ -88,6 +88,12 @@ if ($metodo === 'POST') {
     $novoId = $stmt->insert_id;
     $stmt->close();
 
+    // Invalida o cache em disco do "Meditando junto" (pulso.php, cache de
+    // 60s) — mesmo padrão de presenca.php pro ranking/pulso ao marcar
+    // presença. Sem isso "partilhas hoje" só subiria depois do cache
+    // expirar sozinho (até 60s), mesmo com o front pedindo refetch na hora.
+    @unlink(sys_get_temp_dir() . '/comunidade_pulso_cache.json');
+
     echo json_encode(['ok' => true, 'id' => $novoId]);
     exit;
 }

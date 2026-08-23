@@ -138,6 +138,21 @@ function garantirEstruturaClube(mysqli $mysqli): void
     if ($temLiveLiberada && $temLiveLiberada->num_rows === 0) {
         $mysqli->query("ALTER TABLE config_encontro ADD COLUMN live_liberada TINYINT(1) NOT NULL DEFAULT 0");
     }
+
+    // Acesso de Teste (painel /admin, seção "Acesso de Teste") — lista de
+    // convite/auditoria dos e-mails liberados manualmente sem compra na
+    // Hotmart. A liberação de fato acontece em `alunos` (status='teste'),
+    // lida por login.php/register.php/check.php igual a um comprador
+    // normal (status='ativo') — ver public/api/admin/teste-emails.php.
+    $mysqli->query(
+        "CREATE TABLE IF NOT EXISTS comunidade_teste_emails (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            email VARCHAR(255) NOT NULL UNIQUE,
+            nome VARCHAR(255) NULL,
+            criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+            criado_por VARCHAR(100)
+        )"
+    );
 }
 
 // Streak real (dias consecutivos até hoje/ontem) calculado a partir das

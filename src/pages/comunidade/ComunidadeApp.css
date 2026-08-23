@@ -111,6 +111,7 @@
   flex-direction: column;
   gap: 3px;
   flex: 1;
+  overflow-y: auto;
 }
 
 .cm-sidebar-nav-item {
@@ -149,7 +150,9 @@
 }
 
 .cm-sidebar-footer {
-  margin-top: 12px;
+  margin-top: auto;
+  padding-top: 12px;
+  flex-shrink: 0;
 }
 
 .cm-sidebar-user-card {
@@ -200,13 +203,22 @@
   background: transparent;
   border: none;
   color: var(--cm-text-soft);
-  padding: 6px;
+  padding: 6px 8px;
   border-radius: 8px;
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
   flex-shrink: 0;
   transition:
     background 0.15s ease,
     color 0.15s ease;
+}
+
+.cm-sidebar-logout span {
+  font-size: 0.6rem;
+  font-weight: 500;
+  line-height: 1;
 }
 
 .cm-sidebar-logout:hover {
@@ -236,29 +248,37 @@
    "Próximo encontro ao vivo" na coluna 3, empurrar pra baixo o conteúdo
    de OUTRA coluna que dividia a mesma linha, ex. "Sua Jornada" na coluna
    2 — resultado: topo desalinhado entre colunas + vão gigante entre
-   Sequência e Sua Jornada). Cada coluna agora empilha seu próprio
-   conteúdo com flexbox (ver .cm-feed-empilhado, .cm-coluna-meio,
-   .cm-coluna-direita) e cresce só com a altura do que ela mesma tem —
-   `align-items: start` garante que as 3 colunas começam sempre na mesma
-   linha Y do topo. */
+   Sequência e Sua Jornada). Cada coluna empilha seu próprio conteúdo com
+   flexbox (ver .cm-feed-empilhado, .cm-coluna-meio, .cm-coluna-direita) —
+   topo sempre alinhado. `align-items: stretch` (em vez de `start`) faz as
+   3 colunas terminarem alinhadas embaixo também: cada coluna vira um item
+   de grid com a altura da maior das três (hoje normalmente colunas 2+3
+   empilhadas, já que a coluna 1 só tem o card "Sua prática hoje"); quem
+   não é a mais alta estica pra acompanhar (.cm-grid-feed{height:100%} +
+   .cm-duvida{flex:1} esticam o card até o fim da coluna 1; o
+   `margin-top: auto` no último widget de .cm-coluna-meio/-direita, mais
+   abaixo, cobre o caso oposto — coluna 1 mais alta que 2/3). */
 .cm-main {
   padding: 32px;
   width: 100%;
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) 360px 360px;
   gap: 24px;
-  align-items: start;
+  align-items: stretch;
   background: #f9f7f2;
 }
 
-/* Coluna 1: "Sua prática hoje" (DificuldadeDoDia) + feed da Comunidade
-   empilhados, com espaço entre os dois cards. */
+/* Coluna 1: só "Sua prática hoje" (DificuldadeDoDia) — height:100% pra
+   esticar até a altura da linha do grid (ver .cm-main acima) e o card
+   .cm-duvida abaixo, com flex:1, crescer até preencher essa altura, pra
+   sua borda de baixo terminar alinhada com Meditando junto/Ranking. */
 .cm-grid-feed,
 .cm-feed-empilhado {
   display: flex;
   flex-direction: column;
   gap: 24px;
   min-width: 0;
+  height: 100%;
 }
 
 /* Coluna 2: botão "Já meditei hoje" + Sequência + Sua Jornada + Meditando
@@ -279,6 +299,16 @@
   flex-direction: column;
   gap: 24px;
   min-width: 0;
+}
+
+/* Cola o último widget de cada coluna (Meditando junto / Ranking de
+   Presença) no rodapé da coluna, caso ela sobre espaço esticada por
+   `align-items: stretch` acima (ex: coluna 1 crescer mais que 2/3) — o
+   `gap: 24px` continua garantido como distância mínima até ele, o
+   margin-top:auto só consome o que sobrar depois disso. */
+.cm-coluna-meio > *:last-child,
+.cm-coluna-direita > *:last-child {
+  margin-top: auto;
 }
 
 @media (max-width: 1200px) {
@@ -404,6 +434,11 @@
   box-shadow: var(--cm-shadow);
   padding: 32px;
   color: #1a1a1a;
+  /* flex:1 dentro de .cm-grid-feed (height:100%, ver acima) — estica o
+     card até o fim da coluna 1, pra sua borda de baixo alinhar com
+     Meditando junto/Ranking mesmo quando o conteúdo dele é mais curto que
+     a soma das colunas 2/3. */
+  flex: 1;
 }
 
 .cm-duvida-eyebrow {
@@ -2625,11 +2660,10 @@
   font-size: 0.9rem;
 }
 
-/* Card do feed liberado — mesma moldura do .cm-duvida acima dele na coluna
-   1 (ver Dashboard.jsx: DificuldadeDoDia + FeedComunidade empilhados).
-   Antes essa section não tinha fundo/borda/padding nenhum, então o post
-   (ou a mensagem de empty state) aparecia solto direto no fundo da página,
-   sem parecer o "segundo card" da coluna. */
+/* Card do feed liberado — FeedComunidade.jsx não é mais montado em
+   Dashboard.jsx (era o "card fantasma" duplicado embaixo de "Sua prática
+   hoje", pedido do cliente pra tirar). Classe mantida porque o componente
+   ainda existe e pode voltar a ser usado em outra tela. */
 .cm-feed-liberado {
   background: #f9f7f2;
   border: 1px solid var(--cm-border);

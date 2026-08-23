@@ -3,14 +3,22 @@
 // Alimenta o card "Meditando junto" (MeditandoJunto.jsx), coluna do meio
 // do dashboard, logo abaixo de "Sua Jornada". 3 números 100% reais, nada
 // mockado:
-//   meditaram_hoje  -> alunos distintos com presença hoje (presencas.data)
-//   partilhas_hoje  -> posts no mural hoje (posts_comunidade.created_at)
-//   total_sequencia / maior_sequencia / qtd_7_mais -> streak de CADA aluno
-//     (mesmo algoritmo de calcularStreakEmail em _conexao.php: dias
-//     consecutivos pra trás a partir de hoje/ontem, qualquer buraco
-//     quebra), agregado pra não expor o "X em sequência de Y dias" que
-//     quebra visualmente quando os alunos têm sequências de tamanhos
-//     diferentes.
+//   meditaram_hoje    -> alunos distintos com presença hoje (presencas.data)
+//   partilhas_hoje    -> comentários hoje (comentarios.created_at) — ANTES
+//     contava posts_comunidade, mas esse mural saiu do ar (FeedComunidade
+//     não é mais montado em Dashboard.jsx) e nada grava lá desde então, por
+//     isso sempre mostrava 0 mesmo com gente comentando. A única forma real
+//     de "partilhar" hoje é comentar em algum mural (comentarios.php),
+//     então conta a tabela `comentarios` inteira (todos os aula_id: "Sua
+//     prática hoje" e o mural "geral" das Aulas), não só um.
+//   total_dias_somados -> soma do streak atual de CADA aluno (mesmo
+//     algoritmo de calcularStreakEmail em _conexao.php: dias consecutivos
+//     pra trás a partir de hoje/ontem, qualquer buraco quebra) — substitui
+//     o antigo "X em sequência · maior: Y dias / Z com 7+ dias", que ficava
+//     feio quando os alunos tinham sequências de tamanhos muito diferentes.
+//     Não precisa de CONVERT_TZ em nenhuma dessas queries: a sessão MySQL já
+//     roda fixa em -03:00 (ver `SET time_zone` em _conexao.php), então
+//     CURDATE()/created_at já resolvem em horário de Brasília.
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, OPTIONS');
@@ -42,7 +50,7 @@ $meditaramHoje = (int) $mysqli->query(
 )->fetch_assoc()['n'];
 
 $partilhasHoje = (int) $mysqli->query(
-    "SELECT COUNT(*) AS n FROM posts_comunidade WHERE DATE(created_at) = CURDATE()"
+    "SELECT COUNT(*) AS n FROM comentarios WHERE DATE(created_at) = CURDATE()"
 )->fetch_assoc()['n'];
 
 // Uma query só (não 1 por aluno) pra montar o streak de todo mundo: lê
@@ -54,9 +62,7 @@ while ($row = $res->fetch_assoc()) {
     $datasPorEmail[$row['email']][$row['data']] = true;
 }
 
-$totalSequencia = 0; // alunos com streak >= 2 (1 dia sozinho não é "sequência")
-$maiorSequencia = 0;
-$qtd7Mais = 0;
+$totalDiasSomados = 0; // soma do streak atual de todo mundo (streak 0 só soma zero, sem checagem à parte)
 $hoje = new DateTime('today');
 
 foreach ($datasPorEmail as $marcados) {
@@ -70,18 +76,14 @@ foreach ($datasPorEmail as $marcados) {
         $cursor->modify('-1 day');
     }
 
-    if ($streak >= 2) $totalSequencia++;
-    if ($streak >= 7) $qtd7Mais++;
-    if ($streak > $maiorSequencia) $maiorSequencia = $streak;
+    $totalDiasSomados += $streak;
 }
 
 $json = json_encode([
     'ok' => true,
     'meditaram_hoje' => $meditaramHoje,
     'partilhas_hoje' => $partilhasHoje,
-    'total_sequencia' => $totalSequencia,
-    'maior_sequencia' => $maiorSequencia,
-    'qtd_7_mais' => $qtd7Mais,
+    'total_dias_somados' => $totalDiasSomados,
 ]);
 
 file_put_contents($cacheFile, $json);

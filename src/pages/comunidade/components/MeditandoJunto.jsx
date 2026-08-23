@@ -6,6 +6,10 @@ const INTERVALO_MS = 60000; // mesmo TTL do Cache-Control do endpoint
 // usado em useSequenciaMeditacao.js e ColunaEncontros.jsx) que
 // useMeditacaoHoje.js dispara ao marcar presença.
 const EVENTO_ATUALIZOU = "meditacaoHojeAtualizada";
+// Mesmo literal disparado por DificuldadeDoDia.jsx ao compartilhar uma
+// partilha nova — sem isso "💬 partilhas hoje" só subia no próximo tick do
+// polling de 60s (ou num F5).
+const EVENTO_PARTILHA_CRIADA = "comunidadePartilhaCriada";
 
 // Card "Meditando junto" — coluna do meio do dashboard, logo abaixo de
 // "Sua Jornada" (ver ColunaProgresso.jsx), no lugar do quadrado vazio que
@@ -58,9 +62,22 @@ function MeditandoJunto() {
     return () => window.removeEventListener(EVENTO_ATUALIZOU, aoAtualizarPresenca);
   }, [carregar]);
 
+  // Partilha nova em "Sua prática hoje" (DificuldadeDoDia.jsx) — mesmo
+  // raciocínio do listener acima, mas o POST em comentarios.php já invalida
+  // o cache de pulso.php de forma síncrona (sem setTimeout do lado do PHP,
+  // diferente de presenca.php), então o pequeno atraso aqui é só pra dar
+  // tempo do fetch do POST terminar antes da gente buscar de novo.
+  useEffect(() => {
+    function aoCriarPartilha() {
+      setTimeout(carregar, 400);
+    }
+    window.addEventListener(EVENTO_PARTILHA_CRIADA, aoCriarPartilha);
+    return () => window.removeEventListener(EVENTO_PARTILHA_CRIADA, aoCriarPartilha);
+  }, [carregar]);
+
   if (!pulso) return null;
 
-  const { meditaram_hoje: meditaramHoje, partilhas_hoje: partilhasHoje, total_sequencia: totalSequencia, maior_sequencia: maiorSequencia, qtd_7_mais: qtd7Mais } = pulso;
+  const { meditaram_hoje: meditaramHoje, partilhas_hoje: partilhasHoje, total_dias_somados: totalDiasSomados } = pulso;
 
   return (
     <div className="cm-widget cm-widget-escuro cm-grid-pulso">
@@ -84,14 +101,12 @@ function MeditandoJunto() {
 
       <div className="cm-pulso-linha">
         <span aria-hidden="true">🔥</span>
-        {totalSequencia === 0 ? (
-          <span>Ninguém em sequência hoje, seja o primeiro!</span>
+        {totalDiasSomados === 0 ? (
+          <span>Comece a sequência hoje!</span>
         ) : (
           <span>
-            {totalSequencia} em sequência · maior: {maiorSequencia} dia{maiorSequencia === 1 ? "" : "s"}
-            <span className="cm-pulso-sub">
-              {qtd7Mais} com 7+ dia{qtd7Mais === 1 ? "" : "s"}
-            </span>
+            {totalDiasSomados} dia{totalDiasSomados === 1 ? "" : "s"} de presença somados
+            <span className="cm-pulso-sub">Vocês estão imparáveis</span>
           </span>
         )}
       </div>

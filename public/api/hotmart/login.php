@@ -20,7 +20,10 @@ $aluno = $stmt->get_result()->fetch_assoc();
 $stmt->close();
 
 if (!$aluno) { http_response_code(403); echo json_encode(['erro'=>'Email não encontrado']); exit; }
-if (isset($aluno['status']) && $aluno['status'] !== 'ativo') { http_response_code(403); echo json_encode(['erro'=>'Compra não ativa']); exit; }
+// 'teste' = acesso liberado manualmente pelo admin sem compra (ver
+// public/api/admin/teste-emails.php), tratado igual a 'ativo' daqui pra
+// frente.
+if (isset($aluno['status']) && !in_array($aluno['status'], ['ativo', 'teste'], true)) { http_response_code(403); echo json_encode(['erro'=>'Compra não ativa']); exit; }
 
 $hash = $aluno['senha_hash'] ?? $aluno['senha'] ?? '';
 if (empty($hash)) { http_response_code(403); echo json_encode(['erro'=>'Você ainda não criou senha']); exit; }

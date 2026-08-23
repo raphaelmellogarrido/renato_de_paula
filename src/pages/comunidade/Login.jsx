@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Check, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { avisarSessaoMudou } from "./components/usuarioStorage";
@@ -30,6 +30,22 @@ export default function ComunidadeLogin() {
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [mostrarConfirmar, setMostrarConfirmar] = useState(false);
   const navigate = useNavigate();
+  const emailRef = useRef(null);
+  const senhaRef = useRef(null);
+
+  // Autofill do Chrome/gerenciador de senha às vezes preenche o input sem
+  // disparar onChange do React (o valor muda no DOM, mas o state fica vazio).
+  // Isso deixava o botão "Entrar" com aparência de desabilitado até um
+  // refresh forçado. Lendo o valor real do DOM logo após montar cobre esse
+  // caso sem precisar de gambiarra de CSS no botão.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (emailRef.current?.value && !email) setEmail(emailRef.current.value);
+      if (senhaRef.current?.value && !senha) setSenha(senhaRef.current.value);
+    }, 200);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const requisitosSenha = checarRequisitosSenha(senha);
   const senhaForte = Object.values(requisitosSenha).every(Boolean);
@@ -148,7 +164,18 @@ export default function ComunidadeLogin() {
 
           <div className="cm-login-field">
             <label htmlFor="cm-login-email">Seu e-mail</label>
-            <input id="cm-login-email" type="email" required placeholder="seu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} className="cm-login-input" />
+            <input
+              id="cm-login-email"
+              ref={emailRef}
+              type="email"
+              required
+              autoComplete="email"
+              placeholder="seu@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onInput={(e) => setEmail(e.target.value)}
+              className="cm-login-input"
+            />
           </div>
 
           <div className="cm-login-field">
@@ -156,12 +183,15 @@ export default function ComunidadeLogin() {
             <div className="cm-login-input-wrap">
               <input
                 id="cm-login-senha"
+                ref={senhaRef}
                 type={mostrarSenha ? "text" : "password"}
                 required
                 minLength={modo === "criar" ? 8 : undefined}
+                autoComplete={modo === "criar" ? "new-password" : "current-password"}
                 placeholder="••••••••"
                 value={senha}
                 onChange={(e) => setSenha(e.target.value)}
+                onInput={(e) => setSenha(e.target.value)}
                 className={`cm-login-input cm-login-input-senha ${modo === "criar" && senha ? (senhaForte ? "is-strong" : "is-weak") : ""}`}
               />
               <span className="cm-login-icon-right cm-login-icon-group">
@@ -224,7 +254,11 @@ export default function ComunidadeLogin() {
             </div>
           )}
 
-          <button type="submit" disabled={loading || (modo === "criar" && !podeCriar)} className={`cm-login-submit ${modo === "login" || podeCriar ? "is-ready" : ""}`}>
+          <button
+            type="submit"
+            disabled={loading || (modo === "criar" ? !podeCriar : !email.trim() || !senha.trim())}
+            className={`cm-login-submit ${(modo === "login" && email.trim() && senha.trim()) || podeCriar ? "is-ready" : ""}`}
+          >
             {loading ? "Carregando..." : modo === "criar" ? "Criar conta e começar" : "Entrar"}
           </button>
         </form>

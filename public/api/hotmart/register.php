@@ -34,7 +34,10 @@ if (!$aluno) {
     echo json_encode(['erro' => 'Este email não tem compra ativa. Use o mesmo email da Hotmart.']);
     exit;
 }
-if ($aluno['status'] !== 'ativo') {
+// 'teste' = acesso liberado manualmente pelo admin sem compra (ver
+// public/api/admin/teste-emails.php), tratado igual a 'ativo' daqui pra
+// frente.
+if (!in_array($aluno['status'], ['ativo', 'teste'], true)) {
     http_response_code(403);
     echo json_encode(['erro' => 'Sua compra não está ativa']);
     exit;
