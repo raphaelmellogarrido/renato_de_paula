@@ -268,44 +268,55 @@
   background: #f9f7f2;
 }
 
-/* Coluna 1: só "Sua prática hoje" (DificuldadeDoDia) — height:100% pra
-   esticar até a altura da linha do grid (ver .cm-main acima) e o card
-   .cm-duvida abaixo, com flex:1, crescer até preencher essa altura, pra
-   sua borda de baixo terminar alinhada com Meditando junto/Ranking. */
+/* As 3 colunas (Coluna 1 = "Sua prática hoje"; Coluna 2 = botão "Já
+   meditei hoje" + Sequência + Sua Jornada + Ranking de Presença, ver
+   ColunaProgresso.jsx; Coluna 3 = Próximo encontro + Desafio da semana +
+   Meditando junto, ver ColunaEncontros.jsx) viram flex column com a MESMA
+   altura (100%, herdada da linha do grid — ver `align-items: stretch` em
+   .cm-main) e o MESMO gap:24px entre widgets. !important porque antes
+   cada coluna tinha gap/height própria (24px/20px, 100%/auto) — unifica
+   as 3 de uma vez pra garantir que terminam exatamente na mesma linha Y
+   embaixo. Não quebra o mobile (768px): lá elas viram display:contents
+   (ver media query mais abaixo), que também ganhou !important pra vencer
+   este aqui. */
 .cm-grid-feed,
-.cm-feed-empilhado {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  min-width: 0;
-  height: 100%;
-}
-
-/* Coluna 2: botão "Já meditei hoje" + Sequência + Sua Jornada + Ranking de
-   Presença (ver ColunaProgresso.jsx) — mesmo gap:24px das outras colunas,
-   controlando sozinho a distância entre os 4 widgets (sem depender de
-   linha de grid nenhuma). */
-.cm-coluna-meio {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  min-width: 0;
-}
-
-/* Coluna 3: Próximo encontro ao vivo + Desafio da semana + Meditando
-   junto (ver ColunaEncontros.jsx). */
+.cm-feed-empilhado,
+.cm-coluna-meio,
 .cm-coluna-direita {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  height: auto;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 24px !important;
+  height: 100% !important;
+  min-width: 0;
 }
 
-/* Cola o último widget de cada coluna (Ranking de Presença / Meditando
-   junto) no rodapé da coluna, caso ela sobre espaço esticada por
-   `align-items: stretch` acima (ex: coluna 1 crescer mais que 2/3) — o
-   `gap: 24px` continua garantido como distância mínima até ele, o
-   margin-top:auto só consome o que sobrar depois disso. */
+/* O card do MEIO de cada coluna cresce (flex:1 1 auto) pra absorver
+   sozinho a altura que sobra da coluna — "Sua prática hoje" na coluna 1,
+   "Sua Jornada" na coluna 2, "Desafio da semana" na coluna 3. Substitui o
+   antigo mecanismo de só empurrar o ÚLTIMO widget pra baixo com
+   margin-top:auto (regra logo abaixo, mantida como reforço): antes o vão
+   sobrava concentrado embaixo de um widget só (ex.: Sequência/Sua Jornada
+   ou Próximo encontro/Desafios), agora ele é absorvido pelo card do meio
+   e o gap:24px fica sempre igual entre todos os widgets da coluna. */
+.cm-grid-feed .cm-duvida {
+  flex: 1 1 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.cm-coluna-meio .cm-jornada {
+  flex: 1 1 auto !important;
+}
+
+.cm-coluna-direita .cm-grid-desafio {
+  flex: 1 1 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Reforço: se um dia o card do meio já tiver crescido o quanto podia e
+   ainda sobrar espaço (ex.: coluna 1 ficar mais alta que 2/3), o último
+   widget de cada coluna ainda cola no rodapé. */
 .cm-coluna-meio > *:last-child,
 .cm-coluna-direita > *:last-child {
   margin-top: auto;
@@ -1111,11 +1122,15 @@
    cresce pra caber os itens + a mensagem de status/parabéns sem cortar nem
    criar scroll interno. Antes era travada em 340px com overflow:hidden, mas
    isso cortava o texto "Parabéns! Você completou todos os desafios da
-   semana" quando o conteúdo passava da altura fixa. Não mexe em outros
-   widgets (ex.: Ranking), que têm suas próprias classes de scroll. */
+   semana" quando o conteúdo passava da altura fixa. min-height:0 (era
+   340px) porque quem garante a altura certa agora é o
+   `.cm-coluna-direita .cm-grid-desafio { flex: 1 1 auto }` mais acima —
+   um min-height fixo aqui só voltaria a abrir vão quando o card crescido
+   pelo flex já passasse dele. Não mexe em outros widgets (ex.: Ranking),
+   que têm suas próprias classes de scroll. */
 .cm-grid-desafio {
   height: auto !important;
-  min-height: 340px;
+  min-height: 0;
   max-height: none !important;
   overflow: visible !important;
   display: flex;
@@ -2553,16 +2568,17 @@
   color: #fff;
 }
 
-/* Ranking de Presença (.cm-grid-ranking): vão de 66px pro card "Sua
-   Jornada" acima vem do margin-top:auto que .cm-coluna-meio > *:last-child
-   aplica (ver .cm-main mais acima) — aqui reduzimos só esse card pra
-   16px e compensamos a altura que sobra (~12px) crescendo o container e
-   recentralizando o conteúdo verticalmente, sem mexer em nenhum outro
+/* Ranking de Presença (.cm-grid-ranking): min-height:0 (era 318px) porque
+   quem absorve a altura sobrando na coluna 2 agora é o
+   `.cm-coluna-meio .cm-jornada { flex: 1 1 auto }` mais acima (Sua
+   Jornada cresce, Ranking fica com sua altura natural de conteúdo) — um
+   min-height fixo aqui voltaria a abrir vão. margin:16px continua
+   reduzindo o respiro logo acima do card, sem mexer em nenhum outro
    .cm-widget/.cm-widget-escuro/.cm-jornada. */
 .cm-widget-escuro.cm-grid-ranking {
   margin: 16px 0px 0px 0px !important;
   padding: 26px 22px 28px 22px !important;
-  min-height: 318px !important;
+  min-height: 0 !important;
   display: flex !important;
   flex-direction: column !important;
   justify-content: center !important;
@@ -3174,7 +3190,11 @@ h3.cm-config-subtitle {
   .cm-grid-feed,
   .cm-coluna-meio,
   .cm-coluna-direita {
-    display: contents;
+    /* !important pra vencer o display:flex !important do desktop (ver
+       regra unificada das 3 colunas mais acima no arquivo) — sem isso o
+       flex column de 100% de altura vazava pro mobile e quebrava o
+       empilhamento em 1/2 colunas do grid auto-fit abaixo. */
+    display: contents !important;
   }
 
   /* Largura cheia (ocupa as 2 colunas quando elas existem) */
