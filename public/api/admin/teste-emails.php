@@ -140,11 +140,24 @@ HTML;
         $mail->Body = $html;
         $mail->AltBody = $textoPlano;
 
+        // DEBUG TEMPORÁRIO — remover depois de descobrir o erro do SMTP.
+        $mail->SMTPDebug = 2;
+        $mail->Debugoutput = function ($str, $level) {
+            error_log("SMTP DEBUG $level: $str");
+        };
+
         $mail->send();
         return true;
     } catch (PHPMailerException $e) {
-        error_log('enviarConviteComunidade falhou: ' . $mail->ErrorInfo);
-        return false;
+        error_log("SMTP ERRO: " . $mail->ErrorInfo);
+        // DEBUG TEMPORÁRIO — expõe o erro real do SMTP na resposta em vez da
+        // mensagem genérica, pra dar pra ver no Network tab sem acesso ao
+        // error_log do servidor. Reverter pra `return false;` depois.
+        echo json_encode([
+            'ok' => false,
+            'msg' => 'ERRO SMTP: ' . $mail->ErrorInfo . ' | USER: ' . SMTP_COMUNIDADE_USER,
+        ]);
+        exit;
     }
 }
 
