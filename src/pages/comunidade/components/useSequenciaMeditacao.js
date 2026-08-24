@@ -25,6 +25,17 @@ const FAIXAS_PERCENTUAL_FALLBACK = [
 
 const LABELS_SEMANA = ["S", "T", "Q", "Q", "S", "S", "D"];
 
+// Mesmo fuso travado que useMeditacaoHoje.js usa pra gravar `hojeIso()` no
+// histórico (America/Sao_Paulo, não o fuso do sistema operacional). Bug
+// real: aqui embaixo "hoje"/dia-da-semana eram calculados com `new Date()`
+// cru, que lê o relógio no fuso do APARELHO — num aparelho configurado num
+// fuso diferente de Brasília (comum em celular com fuso automático, ou PC
+// mal configurado), o "hoje" gravado por useMeditacaoHoje.js (sempre -03:00)
+// podia cair um dia adiante/atrás do "hoje" usado aqui pra montar as 7
+// bolinhas da semana, deixando tudo apagado mesmo com presença real batida
+// (streak batendo por já cair no fallback de "ontem").
+const FUSO_BRASIL = "America/Sao_Paulo";
+
 const MENSAGENS_LUDICAS = {
   "segunda-feira": { badge: "🔥 Começou na Segunda", texto: "Começar na segunda é pra quem leva a sério. 💪" },
   "terça-feira": { badge: "🔥 Começou na Terça", texto: "Terça com presença. Você não esperou a próxima segunda." },
@@ -53,6 +64,17 @@ function dataLocalDeIso(iso) {
   return new Date(ano, mes - 1, dia);
 }
 
+// "Hoje" travado no fuso de Brasília, devolvido como Date com os campos
+// ano/mes/dia já corretos (a partir daqui pode usar getFullYear/getMonth/
+// getDate/getDay/setDate normalmente — só a leitura do relógio real usa
+// Intl com o fuso forçado, o resto é aritmética de calendário local, igual
+// dataLocalDeIso acima).
+function hojeBrasil() {
+  const partes = new Intl.DateTimeFormat("en-CA", { timeZone: FUSO_BRASIL, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
+  const mapa = Object.fromEntries(partes.map((p) => [p.type, p.value]));
+  return new Date(Number(mapa.year), Number(mapa.month) - 1, Number(mapa.day));
+}
+
 function lerHistoricoLocal(email) {
   try {
     const lista = JSON.parse(localStorage.getItem(chaveUsuario(CHAVE_BASE_HISTORICO, email)) || "[]");
@@ -67,7 +89,7 @@ function lerHistoricoLocal(email) {
 // existindo, só falta marcar hoje). Qualquer buraco quebra a contagem.
 function calcularStreak(historico) {
   const marcados = new Set(historico);
-  const cursor = new Date();
+  const cursor = hojeBrasil();
   if (!marcados.has(isoLocal(cursor))) {
     cursor.setDate(cursor.getDate() - 1);
   }
@@ -92,8 +114,8 @@ function segundaDaSemana(data) {
 // As 7 bolinhas Seg-Dom da semana atual, cada uma com a data real do dia.
 function calcularBolinhasSemana(historico) {
   const marcados = new Set(historico);
-  const segunda = segundaDaSemana(new Date());
-  const hojeIsoStr = isoLocal(new Date());
+  const segunda = segundaDaSemana(hojeBrasil());
+  const hojeIsoStr = isoLocal(hojeBrasil());
 
   return LABELS_SEMANA.map((label, i) => {
     const data = new Date(segunda);

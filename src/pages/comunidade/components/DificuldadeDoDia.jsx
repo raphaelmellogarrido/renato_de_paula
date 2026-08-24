@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEmailSessao, lerNomeSessao } from "./usuarioStorage";
 import ComentarioCard, { EMAIL_ADMINISTRADOR, EMAIL_ORIENTADOR } from "./ComentarioCard";
+import { chaveCacheComentarios, lerCacheComentarios, salvarCacheComentarios } from "./cacheComentarios";
 
 const COMENTARIOS_URL = "/api/hotmart/comentarios.php";
 // aula_id fixo — este card não é sobre um vídeo específico, é uma reflexão
@@ -44,6 +45,20 @@ function DificuldadeDoDia() {
   const podeExcluir = souAdmin || souOrientador;
 
   const carregar = useCallback((paginaAlvo) => {
+    // Stale-while-revalidate: se tiver cache de visita recente (<2min) pra
+    // essa página, pinta ele JÁ (sem esperar rede) e ainda assim busca fresco
+    // em background — evita a área da lista ficar em branco por segundos
+    // numa visita repetida. Cache é do mural inteiro (não por email): ver
+    // cacheComentarios.js.
+    const chave = chaveCacheComentarios(AULA_ID, paginaAlvo);
+    const cache = lerCacheComentarios(chave);
+    if (cache) {
+      setItens(Array.isArray(cache.itens) ? cache.itens : []);
+      setTotal(Number.isFinite(cache.total) ? cache.total : 0);
+      setPage(Number.isFinite(cache.page) ? cache.page : paginaAlvo);
+      setPages(Number.isFinite(cache.pages) ? Math.max(1, cache.pages) : 1);
+    }
+
     fetch(`${COMENTARIOS_URL}?aula_id=${AULA_ID}&page=${paginaAlvo}&per_page=${POR_PAGINA}`)
       .then((r) => r.json())
       .then((dados) => {
@@ -51,11 +66,16 @@ function DificuldadeDoDia() {
         setTotal(Number.isFinite(dados?.total) ? dados.total : 0);
         setPage(Number.isFinite(dados?.page) ? dados.page : paginaAlvo);
         setPages(Number.isFinite(dados?.pages) ? Math.max(1, dados.pages) : 1);
+        salvarCacheComentarios(chave, dados);
       })
       .catch((err) => {
         console.error("[Clube Presença] falha ao carregar 'Sua prática hoje':", err);
-        setItens([]);
-        setTotal(0);
+        // Só zera se não havia cache já pintado — não queremos que uma falha
+        // de rede APAGUE dados válidos que a visita anterior deixou na tela.
+        if (!cache) {
+          setItens([]);
+          setTotal(0);
+        }
       });
   }, []);
 
@@ -135,6 +155,18 @@ function DificuldadeDoDia() {
       </form>
 
       <div className="cm-duvida-divider" />
+
+      {carregando && (
+        // Skeleton só aparece se não havia cache pra pintar de cara (carregar()
+        // já preenche itens/total a partir do cache antes do fetch resolver,
+        // então nesse caso `carregando` já vira false direto) — nunca mais
+        // deixa a área da lista em branco enquanto espera a rede.
+        <div className="cm-comentarios-lista" aria-hidden="true">
+          {[0, 1, 2].map((i) => (
+            <div className="cm-comentario-skeleton" key={i} />
+          ))}
+        </div>
+      )}
 
       {!carregando && vazio && <p className="cm-duvida-vazio">Seja o primeiro a comentar</p>}
 

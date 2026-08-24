@@ -63,8 +63,30 @@ $mysqli->query("SET time_zone = '-03:00'");
 // phpMyAdmin — mesmo padrão de auto-provisionamento que webhook.php e
 // live/reservas.php já usam neste repo. Idempotente: seguro chamar em
 // toda requisição.
+//
+// Perf: essa função sozinha é ~7 round-trips de rede pro MySQL (4x CREATE
+// TABLE IF NOT EXISTS, 2x SELECT em INFORMATION_SCHEMA.COLUMNS, 1x DELETE)
+// — em hospedagem compartilhada isso pesava em TODA request de
+// comentarios.php e aulas-raiz/progresso.php, mesmo sem nenhuma mudança de
+// schema pra fazer (era o gargalo real por trás dos ~10s de carregamento
+// de "Sua prática hoje"/comentários, não falta de índice). Por isso, abaixo
+// de $estruturaClubeVersao: escreve um arquivo-marcador na primeira vez que
+// roda com sucesso e, enquanto ele existir, pula a função inteira com um
+// único file_exists() (1 stat, não bate no banco). Corrida entre requests
+// concorrentes logo após um deploy é inofensiva — todo CREATE/ALTER aqui já
+// é condicional/idempotente. Pra forçar rerun depois de mudar o schema
+// nesta função, basta subir o arquivo com $estruturaClubeVersao
+// incrementada (não depende de lembrar de apagar o marcador no servidor).
 function garantirEstruturaClube(mysqli $mysqli): void
 {
+    // (não pode ser `const` aqui dentro — PHP só aceita const no nível do
+    // arquivo/classe, não dentro do corpo de uma função)
+    $estruturaClubeVersao = 1;
+    $marcador = sys_get_temp_dir() . '/comunidade_estrutura_v' . $estruturaClubeVersao . '.ok';
+    if (file_exists($marcador)) {
+        return;
+    }
+
     $mysqli->query(
         "CREATE TABLE IF NOT EXISTS progresso_aulas_raiz (
             email VARCHAR(255) NOT NULL,
@@ -165,6 +187,13 @@ function garantirEstruturaClube(mysqli $mysqli): void
             criado_por VARCHAR(100)
         )"
     );
+
+    // Grava o marcador por último — se alguma query acima falhar/lançar, a
+    // função roda de novo na próxima request em vez de "esquecer" que faltou
+    // algo. @ silencia só erro de permissão/disco no temp dir: nesse caso
+    // raro, cai de novo em file_exists()===false na próxima request e
+    // repete o setup (pior caso = sem cache, não quebra nada).
+    @file_put_contents($marcador, (string) time());
 }
 
 // Streak real (dias consecutivos até hoje/ontem) calculado a partir das

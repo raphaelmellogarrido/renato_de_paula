@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEmailSessao, lerNomeSessao } from "./usuarioStorage";
 import ComentarioCard, { EMAIL_ADMINISTRADOR, EMAIL_ORIENTADOR } from "./ComentarioCard";
+import { chaveCacheComentarios, lerCacheComentarios, salvarCacheComentarios } from "./cacheComentarios";
 
 const COMENTARIOS_URL = "/api/hotmart/comentarios.php";
 // aula_id fixo — antes cada vídeo tinha seu próprio bucket de comentários
@@ -33,6 +34,18 @@ function ComentariosFeed() {
   const podeExcluir = souAdmin || souOrientador;
 
   const carregar = useCallback((paginaAlvo) => {
+    // Stale-while-revalidate — mesmo padrão de DificuldadeDoDia.jsx: pinta
+    // cache de visita recente (<2min) na hora, busca fresco em background.
+    // Ver cacheComentarios.js.
+    const chave = chaveCacheComentarios(AULA_ID, paginaAlvo);
+    const cache = lerCacheComentarios(chave);
+    if (cache) {
+      setItens(Array.isArray(cache.itens) ? cache.itens : []);
+      setTotal(Number.isFinite(cache.total) ? cache.total : 0);
+      setPage(Number.isFinite(cache.page) ? cache.page : paginaAlvo);
+      setPages(Number.isFinite(cache.pages) ? Math.max(1, cache.pages) : 1);
+    }
+
     fetch(`${COMENTARIOS_URL}?aula_id=${AULA_ID}&page=${paginaAlvo}`)
       .then((r) => r.json())
       .then((dados) => {
@@ -40,11 +53,14 @@ function ComentariosFeed() {
         setTotal(Number.isFinite(dados?.total) ? dados.total : 0);
         setPage(Number.isFinite(dados?.page) ? dados.page : paginaAlvo);
         setPages(Number.isFinite(dados?.pages) ? Math.max(1, dados.pages) : 1);
+        salvarCacheComentarios(chave, dados);
       })
       .catch((err) => {
         console.error("[Clube Presença] falha ao carregar comentários:", err);
-        setItens([]);
-        setTotal(0);
+        if (!cache) {
+          setItens([]);
+          setTotal(0);
+        }
       });
   }, []);
 
@@ -115,6 +131,16 @@ function ComentariosFeed() {
           {enviando ? "Enviando..." : "Comentar"}
         </button>
       </form>
+
+      {carregando && (
+        // Some direto se carregar() já achou cache pra pintar (ver
+        // carregando acima) — só aparece numa visita realmente sem cache.
+        <div className="cm-comentarios-lista" aria-hidden="true">
+          {[0, 1, 2].map((i) => (
+            <div className="cm-comentario-skeleton" key={i} />
+          ))}
+        </div>
+      )}
 
       {!carregando && !vazio && (
         <div className="cm-comentarios-lista">

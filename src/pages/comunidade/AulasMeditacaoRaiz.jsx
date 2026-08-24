@@ -18,6 +18,35 @@ const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://l
 const PROGRESSO_AULAS_RAIZ_URL = "/api/hotmart/aulas-raiz/progresso.php";
 const LIMIAR_AUTO_CONCLUIDA = 0.9;
 
+// Cache leve (stale-while-revalidate) do catálogo de dias/vídeos — não é
+// por-usuário (o catálogo é o mesmo pra todo mundo, vem do sistema de
+// arquivos em CURSO_RAIZ_DIR via server/index.js, não muda com frequência).
+// Evita a tela "Carregando suas aulas..." numa navegação repetida: pinta o
+// catálogo da visita anterior (<2min) na hora, atualiza em background.
+const CHAVE_CACHE_CATALOGO = "cm_catalogo_aulas_raiz";
+const TTL_CACHE_CATALOGO_MS = 2 * 60 * 1000;
+
+function lerCatalogoCache() {
+  try {
+    const bruto = localStorage.getItem(CHAVE_CACHE_CATALOGO);
+    if (!bruto) return null;
+    const { dias, quando } = JSON.parse(bruto);
+    if (!Array.isArray(dias) || typeof quando !== "number") return null;
+    if (Date.now() - quando > TTL_CACHE_CATALOGO_MS) return null;
+    return dias;
+  } catch {
+    return null;
+  }
+}
+
+function salvarCatalogoCache(dias) {
+  try {
+    localStorage.setItem(CHAVE_CACHE_CATALOGO, JSON.stringify({ dias, quando: Date.now() }));
+  } catch {
+    // localStorage indisponível — sem cache, sem drama, o fetch normal segue.
+  }
+}
+
 // Extrai o número do dia a partir do nome do arquivo ("dia1.2.mp4" -> 1),
 // mesmo padrão de regex que JornadaProgress.jsx já usa pra agrupar
 // TITULOS_AULAS_RAIZ por dia.
@@ -64,14 +93,18 @@ function salvarProgressoLocal(email, progresso) {
 }
 
 export default function AulasMeditacaoRaiz() {
-  const [dias, setDias] = useState([]);
+  // Nasce preenchido com o cache (se houver e ainda válido) pra pintar o
+  // catálogo na hora — ver CHAVE_CACHE_CATALOGO acima. `loading` já começa
+  // false nesse caso: não faz sentido mostrar "Carregando suas aulas..."
+  // por cima de um catálogo que já está na tela.
+  const [dias, setDias] = useState(() => lerCatalogoCache() || []);
   const [diaSelecionado, setDiaSelecionado] = useState(null);
   const [videoAtivoArquivo, setVideoAtivoArquivo] = useState(null);
   const email = useEmailSessao();
   const [progressoPorArquivo, setProgressoPorArquivo] = useState(() =>
     email ? carregarProgressoLocal(email) : {},
   );
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => lerCatalogoCache() === null);
   const [erroCatalogo, setErroCatalogo] = useState(false);
   // progressoCarregado: true quando o GET de progresso já resolveu (ou não
   // há sessão, então não há o que esperar) — usado tanto pra segurar a
@@ -125,16 +158,21 @@ export default function AulasMeditacaoRaiz() {
     // em qualquer desfecho (sucesso, erro de rede ou timeout).
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 8000);
+    // Snapshot do cache ANTES do fetch — decide se um erro de rede pode
+    // aparecer como tela de erro (sem cache) ou deve só manter o catálogo já
+    // pintado na tela (com cache), sem interromper quem já está navegando.
+    const tinhaCache = lerCatalogoCache() !== null;
 
     fetch(`${API_URL}/api/aulas-raiz`, { signal: controller.signal })
       .then((r) => r.json())
       .then((data) => {
         const listaDias = Array.isArray(data?.dias) ? data.dias : [];
         setDias(listaDias);
+        salvarCatalogoCache(listaDias);
       })
       .catch((err) => {
         console.error("Erro ao carregar catálogo de aulas-raiz:", err);
-        setErroCatalogo(true);
+        if (!tinhaCache) setErroCatalogo(true);
       })
       .finally(() => {
         clearTimeout(timeoutId);

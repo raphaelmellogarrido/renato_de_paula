@@ -565,6 +565,27 @@
   border-radius: 14px;
 }
 
+/* Placeholder mostrado por DificuldadeDoDia.jsx/ComentariosFeed.jsx enquanto
+   o 1º fetch não resolveu e não havia cache pra pintar na hora (ver
+   cacheComentarios.js) — mesma altura/raio do .cm-comentario-card real pra
+   não pular layout quando o dado de verdade substitui o skeleton. */
+.cm-comentario-skeleton {
+  height: 64px;
+  border-radius: 14px;
+  background: linear-gradient(90deg, var(--cm-border) 25%, #f4f4f4 37%, var(--cm-border) 63%);
+  background-size: 400% 100%;
+  animation: cm-skeleton-pulso 1.4s ease-in-out infinite;
+}
+
+@keyframes cm-skeleton-pulso {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
 .cm-comentario-card-avatar {
   width: 36px;
   height: 36px;
@@ -3325,5 +3346,36 @@ h3.cm-config-subtitle {
     min-height: 0 !important;
     padding: 22px !important;
     justify-content: flex-start !important;
+  }
+}
+
+/* Correção: comentário cortado com "..." no celular (Home e Aulas) — o
+   line-clamp aplicado ao texto do comentário estava truncando em 1 linha.
+   Regra fora de qualquer @media, no final do arquivo, pra vencer tudo. */
+.cm-comentario-texto,
+.cm-duvida-comentario p,
+.cm-comentario-corpo p,
+.cm-feed-comentario-texto,
+[class*="comentario"] p {
+  display: block !important;
+  -webkit-line-clamp: unset !important;
+  -webkit-box-orient: unset !important;
+  line-clamp: unset !important;
+  overflow: visible !important;
+  white-space: normal !important;
+  text-overflow: clip !important;
+  max-height: none !important;
+  height: auto !important;
+  word-break: break-word !important;
+  overflow-wrap: anywhere !important;
+}
+
+@media (max-width: 768px) {
+  .cm-comentario-card,
+  .cm-duvida-comentario,
+  .cm-feed-comentario {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
   }
 }
