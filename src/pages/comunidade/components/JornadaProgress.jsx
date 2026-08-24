@@ -48,7 +48,7 @@ const ICONE_CURSO_CONCLUIDO = "/icons/trophy_lotus_cutout.png";
 //  3. bora-aula — default: ainda tem vídeo do dia atual pra assistir.
 function getStatusJornada({ jornadaCompleta, maxDiaCompleto, ultimoDiaCompletadoData, hojeServidor }) {
   if (jornadaCompleta) {
-    return { estado: "curso-concluido", texto: "Curso concluído", icone: ICONE_CURSO_CONCLUIDO };
+    return { estado: "curso-concluido", texto: "Jornada completa", icone: ICONE_CURSO_CONCLUIDO };
   }
   // hojeServidor (fuso Brasília, vindo do GET de progresso.php) é preferido
   // sobre isoLocal(new Date()) (relógio do navegador) pelo mesmo motivo de
@@ -114,7 +114,7 @@ export default function JornadaProgress({ progressoPorArquivo = {}, compacto = f
   const restantes = TOTAL_AULAS - totalAssistidos;
   let mensagem;
   if (statusJornada.estado === "curso-concluido") {
-    mensagem = "Você completou sua transformação! 🪷";
+    mensagem = "Parabéns por completar sua jornada! Agora é manter a prática diária. ✨";
   } else if (statusJornada.estado === "dia-concluido") {
     mensagem = "Próxima aula libera à meia-noite ✨";
   } else if (totalAssistidos === 0) {
