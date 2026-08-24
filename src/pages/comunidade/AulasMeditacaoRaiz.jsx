@@ -548,7 +548,9 @@ export default function AulasMeditacaoRaiz() {
             <p className="cm-video-legenda">✓ marcado automaticamente ao atingir 90% do vídeo</p>
           </div>
 
-          <JornadaProgress progressoPorArquivo={progressoPorArquivo} hojeServidor={hojeServidor} />
+          {/* Sidebar é mais estreita que a coluna da home — badge curto pra
+              não estourar o card (ver badgeDiaConcluidoTexto em JornadaProgress.jsx). */}
+          <JornadaProgress progressoPorArquivo={progressoPorArquivo} hojeServidor={hojeServidor} badgeDiaConcluidoTexto="Dia concluído" />
         </div>
       </div>
 

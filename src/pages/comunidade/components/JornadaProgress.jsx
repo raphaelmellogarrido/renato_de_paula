@@ -46,7 +46,7 @@ const ICONE_CURSO_CONCLUIDO = "/icons/trophy_lotus_cutout.png";
 //     fica de fora de propósito: é a exceção Dia0->Dia1, que já libera no
 //     mesmo dia, então não faz sentido mostrar "bloqueado" aqui.
 //  3. bora-aula — default: ainda tem vídeo do dia atual pra assistir.
-function getStatusJornada({ jornadaCompleta, maxDiaCompleto, ultimoDiaCompletadoData, hojeServidor }) {
+function getStatusJornada({ jornadaCompleta, maxDiaCompleto, ultimoDiaCompletadoData, hojeServidor, badgeDiaConcluidoTexto }) {
   if (jornadaCompleta) {
     return { estado: "curso-concluido", texto: "Jornada completa", icone: ICONE_CURSO_CONCLUIDO };
   }
@@ -56,7 +56,7 @@ function getStatusJornada({ jornadaCompleta, maxDiaCompleto, ultimoDiaCompletado
   // real quando o dispositivo não está em BRT.
   const bloqueadoAteAmanha = maxDiaCompleto >= 1 && ultimoDiaCompletadoData === (hojeServidor || isoLocal(new Date()));
   if (bloqueadoAteAmanha) {
-    return { estado: "dia-concluido", texto: "Dia de curso concluído", icone: ICONE_DIA_CONCLUIDO };
+    return { estado: "dia-concluido", texto: badgeDiaConcluidoTexto, icone: ICONE_DIA_CONCLUIDO };
   }
   return { estado: "bora-aula", texto: "Bora pra aula?", icone: ICONE_BORA_AULA };
 }
@@ -94,8 +94,15 @@ function calcularStatusPorDia(progressoPorArquivo) {
  * (anel + trilha de 16 dias) por um anel pequeno ao lado do texto, do
  * tamanho de um `.cm-widget` comum, pra não desalinhar a grade do
  * dashboard com o "Desafio da Semana" ao lado.
+ *
+ * `badgeDiaConcluidoTexto`: texto do badge no estado "dia-concluido"
+ * (esperando virar o dia). Default é o texto completo, usado na home
+ * (ColunaProgresso.jsx), onde a coluna é larga o bastante. A sidebar de
+ * /comunidade/aulas-raiz (AulasMeditacaoRaiz.jsx) é mais estreita e
+ * passa uma versão curta pra não estourar o card — ver `.cm-jornada-badge`
+ * (white-space: nowrap, flex-shrink: 0) em ComunidadeApp.css.
  */
-export default function JornadaProgress({ progressoPorArquivo = {}, compacto = false, hojeServidor = null }) {
+export default function JornadaProgress({ progressoPorArquivo = {}, compacto = false, hojeServidor = null, badgeDiaConcluidoTexto = "Dia de curso concluído" }) {
   const { totalAssistidos, statusPorDia, diaAtualIndex } = useMemo(() => calcularStatusPorDia(progressoPorArquivo), [progressoPorArquivo]);
 
   const percentual = TOTAL_AULAS ? Math.round((totalAssistidos / TOTAL_AULAS) * 100) : 0;
@@ -107,8 +114,8 @@ export default function JornadaProgress({ progressoPorArquivo = {}, compacto = f
   const maxDiaCompleto = useMemo(() => calcularMaxDiaCompleto(DIAS_CATALOGO, progressoPorArquivo), [progressoPorArquivo]);
   const ultimoDiaCompletadoData = useMemo(() => calcularUltimoDiaCompletadoData(DIAS_CATALOGO, progressoPorArquivo, maxDiaCompleto), [progressoPorArquivo, maxDiaCompleto]);
   const statusJornada = useMemo(
-    () => getStatusJornada({ jornadaCompleta, maxDiaCompleto, ultimoDiaCompletadoData, hojeServidor }),
-    [jornadaCompleta, maxDiaCompleto, ultimoDiaCompletadoData, hojeServidor],
+    () => getStatusJornada({ jornadaCompleta, maxDiaCompleto, ultimoDiaCompletadoData, hojeServidor, badgeDiaConcluidoTexto }),
+    [jornadaCompleta, maxDiaCompleto, ultimoDiaCompletadoData, hojeServidor, badgeDiaConcluidoTexto],
   );
 
   const restantes = TOTAL_AULAS - totalAssistidos;
