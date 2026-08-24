@@ -172,6 +172,24 @@
   transform: translateY(-1px);
 }
 
+/* Card some no desktop dentro da sidebar (cm-ajuda-card--desktop) e some no
+   mobile por padrão (cm-ajuda-card--mobile, ligado no fim da lista de
+   cards em Dashboard.jsx) — os dois trocam de lugar no @media(max-width:
+   768px) mais abaixo no arquivo, junto da sidebar virando topbar. */
+.cm-ajuda-card--desktop {
+  display: flex;
+}
+
+.cm-ajuda-card--mobile {
+  display: none;
+}
+
+.cm-ajuda-seta {
+  margin-left: auto;
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
 .cm-ajuda-icone {
   width: 36px;
   height: 36px;
@@ -1708,10 +1726,6 @@
   margin: 2px auto 10px;
 }
 
-.cm-jornada-trilha {
-  margin-bottom: 10px;
-}
-
 .cm-jornada-topo {
   display: flex;
   align-items: center;
@@ -1851,20 +1865,26 @@
   color: var(--cm-text-soft);
 }
 
+/* Grid fixo de 7 colunas (não flex-wrap): com flex-wrap as 16 bolinhas
+   quebravam linha de forma inconsistente conforme a largura disponível
+   (ex.: 4/5/6 numa linha, 7 noutra, sobrando 2 soltas) porque o wrap do
+   flexbox não força alinhamento em colunas. Grid com colunas de tamanho
+   fixo garante sempre 7 por linha, alinhadas, em qualquer largura de
+   card/sidebar. */
 .cm-jornada-trilha {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(7, 32px);
   gap: 8px;
+  justify-content: center;
   margin-bottom: 16px;
 }
 
 .cm-jornada-bolinha {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   font-size: 0.7rem;
   font-weight: 700;
@@ -1891,7 +1911,7 @@
 
 .cm-jornada-bolinha.is-atual {
   background: var(--cm-beige-soft);
-  border: 2px dashed var(--cm-jornada-violeta);
+  border: 1px dashed var(--cm-jornada-violeta);
   color: var(--cm-text);
 }
 
@@ -3292,8 +3312,30 @@ h3.cm-config-subtitle {
     display: none;
   }
 
-  .cm-ajuda-card {
-    display: none;
+  .cm-ajuda-card--desktop {
+    display: none !important;
+  }
+
+  /* Card mobile (Dashboard.jsx) vira o último item real de .cm-main —
+     order:99 vence o maior order explícito hoje (9, no .cm-grid-ranking
+     mais abaixo) e grid-column:1/-1 casa com os outros widgets full-width
+     do grid mobile (.cm-duvida, .cm-grid-desafio etc., ver mais abaixo). */
+  .cm-ajuda-card--mobile {
+    display: flex !important;
+    order: 99;
+    grid-column: 1 / -1;
+    margin: 24px 16px;
+    background: #111;
+    color: #fff;
+  }
+
+  .cm-ajuda-card--mobile .cm-ajuda-icone {
+    background: #25d366;
+  }
+
+  .cm-ajuda-card--mobile .cm-ajuda-texto span {
+    opacity: 0.7;
+    color: #fff;
   }
 
   .cm-sidebar-brand {

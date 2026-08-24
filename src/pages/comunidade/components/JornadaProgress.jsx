@@ -1,19 +1,24 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { TITULOS_AULAS_RAIZ } from "../../../lib/titulosAulasRaiz";
+import { ARQUIVOS_OCULTOS_AULAS_RAIZ, TITULOS_AULAS_RAIZ } from "../../../lib/titulosAulasRaiz";
 import { calcularMaxDiaCompleto, calcularUltimoDiaCompletadoData, isoLocal } from "./progressoDias";
 
-const TOTAL_AULAS = Object.keys(TITULOS_AULAS_RAIZ).length; // 48 (dia1.3.mp4 removido, ver ARQUIVOS_OCULTOS_AULAS_RAIZ)
 const TOTAL_DIAS = 16; // Dia 0 a Dia 15
 
 // Agrupa TITULOS_AULAS_RAIZ (chaves "diaN.M.mp4") por número do dia — uma
 // vez, no import. Assim o card sabe quantos vídeos cada dia tem sem
 // depender do catálogo vindo da API (que só chega depois de um fetch).
+// Pula ARQUIVOS_OCULTOS_AULAS_RAIZ (dia1.3.mp4) igual o catálogo real da
+// API (server/index.js) já faz — senão o Dia 1 conta 4 vídeos em vez de 3
+// e nunca fecha (o arquivo oculto nunca fica "assistida" pra aluno novo),
+// e o total de aulas dá 49 em vez de 48.
 const AULAS_POR_DIA = Array.from({ length: TOTAL_DIAS }, () => []);
 for (const arquivo of Object.keys(TITULOS_AULAS_RAIZ)) {
+  if (ARQUIVOS_OCULTOS_AULAS_RAIZ.has(arquivo)) continue;
   const dia = Number(arquivo.match(/^dia(\d+)\./)?.[1]);
   if (AULAS_POR_DIA[dia]) AULAS_POR_DIA[dia].push(arquivo);
 }
+const TOTAL_AULAS = AULAS_POR_DIA.reduce((soma, arquivos) => soma + arquivos.length, 0); // 48
 
 // Mesmo formato { dia, videos: [{arquivo}] } que progressoDias.js espera —
 // permite reusar EXATAMENTE o cálculo de bloqueio por calendário que já
@@ -41,11 +46,15 @@ const ICONE_CURSO_CONCLUIDO = "/icons/trophy_lotus_cutout.png";
 //     fica de fora de propósito: é a exceção Dia0->Dia1, que já libera no
 //     mesmo dia, então não faz sentido mostrar "bloqueado" aqui.
 //  3. bora-aula — default: ainda tem vídeo do dia atual pra assistir.
-function getStatusJornada({ jornadaCompleta, maxDiaCompleto, ultimoDiaCompletadoData }) {
+function getStatusJornada({ jornadaCompleta, maxDiaCompleto, ultimoDiaCompletadoData, hojeServidor }) {
   if (jornadaCompleta) {
     return { estado: "curso-concluido", texto: "Curso concluído", icone: ICONE_CURSO_CONCLUIDO };
   }
-  const bloqueadoAteAmanha = maxDiaCompleto >= 1 && ultimoDiaCompletadoData === isoLocal(new Date());
+  // hojeServidor (fuso Brasília, vindo do GET de progresso.php) é preferido
+  // sobre isoLocal(new Date()) (relógio do navegador) pelo mesmo motivo de
+  // podeAssistir em progressoDias.js — evita o badge divergir do bloqueio
+  // real quando o dispositivo não está em BRT.
+  const bloqueadoAteAmanha = maxDiaCompleto >= 1 && ultimoDiaCompletadoData === (hojeServidor || isoLocal(new Date()));
   if (bloqueadoAteAmanha) {
     return { estado: "dia-concluido", texto: "Dia de curso concluído", icone: ICONE_DIA_CONCLUIDO };
   }
@@ -86,7 +95,7 @@ function calcularStatusPorDia(progressoPorArquivo) {
  * tamanho de um `.cm-widget` comum, pra não desalinhar a grade do
  * dashboard com o "Desafio da Semana" ao lado.
  */
-export default function JornadaProgress({ progressoPorArquivo = {}, compacto = false }) {
+export default function JornadaProgress({ progressoPorArquivo = {}, compacto = false, hojeServidor = null }) {
   const { totalAssistidos, statusPorDia, diaAtualIndex } = useMemo(() => calcularStatusPorDia(progressoPorArquivo), [progressoPorArquivo]);
 
   const percentual = TOTAL_AULAS ? Math.round((totalAssistidos / TOTAL_AULAS) * 100) : 0;
@@ -97,7 +106,10 @@ export default function JornadaProgress({ progressoPorArquivo = {}, compacto = f
   // (ver progressoDias.js), reaproveitadas aqui só pra escolher o badge.
   const maxDiaCompleto = useMemo(() => calcularMaxDiaCompleto(DIAS_CATALOGO, progressoPorArquivo), [progressoPorArquivo]);
   const ultimoDiaCompletadoData = useMemo(() => calcularUltimoDiaCompletadoData(DIAS_CATALOGO, progressoPorArquivo, maxDiaCompleto), [progressoPorArquivo, maxDiaCompleto]);
-  const statusJornada = useMemo(() => getStatusJornada({ jornadaCompleta, maxDiaCompleto, ultimoDiaCompletadoData }), [jornadaCompleta, maxDiaCompleto, ultimoDiaCompletadoData]);
+  const statusJornada = useMemo(
+    () => getStatusJornada({ jornadaCompleta, maxDiaCompleto, ultimoDiaCompletadoData, hojeServidor }),
+    [jornadaCompleta, maxDiaCompleto, ultimoDiaCompletadoData, hojeServidor],
+  );
 
   const restantes = TOTAL_AULAS - totalAssistidos;
   let mensagem;

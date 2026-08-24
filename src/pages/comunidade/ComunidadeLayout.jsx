@@ -5,6 +5,10 @@ import ComunidadeSidebar from "./components/ComunidadeSidebar";
 import "./ComunidadeApp.css";
 
 // Shell de toda a area /comunidade
+// Auth já foi checada antes de chegar aqui (ver RotaComunidade em App.jsx,
+// que decide sem sessão -> /comunidade/login sem nem carregar este chunk).
+// O check abaixo fica só como defesa (ex: sessão expirar durante a troca de
+// aba) — não é mais o caminho normal de redirect.
 function ComunidadeLayout() {
   const { session, loading } = useComunidadeAuth();
   const navigate = useNavigate();
@@ -23,13 +27,13 @@ function ComunidadeLayout() {
     }
   }, [loading, session, navigate]);
 
+  if (loading) return null;
+  if (!session) return null;
+
   function handleSair() {
     limparSessao();
     navigate("/comunidade/login", { replace: true });
   }
-
-  if (loading) return null;
-  if (!session) return null;
 
   return (
     <div className="comunidade-app cm-shell">

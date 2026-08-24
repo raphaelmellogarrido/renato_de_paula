@@ -17,13 +17,13 @@ import { useProgressoAulasRaiz } from "./useProgressoAulasRaiz";
 // depois de JornadaProgress (Sua Jornada) — ocupava o quadrado vazio que
 // sobrava ali antes (era o lugar do Meditando junto).
 function ColunaProgresso() {
-  const progressoPorArquivo = useProgressoAulasRaiz();
+  const { progressoPorArquivo, hojeServidor } = useProgressoAulasRaiz();
 
   return (
     <>
       <BotaoMediteiHoje />
       <Sequencia />
-      <JornadaProgress progressoPorArquivo={progressoPorArquivo} />
+      <JornadaProgress progressoPorArquivo={progressoPorArquivo} hojeServidor={hojeServidor} />
       <RankingPresenca />
     </>
   );

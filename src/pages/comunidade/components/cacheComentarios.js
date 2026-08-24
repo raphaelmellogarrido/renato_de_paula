@@ -37,3 +37,30 @@ export function salvarCacheComentarios(chave, dados) {
     // fonte de verdade, só perde o atalho de "pintar na hora".
   }
 }
+
+async function tentarBuscarJson(url, options) {
+  const r = await fetch(url, options);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  return await r.json(); // corpo não-JSON (ex: página de erro do PHP em vez de {erro:...}) também cai aqui
+}
+
+// Busca JSON em comentarios.php com 1 retry automático (800ms) se a resposta
+// vier com status de erro ou corpo que não é JSON válido. Existe por causa
+// de um 500 real na 1ª visita da sessão: o dashboard dispara ~4 fetches ao
+// mesmo tempo e, antes do marcador de setup existir em _conexao.php, duas
+// dessas requests podiam colidir dentro de garantirEstruturaClube() e derrubar
+// a request com 500 — sem isso, DificuldadeDoDia.jsx/ComentariosFeed.jsx
+// liam a resposta quebrada, caíam no .catch e mostravam "Seja o primeiro a
+// comentar" pra um mural que já tinha comentários (só reaparecia com F5,
+// quando a corrida já tinha sido resolvida pela request anterior). Quem
+// chama decide o que fazer se as 2 tentativas falharem — ver os catch em
+// DificuldadeDoDia.jsx/ComentariosFeed.jsx, que preservam o cache/skeleton
+// em vez de zerar a lista.
+export async function buscarComentarios(url, options) {
+  try {
+    return await tentarBuscarJson(url, options);
+  } catch {
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    return await tentarBuscarJson(url, options); // 2ª falha propaga pro .catch de quem chamou
+  }
+}

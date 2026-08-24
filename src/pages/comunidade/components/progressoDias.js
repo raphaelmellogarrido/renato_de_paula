@@ -92,12 +92,34 @@ function videoAnteriorAssistido(dias, progressoPorArquivo, diaAlvo, videoIndexAl
  * podeAssistir(diaAlvo, videoIndexAlvo) — regras exatas pedidas pelo
  * cliente. Retorna { liberado, motivo }, motivo só é usado quando
  * liberado===false, pra escolher o toast certo em AulasMeditacaoRaiz.jsx:
- *  - "ordem"      -> "Assista o vídeo anterior para liberar."
- *  - "calendario" -> "Você já completou seu dia hoje! Volte amanhã..."
- *  - "sequencia"  -> tentando pular 2+ dias (não deveria ser alcançável
- *                    pela UI normal, mas cobre navegação manual).
+ *  - "ordem"       -> "Assista o vídeo anterior para liberar."
+ *  - "calendario"  -> "Você já completou seu dia hoje! Volte amanhã..."
+ *  - "sequencia"   -> tentando pular 2+ dias (não deveria ser alcançável
+ *                     pela UI normal, mas cobre navegação manual).
+ *  - "verificando" -> ver `verificado` abaixo.
+ *
+ * `hojeServidor` (string "YYYY-MM-DD", fuso Brasília, vinda do GET de
+ * progresso.php): referência de "hoje" pras comparações de calendário.
+ * Preferida sobre `hoje()` (relógio do NAVEGADOR) — um dispositivo com fuso
+ * diferente de BRT podia calcular a virada de dia errado comparando contra
+ * `ultimoDiaCompletadoData`, que vem sempre em fuso Brasília do banco. Some
+ * pro fallback local só quando ainda não chegou nenhuma resposta do
+ * servidor nesta sessão (ex.: cálculo especulativo antes do primeiro GET).
+ *
+ * `verificado` (bool, default true pra não quebrar quem já chama esta
+ * função sem o valor — ex. JornadaProgress.jsx, que só EXIBE o bloqueio, não
+ * o aplica): quando false, os ramos que liberariam um dia novo por
+ * passagem de calendário ficam bloqueados (motivo "verificando") em vez de
+ * abrir — evita que um GET que falhou/deu timeout (ver AulasMeditacaoRaiz.jsx)
+ * libere o player por falta de confirmação do servidor, em vez de travar
+ * como deveria (fail-closed, não fail-open).
  */
-export function podeAssistir(diaAlvo, videoIndexAlvo, { dias, progressoPorArquivo, maxDiaCompleto, ultimoDiaCompletadoData }) {
+export function podeAssistir(
+  diaAlvo,
+  videoIndexAlvo,
+  { dias, progressoPorArquivo, maxDiaCompleto, ultimoDiaCompletadoData, hojeServidor, verificado = true },
+) {
+  const hojeRef = hojeServidor || hoje();
   // DIA 0 SEMPRE LIVRE — mas em ordem dentro do próprio dia.
   if (diaAlvo === 0) {
     if (videoIndexAlvo === 0) return { liberado: true, motivo: null };
@@ -120,9 +142,14 @@ export function podeAssistir(diaAlvo, videoIndexAlvo, { dias, progressoPorArquiv
     }
 
     // REGRA GERAL: 1 dia novo por dia de calendário. Só libera se o último
-    // dia completado foi ANTES de hoje (comparação de DATE, não datetime).
+    // dia completado foi ANTES de hoje (comparação de DATE, não datetime) —
+    // e só se o servidor já confirmou o progresso desta sessão (`verificado`,
+    // ver doc da função acima). Sem confirmação, fica bloqueado por padrão.
     if (maxDiaCompleto >= 1) {
-      if (ultimoDiaCompletadoData && ultimoDiaCompletadoData < hoje()) {
+      if (!verificado) {
+        return { liberado: false, motivo: "verificando" };
+      }
+      if (ultimoDiaCompletadoData && ultimoDiaCompletadoData < hojeRef) {
         if (videoIndexAlvo === 0) return { liberado: true, motivo: null };
         const ok = videoAnteriorAssistido(dias, progressoPorArquivo, diaAlvo, videoIndexAlvo);
         return ok ? { liberado: true, motivo: null } : { liberado: false, motivo: "ordem" };

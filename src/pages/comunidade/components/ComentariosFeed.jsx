@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEmailSessao, lerNomeSessao } from "./usuarioStorage";
 import ComentarioCard, { EMAIL_ADMINISTRADOR, EMAIL_ORIENTADOR } from "./ComentarioCard";
-import { chaveCacheComentarios, lerCacheComentarios, salvarCacheComentarios } from "./cacheComentarios";
+import { chaveCacheComentarios, lerCacheComentarios, salvarCacheComentarios, buscarComentarios } from "./cacheComentarios";
 
 const COMENTARIOS_URL = "/api/hotmart/comentarios.php";
 // aula_id fixo — antes cada vídeo tinha seu próprio bucket de comentários
@@ -46,8 +46,7 @@ function ComentariosFeed() {
       setPages(Number.isFinite(cache.pages) ? Math.max(1, cache.pages) : 1);
     }
 
-    fetch(`${COMENTARIOS_URL}?aula_id=${AULA_ID}&page=${paginaAlvo}`)
-      .then((r) => r.json())
+    buscarComentarios(`${COMENTARIOS_URL}?aula_id=${AULA_ID}&page=${paginaAlvo}`)
       .then((dados) => {
         setItens(Array.isArray(dados?.itens) ? dados.itens : []);
         setTotal(Number.isFinite(dados?.total) ? dados.total : 0);
@@ -56,11 +55,10 @@ function ComentariosFeed() {
         salvarCacheComentarios(chave, dados);
       })
       .catch((err) => {
-        console.error("[Clube Presença] falha ao carregar comentários:", err);
-        if (!cache) {
-          setItens([]);
-          setTotal(0);
-        }
+        console.error("[Clube Presença] falha ao carregar comentários (após retry):", err);
+        // Mesmo motivo de DificuldadeDoDia.jsx: buscarComentarios já fez 1
+        // retry, então não zera itens/total aqui — mantém cache pintado ou
+        // skeleton, nunca mostra estado vazio por falha transitória.
       });
   }, []);
 

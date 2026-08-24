@@ -66,6 +66,9 @@ function mensagemBloqueio(motivo, dia) {
   if (motivo === "sequencia") {
     return `Complete os dias anteriores para desbloquear o Dia ${dia}.`;
   }
+  if (motivo === "verificando") {
+    return "Não foi possível confirmar seu progresso. Recarregue a página.";
+  }
   return "Vídeo bloqueado.";
 }
 
@@ -111,6 +114,16 @@ export default function AulasMeditacaoRaiz() {
   // renderização (evita flash no Dia 0 antes de "pular" pra aula certa)
   // quanto pra liberar o cálculo de "continuar de onde parou" (alvoResumo).
   const [progressoCarregado, setProgressoCarregado] = useState(!email);
+  // hojeServidor: data de HOJE segundo o servidor (fuso Brasília, vem no GET
+  // de progresso.php) — referência usada por podeAssistir em vez do relógio
+  // do navegador (ver progressoDias.js). progressoVerificado: true SÓ quando
+  // esse GET respondeu com sucesso nesta sessão do componente — diferente de
+  // progressoCarregado, que também vira true no timeout/erro (pra tela de
+  // loading não travar pra sempre). Sem essa confirmação, podeAssistir trava
+  // qualquer liberação por passagem de calendário (fail-closed em vez de
+  // fail-open) — ver comentário grande no useEffect de progresso abaixo.
+  const [hojeServidor, setHojeServidor] = useState(null);
+  const [progressoVerificado, setProgressoVerificado] = useState(false);
 
   const marcados85Ref = useRef(new Set());
   const [emailAnterior, setEmailAnterior] = useState(email);
@@ -136,6 +149,7 @@ export default function AulasMeditacaoRaiz() {
     setEmailAnterior(email);
     setProgressoPorArquivo(email ? carregarProgressoLocal(email) : {});
     setProgressoCarregado(!email);
+    setProgressoVerificado(false);
   }
 
   // Refs não podem ser alterados durante o render (só em efeitos/handlers) —
@@ -219,10 +233,19 @@ export default function AulasMeditacaoRaiz() {
           salvarProgressoLocal(email, mesclado);
           return mesclado;
         });
+        // Data de "hoje" segundo o SERVIDOR (não o navegador) — ver doc de
+        // podeAssistir em progressoDias.js. Só marca verificado=true aqui,
+        // dentro do .then de sucesso: se o GET falhar/der timeout, o bloqueio
+        // por calendário precisa continuar fechado (ver .catch abaixo).
+        if (data?.hoje) setHojeServidor(data.hoje);
+        setProgressoVerificado(true);
       })
       .catch(() => {
         // PHP indisponível ou lento (abort do timeout) — segue só com o que
-        // já está no localStorage, sem travar a página.
+        // já está no localStorage, sem travar a página. NÃO marca
+        // progressoVerificado=true aqui de propósito: sem confirmação do
+        // servidor, podeAssistir trava qualquer liberação por calendário em
+        // vez de assumir que está tudo liberado (fail-closed).
       })
       .finally(() => {
         clearTimeout(timeoutId);
@@ -285,6 +308,8 @@ export default function AulasMeditacaoRaiz() {
           progressoPorArquivo,
           maxDiaCompleto,
           ultimoDiaCompletadoData,
+          hojeServidor,
+          verificado: progressoVerificado,
         });
       });
     }
@@ -304,7 +329,7 @@ export default function AulasMeditacaoRaiz() {
     });
 
     return mapa;
-  }, [dias, progressoPorArquivo, maxDiaCompleto, ultimoDiaCompletadoData, diaEfetivo]);
+  }, [dias, progressoPorArquivo, maxDiaCompleto, ultimoDiaCompletadoData, diaEfetivo, hojeServidor, progressoVerificado]);
 
   const bloqueioVideoAtivo = videoAtivo ? bloqueioPorArquivo[videoAtivo.arquivo] : null;
 
@@ -523,7 +548,7 @@ export default function AulasMeditacaoRaiz() {
             <p className="cm-video-legenda">✓ marcado automaticamente ao atingir 90% do vídeo</p>
           </div>
 
-          <JornadaProgress progressoPorArquivo={progressoPorArquivo} />
+          <JornadaProgress progressoPorArquivo={progressoPorArquivo} hojeServidor={hojeServidor} />
         </div>
       </div>
 

@@ -47,7 +47,12 @@ if ($method === 'GET') {
     }
     $stmt->close();
 
-    echo json_encode(['ok' => true, 'aulas' => $aulas]);
+    // 'hoje': data do SERVIDOR (fuso Brasília, forçado em _conexao.php), não
+    // do navegador do cliente — o front usa isso (não new Date() local) pra
+    // decidir se "já é um novo dia" no bloqueio por calendário (ver
+    // progressoDias.js/podeAssistir). Sem isso, um dispositivo com fuso
+    // diferente de BRT podia destravar o próximo dia cedo/tarde demais.
+    echo json_encode(['ok' => true, 'aulas' => $aulas, 'hoje' => date('Y-m-d')]);
     exit;
 }
 

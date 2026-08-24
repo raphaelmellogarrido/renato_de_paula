@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEmailSessao, lerNomeSessao } from "./usuarioStorage";
 import ComentarioCard, { EMAIL_ADMINISTRADOR, EMAIL_ORIENTADOR } from "./ComentarioCard";
-import { chaveCacheComentarios, lerCacheComentarios, salvarCacheComentarios } from "./cacheComentarios";
+import { chaveCacheComentarios, lerCacheComentarios, salvarCacheComentarios, buscarComentarios } from "./cacheComentarios";
 
 const COMENTARIOS_URL = "/api/hotmart/comentarios.php";
 // aula_id fixo — este card não é sobre um vídeo específico, é uma reflexão
@@ -59,8 +59,7 @@ function DificuldadeDoDia() {
       setPages(Number.isFinite(cache.pages) ? Math.max(1, cache.pages) : 1);
     }
 
-    fetch(`${COMENTARIOS_URL}?aula_id=${AULA_ID}&page=${paginaAlvo}&per_page=${POR_PAGINA}`)
-      .then((r) => r.json())
+    buscarComentarios(`${COMENTARIOS_URL}?aula_id=${AULA_ID}&page=${paginaAlvo}&per_page=${POR_PAGINA}`)
       .then((dados) => {
         setItens(Array.isArray(dados?.itens) ? dados.itens : []);
         setTotal(Number.isFinite(dados?.total) ? dados.total : 0);
@@ -69,13 +68,13 @@ function DificuldadeDoDia() {
         salvarCacheComentarios(chave, dados);
       })
       .catch((err) => {
-        console.error("[Clube Presença] falha ao carregar 'Sua prática hoje':", err);
-        // Só zera se não havia cache já pintado — não queremos que uma falha
-        // de rede APAGUE dados válidos que a visita anterior deixou na tela.
-        if (!cache) {
-          setItens([]);
-          setTotal(0);
-        }
+        console.error("[Clube Presença] falha ao carregar 'Sua prática hoje' (após retry):", err);
+        // Nunca zera itens/total aqui: já tentamos 2x (buscarComentarios já
+        // faz 1 retry). Se havia cache, ele continua pintado; se não havia,
+        // total continua null e a tela fica no skeleton — nunca mostra
+        // "Seja o primeiro a comentar" por causa de uma falha transitória
+        // (era isso que fazia o mural aparecer vazio no primeiro load e só
+        // corrigir com F5).
       });
   }, []);
 

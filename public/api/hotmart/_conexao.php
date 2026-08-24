@@ -87,113 +87,135 @@ function garantirEstruturaClube(mysqli $mysqli): void
         return;
     }
 
-    $mysqli->query(
-        "CREATE TABLE IF NOT EXISTS progresso_aulas_raiz (
-            email VARCHAR(255) NOT NULL,
-            arquivo VARCHAR(50) NOT NULL,
-            dia TINYINT NOT NULL DEFAULT 0,
-            progresso_percent TINYINT NOT NULL DEFAULT 0,
-            ultima_posicao INT NOT NULL DEFAULT 0,
-            assistida TINYINT(1) NOT NULL DEFAULT 0,
-            completada_em DATETIME NULL,
-            PRIMARY KEY (email, arquivo)
-        )"
-    );
+    // Tudo abaixo em try/catch: desde PHP 8.1 o mysqli lança
+    // mysqli_sql_exception por padrão (MYSQLI_REPORT_ERROR|STRICT) em vez
+    // de só retornar false. O dashboard dispara ~4 fetches simultâneos no
+    // primeiro load da sessão (comentarios.php, progresso.php, pulso.php,
+    // etc.) — se duas dessas requests chegam aqui ao mesmo tempo, ainda
+    // antes do marcador existir, o par "SELECT checa se a coluna existe" +
+    // "ALTER TABLE ADD COLUMN" não é atômico: as duas podem passar pelo
+    // SELECT vendo que a coluna não existe e colidir no ALTER (uma delas
+    // recebe "Duplicate column name"). Sem este try/catch essa exceção
+    // subia direto pra fora da função e virava 500 na request — quebrando
+    // o feed inteiro na primeira visita, mesmo a tabela tendo sido criada
+    // com sucesso pela outra request. Bug real (24/08): comentários só
+    // apareciam depois de F5 porque a 2ª request já achava o marcador
+    // pronto e pulava a função inteira.
+    try {
+        $mysqli->query(
+            "CREATE TABLE IF NOT EXISTS progresso_aulas_raiz (
+                email VARCHAR(255) NOT NULL,
+                arquivo VARCHAR(50) NOT NULL,
+                dia TINYINT NOT NULL DEFAULT 0,
+                progresso_percent TINYINT NOT NULL DEFAULT 0,
+                ultima_posicao INT NOT NULL DEFAULT 0,
+                assistida TINYINT(1) NOT NULL DEFAULT 0,
+                completada_em DATETIME NULL,
+                PRIMARY KEY (email, arquivo)
+            )"
+        );
 
-    // Comentários por aula (ComentariosFeed.jsx) — permanente, não faz parte
-    // de nenhum reset semanal (DesafioSemana etc.). aula_id sem FK de
-    // propósito: aceita tanto id de vídeo do curso mock (Aula.jsx, ex:
-    // "boas-vindas") quanto arquivo do curso real (AulasMeditacaoRaiz.jsx,
-    // ex: "dia1.2.mp4"), sem exigir uma tabela de aulas unificada.
-    $mysqli->query(
-        "CREATE TABLE IF NOT EXISTS comentarios (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            email VARCHAR(255) NOT NULL,
-            nome VARCHAR(255),
-            aula_id VARCHAR(100) NOT NULL DEFAULT 'geral',
-            comentario TEXT NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            INDEX(aula_id),
-            INDEX(created_at)
-        )"
-    );
+        // Comentários por aula (ComentariosFeed.jsx) — permanente, não faz parte
+        // de nenhum reset semanal (DesafioSemana etc.). aula_id sem FK de
+        // propósito: aceita tanto id de vídeo do curso mock (Aula.jsx, ex:
+        // "boas-vindas") quanto arquivo do curso real (AulasMeditacaoRaiz.jsx,
+        // ex: "dia1.2.mp4"), sem exigir uma tabela de aulas unificada.
+        $mysqli->query(
+            "CREATE TABLE IF NOT EXISTS comentarios (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                email VARCHAR(255) NOT NULL,
+                nome VARCHAR(255),
+                aula_id VARCHAR(100) NOT NULL DEFAULT 'geral',
+                comentario TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                INDEX(aula_id),
+                INDEX(created_at)
+            )"
+        );
 
-    // Feed da Comunidade (Clube Presença) — mural real, consumido por
-    // FeedComunidade.jsx via public/api/comunidade/posts.php. Substitui o
-    // mock fixo (FEED_COMUNIDADE em mockData.js, removido) que mostrava
-    // sempre os mesmos 4 posts fake pra todo mundo — agora tabela vazia =
-    // feed vazio de verdade, sem inventar autor nenhum.
-    $mysqli->query(
-        "CREATE TABLE IF NOT EXISTS posts_comunidade (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            email VARCHAR(255) NOT NULL,
-            nome VARCHAR(255) NOT NULL DEFAULT 'Aluno',
-            texto TEXT NOT NULL,
-            curtidas INT NOT NULL DEFAULT 0,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            INDEX(created_at)
-        )"
-    );
+        // Feed da Comunidade (Clube Presença) — mural real, consumido por
+        // FeedComunidade.jsx via public/api/comunidade/posts.php. Substitui o
+        // mock fixo (FEED_COMUNIDADE em mockData.js, removido) que mostrava
+        // sempre os mesmos 4 posts fake pra todo mundo — agora tabela vazia =
+        // feed vazio de verdade, sem inventar autor nenhum.
+        $mysqli->query(
+            "CREATE TABLE IF NOT EXISTS posts_comunidade (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                email VARCHAR(255) NOT NULL,
+                nome VARCHAR(255) NOT NULL DEFAULT 'Aluno',
+                texto TEXT NOT NULL,
+                curtidas INT NOT NULL DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                INDEX(created_at)
+            )"
+        );
 
-    // Recuperação de senha (esqueceu-senha.php / redefinir-senha.php).
-    // Token é a própria PK (bin2hex(random_bytes(32)) — 64 chars hex, cabe
-    // em 128 mas deixamos folga). expires_at: 1h a partir da geração.
-    $mysqli->query(
-        "CREATE TABLE IF NOT EXISTS password_resets (
-            email VARCHAR(255) NOT NULL,
-            token VARCHAR(128) NOT NULL PRIMARY KEY,
-            expires_at DATETIME NOT NULL,
-            INDEX(email)
-        )"
-    );
-    // Limpeza oportunista de tokens vencidos — sem cron, só aproveita que
-    // toda request já passa por aqui (mesmo espírito idempotente do resto
-    // desta função).
-    $mysqli->query("DELETE FROM password_resets WHERE expires_at < NOW()");
+        // Recuperação de senha (esqueceu-senha.php / redefinir-senha.php).
+        // Token é a própria PK (bin2hex(random_bytes(32)) — 64 chars hex, cabe
+        // em 128 mas deixamos folga). expires_at: 1h a partir da geração.
+        $mysqli->query(
+            "CREATE TABLE IF NOT EXISTS password_resets (
+                email VARCHAR(255) NOT NULL,
+                token VARCHAR(128) NOT NULL PRIMARY KEY,
+                expires_at DATETIME NOT NULL,
+                INDEX(email)
+            )"
+        );
+        // Limpeza oportunista de tokens vencidos — sem cron, só aproveita que
+        // toda request já passa por aqui (mesmo espírito idempotente do resto
+        // desta função).
+        $mysqli->query("DELETE FROM password_resets WHERE expires_at < NOW()");
 
-    $temApelido = $mysqli->query(
-        "SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
-         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'alunos' AND COLUMN_NAME = 'apelido'"
-    );
-    if ($temApelido && $temApelido->num_rows === 0) {
-        $mysqli->query("ALTER TABLE alunos ADD COLUMN apelido VARCHAR(30) NULL AFTER nome");
+        $temApelido = $mysqli->query(
+            "SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'alunos' AND COLUMN_NAME = 'apelido'"
+        );
+        if ($temApelido && $temApelido->num_rows === 0) {
+            $mysqli->query("ALTER TABLE alunos ADD COLUMN apelido VARCHAR(30) NULL AFTER nome");
+        }
+
+        // Controle manual da live (seção "Controle da Live" em AdminMeditacao.jsx,
+        // consumida por public/api/live/status.php + public/api/admin/live-controle.php).
+        // Trava o botão "Entrar na live" em ColunaEncontros.jsx até o professor
+        // liberar, independente de link_live já estar preenchido. Mesmo padrão de
+        // ALTER condicional do apelido acima. Default 0 (travado): a coluna nunca
+        // libera sozinha na primeira vez que é criada.
+        $temLiveLiberada = $mysqli->query(
+            "SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'config_encontro' AND COLUMN_NAME = 'live_liberada'"
+        );
+        if ($temLiveLiberada && $temLiveLiberada->num_rows === 0) {
+            $mysqli->query("ALTER TABLE config_encontro ADD COLUMN live_liberada TINYINT(1) NOT NULL DEFAULT 0");
+        }
+
+        // Acesso de Teste (painel /admin, seção "Acesso de Teste") — lista de
+        // convite/auditoria dos e-mails liberados manualmente sem compra na
+        // Hotmart. A liberação de fato acontece em `alunos` (status='teste'),
+        // lida por login.php/register.php/check.php igual a um comprador
+        // normal (status='ativo') — ver public/api/admin/teste-emails.php.
+        $mysqli->query(
+            "CREATE TABLE IF NOT EXISTS comunidade_teste_emails (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                email VARCHAR(255) NOT NULL UNIQUE,
+                nome VARCHAR(255) NULL,
+                criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+                criado_por VARCHAR(100)
+            )"
+        );
+
+        // Grava o marcador por último — se alguma query acima falhar/lançar, a
+        // função roda de novo na próxima request em vez de "esquecer" que faltou
+        // algo. @ silencia só erro de permissão/disco no temp dir: nesse caso
+        // raro, cai de novo em file_exists()===false na próxima request e
+        // repete o setup (pior caso = sem cache, não quebra nada).
+        @file_put_contents($marcador, (string) time());
+    } catch (\Throwable $e) {
+        // Nunca deixa esse setup idempotente derrubar a request com 500 —
+        // loga e segue sem marcador (não escrevemos ele aqui, então a
+        // próxima request tenta o setup de novo; pior caso é ficar lento
+        // de novo uma vez, não quebrar o feed). Ver comentário grande acima.
+        error_log('[Clube Presença] garantirEstruturaClube falhou, seguindo sem setup: ' . $e->getMessage());
     }
-
-    // Controle manual da live (seção "Controle da Live" em AdminMeditacao.jsx,
-    // consumida por public/api/live/status.php + public/api/admin/live-controle.php).
-    // Trava o botão "Entrar na live" em ColunaEncontros.jsx até o professor
-    // liberar, independente de link_live já estar preenchido. Mesmo padrão de
-    // ALTER condicional do apelido acima. Default 0 (travado): a coluna nunca
-    // libera sozinha na primeira vez que é criada.
-    $temLiveLiberada = $mysqli->query(
-        "SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
-         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'config_encontro' AND COLUMN_NAME = 'live_liberada'"
-    );
-    if ($temLiveLiberada && $temLiveLiberada->num_rows === 0) {
-        $mysqli->query("ALTER TABLE config_encontro ADD COLUMN live_liberada TINYINT(1) NOT NULL DEFAULT 0");
-    }
-
-    // Acesso de Teste (painel /admin, seção "Acesso de Teste") — lista de
-    // convite/auditoria dos e-mails liberados manualmente sem compra na
-    // Hotmart. A liberação de fato acontece em `alunos` (status='teste'),
-    // lida por login.php/register.php/check.php igual a um comprador
-    // normal (status='ativo') — ver public/api/admin/teste-emails.php.
-    $mysqli->query(
-        "CREATE TABLE IF NOT EXISTS comunidade_teste_emails (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            email VARCHAR(255) NOT NULL UNIQUE,
-            nome VARCHAR(255) NULL,
-            criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
-            criado_por VARCHAR(100)
-        )"
-    );
-
-    // Grava o marcador por último — se alguma query acima falhar/lançar, a
-    // função roda de novo na próxima request em vez de "esquecer" que faltou
-    // algo. @ silencia só erro de permissão/disco no temp dir: nesse caso
-    // raro, cai de novo em file_exists()===false na próxima request e
-    // repete o setup (pior caso = sem cache, não quebra nada).
-    @file_put_contents($marcador, (string) time());
 }
 
 // Streak real (dias consecutivos até hoje/ontem) calculado a partir das

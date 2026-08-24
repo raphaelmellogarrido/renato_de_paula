@@ -35,6 +35,11 @@ export function useProgressoAulasRaiz() {
   const [progressoPorArquivo, setProgressoPorArquivo] = useState(() =>
     email ? carregarProgressoLocal(email) : {},
   );
+  // hojeServidor: data de HOJE segundo o servidor (fuso Brasília), vinda do
+  // mesmo GET de progresso.php — repassada pra JornadaProgress.jsx pra ela
+  // usar a mesma referência de "hoje" que AulasMeditacaoRaiz.jsx usa no
+  // bloqueio real (ver progressoDias.js), em vez do relógio do navegador.
+  const [hojeServidor, setHojeServidor] = useState(null);
   const [emailAnterior, setEmailAnterior] = useState(email);
 
   // Troca de conta / logout+login: recarrega do zero pra chave do NOVO
@@ -66,6 +71,7 @@ export function useProgressoAulasRaiz() {
           salvarProgressoLocal(email, mesclado);
           return mesclado;
         });
+        if (data?.hoje) setHojeServidor(data.hoje);
       })
       .catch(() => {
         // PHP indisponível — segue só com o que já está no localStorage,
@@ -73,7 +79,7 @@ export function useProgressoAulasRaiz() {
       });
   }, [email]);
 
-  return progressoPorArquivo;
+  return { progressoPorArquivo, hojeServidor };
 }
 
 export default useProgressoAulasRaiz;

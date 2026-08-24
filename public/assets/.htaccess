@@ -1,0 +1,13 @@
+# Cache de 1 ano pros arquivos com hash de conteúdo (dist/assets/*.js,
+# *.css) gerados pelo Vite — o nome muda sempre que o conteúdo muda, então
+# cache longo aqui é seguro (nunca serve versão velha sob o mesmo nome).
+# Fica só nesta pasta, não afeta a raiz do .htaccess (SPA/API) nem
+# public/icons (nomes fixos, sem hash — cache longo lá quebraria update).
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresDefault "access plus 1 year"
+</IfModule>
+
+<IfModule mod_headers.c>
+  Header set Cache-Control "public, max-age=31536000, immutable"
+</IfModule>

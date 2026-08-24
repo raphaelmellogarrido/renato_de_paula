@@ -5,6 +5,7 @@ import Footer from "./components/Footer";
 import ScrollToTop from "./components/ScrollToTop";
 import MetaPixelTracker from "./components/MetaPixelTracker";
 import Home from "./pages/Home";
+import useComunidadeAuth from "./pages/comunidade/components/useComunidadeAuth";
 import "./App.css";
 // import "./pages/comunidade/Login.css";
 
@@ -26,6 +27,21 @@ const RedefinirSenha = lazy(() => import("./pages/comunidade/RedefinirSenha"));
 // telinha cheia (cm-login-page) do login — por isso entram aqui também pra
 // esconder Navbar/Footer do site.
 const ROTAS_TELA_CHEIA_COMUNIDADE = ["/comunidade", "/esqueceu-senha", "/redefinir-senha"];
+
+// Decide auth ANTES de pedir o chunk do ComunidadeLayout. useComunidadeAuth
+// só lê localStorage (síncrono, sem libs pesadas) então dá pra manter fora
+// do lazy() — sem isso, quem chega em /comunidade sem sessão baixava o
+// chunk inteiro do ComunidadeLayout só pra descobrir (já montado, num
+// useEffect) que precisava redirecionar pro /comunidade/login, e SÓ ENTÃO
+// começava a baixar o chunk do Login. Dois round-trips em série, um atrás
+// do outro, era o que o PageSpeed reportava como 2540ms de atraso no LCP
+// (o <h1> do login). Resolvendo aqui, sem sessão vai direto pro chunk do
+// Login, sem passar pelo do Layout.
+function RotaComunidade() {
+  const { session } = useComunidadeAuth();
+  if (!session) return <Navigate to="/comunidade/login" replace />;
+  return <ComunidadeLayout />;
+}
 
 function App() {
   const location = useLocation();
@@ -53,7 +69,7 @@ function App() {
             <Route path="/comunidade/login" element={<ComunidadeLogin />} />
             <Route path="/esqueceu-senha" element={<EsqueceuSenha />} />
             <Route path="/redefinir-senha" element={<RedefinirSenha />} />
-            <Route path="/comunidade" element={<ComunidadeLayout />}>
+            <Route path="/comunidade" element={<RotaComunidade />}>
               <Route index element={<ComunidadeDashboard />} />
               <Route path="aulas-raiz" element={<ComunidadeAulasRaiz />} />
               <Route path="aula/:id" element={<ComunidadeAula />} />
