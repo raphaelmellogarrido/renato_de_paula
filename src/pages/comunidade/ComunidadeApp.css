@@ -613,44 +613,50 @@
   font-style: italic;
 }
 
-/* Toolbar em pílula (item 3): Negrito / Itálico / Emoji / Foto, logo abaixo
-   do textarea — substitui o antigo botão solto de anexar. */
-.cm-duvida-toolbar {
+/* Toolbar em pílula: Negrito / Itálico / Emoji / Foto, logo abaixo do
+   textarea, alinhada à esquerda. Container cinza claro sem borda, cada botão
+   é um quadrado arredondado sem borda com hover/active suaves. */
+.cm-toolbar {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   width: fit-content;
-  background: var(--cm-sage-soft, #f3f1ec);
-  border-radius: 999px;
-  padding: 6px;
+  background: #f5f5f5;
+  border-radius: 9999px;
+  padding: 6px 10px;
   margin-top: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .cm-duvida-anexar-input {
   display: none;
 }
 
-.cm-duvida-toolbar-btn {
-  width: 32px;
-  height: 32px;
+.cm-toolbar-btn {
+  width: 30px;
+  height: 30px;
   flex-shrink: 0;
   background: none;
   border: none;
-  border-radius: 999px;
-  color: var(--cm-sage-dark);
+  border-radius: 8px;
+  color: #555;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
 }
 
-.cm-duvida-toolbar-btn:hover:not(:disabled),
-.cm-duvida-toolbar-btn.is-ativo {
-  background: #fff;
+.cm-toolbar-btn:hover:not(:disabled) {
+  background: #e5e5e5;
 }
 
-.cm-duvida-toolbar-btn:disabled {
+.cm-toolbar-btn:active:not(:disabled),
+.cm-toolbar-btn.is-ativo {
+  background: #ddd;
+}
+
+.cm-toolbar-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }

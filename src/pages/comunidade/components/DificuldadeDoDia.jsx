@@ -330,22 +330,22 @@ function DificuldadeDoDia() {
 
         {fotoErro && <p className="cm-duvida-foto-erro">{fotoErro}</p>}
 
-        <div className="cm-duvida-toolbar">
-          <button type="button" className="cm-duvida-toolbar-btn" aria-label="Negrito" title="Negrito" onClick={() => aplicarMarcador("**")}>
-            <Bold size={16} />
+        <div className="cm-toolbar">
+          <button type="button" className="cm-toolbar-btn" aria-label="Negrito" title="Negrito" onClick={() => aplicarMarcador("**")}>
+            <Bold size={18} />
           </button>
-          <button type="button" className="cm-duvida-toolbar-btn" aria-label="Itálico" title="Itálico" onClick={() => aplicarMarcador("*")}>
-            <Italic size={16} />
+          <button type="button" className="cm-toolbar-btn" aria-label="Itálico" title="Itálico" onClick={() => aplicarMarcador("*")}>
+            <Italic size={18} />
           </button>
           <button
             ref={emojiBotaoRef}
             type="button"
-            className={`cm-duvida-toolbar-btn ${emojiAberto ? "is-ativo" : ""}`}
+            className={`cm-toolbar-btn ${emojiAberto ? "is-ativo" : ""}`}
             aria-label="Inserir emoji"
             title="Inserir emoji"
             onClick={() => setEmojiAberto((v) => !v)}
           >
-            <Smile size={16} />
+            <Smile size={18} />
           </button>
           <input
             ref={fileInputRef}
@@ -357,13 +357,13 @@ function DificuldadeDoDia() {
           />
           <button
             type="button"
-            className="cm-duvida-toolbar-btn"
+            className="cm-toolbar-btn"
             aria-label="Anexar foto"
             title="Anexar foto"
             disabled={enviando}
             onClick={() => fileInputRef.current?.click()}
           >
-            <ImageIcon size={16} />
+            <ImageIcon size={18} />
           </button>
 
           {emojiAberto && (
