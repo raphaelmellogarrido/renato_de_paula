@@ -35,6 +35,31 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $res = $mysqli->query("SELECT YEARWEEK(CURDATE(), 1) as sem");
 $semana = (int) $res->fetch_assoc()['sem'];
 
+// Marcador de reset (bug reportado 25/08): o DELETE abaixo zera o banco,
+// mas o navegador de quem já tinha marcado um check antes guarda isso em
+// localStorage (DesafioSemana.jsx) e o merge de lá NUNCA desmarca um item
+// já true localmente — como a linha dele em desafio_semana some, não sobra
+// nada vindo do servidor pra "corrigir" esse valor, e os 3 checks continuam
+// aparecendo marcados pro aluno mesmo depois do reset. Este marcador
+// (resetado_em, lido por desafio-semana.php) é o que avisa o front que o
+// cache local daquela semana ficou stale e precisa ser descartado. Grava
+// ANTES do DELETE abaixo e independente da tabela desafio_semana já existir
+// — o reset "vale" a partir de agora mesmo que ninguém tenha marcado nada
+// ainda essa semana.
+$mysqli->query(
+    "CREATE TABLE IF NOT EXISTS desafio_semana_reset (
+        semana INT NOT NULL PRIMARY KEY,
+        resetado_em DATETIME NOT NULL
+    )"
+);
+$stmtReset = $mysqli->prepare(
+    "INSERT INTO desafio_semana_reset (semana, resetado_em) VALUES (?, NOW())
+     ON DUPLICATE KEY UPDATE resetado_em = NOW()"
+);
+$stmtReset->bind_param('i', $semana);
+$stmtReset->execute();
+$stmtReset->close();
+
 // A tabela desafio_semana só existe depois do primeiro check de algum
 // aluno (criada por desafio-semana.php, não por garantirEstruturaClube) —
 // se ainda não existir, não há nada pra resetar, mas isso não é erro.

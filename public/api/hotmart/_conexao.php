@@ -81,7 +81,7 @@ function garantirEstruturaClube(mysqli $mysqli): void
 {
     // (não pode ser `const` aqui dentro — PHP só aceita const no nível do
     // arquivo/classe, não dentro do corpo de uma função)
-    $estruturaClubeVersao = 4;
+    $estruturaClubeVersao = 5;
     $marcador = sys_get_temp_dir() . '/comunidade_estrutura_v' . $estruturaClubeVersao . '.ok';
     if (file_exists($marcador)) {
         return;
@@ -216,6 +216,26 @@ function garantirEstruturaClube(mysqli $mysqli): void
             $mysqli->query("ALTER TABLE alunos ADD COLUMN avatar_url VARCHAR(255) NULL AFTER apelido");
         }
 
+        // Foto de perfil, v2 (bug reportado 25/08: a foto salva como arquivo
+        // em avatar_url sumia depois de todo `git push`, porque a Hostinger
+        // recria a pasta do app do zero a cada deploy — apagando qualquer
+        // arquivo que não veio do Git, mesmo problema já documentado no
+        // HANDOFF.md pros vídeos). avatar_url acima fica em desuso (nunca
+        // mais escrito, só não é dropado); a foto agora vive DENTRO do banco
+        // (avatar_blob), que sobrevive a qualquer deploy, e é servida por
+        // public/api/hotmart/avatar.php. avatar_versao incrementa a cada
+        // upload — funciona como cache-buster (?v=N na URL) e como "tem foto
+        // ou não" (0 = nunca subiu/perdeu a foto antiga da v1, front mostra
+        // iniciais). Mesmo padrão de ALTER condicional usado acima.
+        $temAvatarBlob = $mysqli->query(
+            "SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'alunos' AND COLUMN_NAME = 'avatar_blob'"
+        );
+        if ($temAvatarBlob && $temAvatarBlob->num_rows === 0) {
+            $mysqli->query("ALTER TABLE alunos ADD COLUMN avatar_blob MEDIUMBLOB NULL AFTER avatar_url");
+            $mysqli->query("ALTER TABLE alunos ADD COLUMN avatar_versao INT NOT NULL DEFAULT 0 AFTER avatar_blob");
+        }
+
         // Resposta a comentário (botão "Responder" em "Sua prática hoje",
         // DificuldadeDoDia.jsx + ComentarioCard.jsx) — NULL = comentário raiz,
         // preenchido = resposta aninhada sob o comentário pai. Sem FK de
@@ -280,6 +300,17 @@ function garantirEstruturaClube(mysqli $mysqli): void
         // de novo uma vez, não quebrar o feed). Ver comentário grande acima.
         error_log('[Clube Presença] garantirEstruturaClube falhou, seguindo sem setup: ' . $e->getMessage());
     }
+}
+
+// URL pública da foto de perfil (ver avatar_blob/avatar_versao acima e
+// avatar.php) — null quando avatarVersao é 0/vazio (aluno nunca subiu foto,
+// ou subiu antes da v2 e perdeu no deploy: front mostra iniciais nesse
+// caso). ?v= é só cache-buster (muda a cada upload), avatar.php ignora o
+// valor, só lê email.
+function avatarUrlPublica(?string $email, $avatarVersao): ?string
+{
+    if (!$email || !$avatarVersao) return null;
+    return '/api/hotmart/avatar.php?email=' . rawurlencode($email) . '&v=' . (int) $avatarVersao;
 }
 
 // Streak real (dias consecutivos até hoje/ontem) calculado a partir das

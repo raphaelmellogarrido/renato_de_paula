@@ -68,7 +68,7 @@ if ($metodo === 'GET') {
     // INNER) porque o autor pode ter sido removido de `alunos` e o
     // comentário continua existindo; nesse caso avatar_url só vem null.
     $stmt = $mysqli->prepare(
-        "SELECT c.id, c.email, c.nome, c.comentario, c.image_url, c.created_at, a.avatar_url
+        "SELECT c.id, c.email, c.nome, c.comentario, c.image_url, c.created_at, a.avatar_versao
          FROM comentarios c
          LEFT JOIN alunos a ON a.email = c.email
          WHERE c.aula_id = ? AND c.parent_id IS NULL ORDER BY c.created_at DESC LIMIT ? OFFSET ?"
@@ -92,7 +92,9 @@ if ($metodo === 'GET') {
             'image_url' => $row['image_url'] !== null && $row['image_url'] !== '' ? $row['image_url'] : null,
             // null quando o autor não tem foto de perfil — front mostra as
             // iniciais nesse caso (mesmo fallback de image_url acima).
-            'avatar_url' => $row['avatar_url'] !== null && $row['avatar_url'] !== '' ? $row['avatar_url'] : null,
+            // avatarUrlPublica (_conexao.php) monta a URL a partir de
+            // avatar_versao — ver bug reportado 25/08 (foto em BLOB).
+            'avatar_url' => avatarUrlPublica($row['email'], $row['avatar_versao']),
             'created_at' => $row['created_at'], // já em horário de Brasília (SET time_zone em _conexao.php)
             'respostas' => [],
         ];
@@ -106,7 +108,7 @@ if ($metodo === 'GET') {
         $placeholders = implode(',', array_fill(0, count($idsRaiz), '?'));
         $tipos = str_repeat('i', count($idsRaiz));
         $stmtResp = $mysqli->prepare(
-            "SELECT c.id, c.parent_id, c.email, c.nome, c.comentario, c.image_url, c.created_at, a.avatar_url
+            "SELECT c.id, c.parent_id, c.email, c.nome, c.comentario, c.image_url, c.created_at, a.avatar_versao
              FROM comentarios c
              LEFT JOIN alunos a ON a.email = c.email
              WHERE c.parent_id IN ($placeholders) ORDER BY c.created_at ASC"
@@ -124,7 +126,7 @@ if ($metodo === 'GET') {
                 'nome' => $row['nome'] !== null && $row['nome'] !== '' ? $row['nome'] : 'Aluno',
                 'comentario' => $row['comentario'],
                 'image_url' => $row['image_url'] !== null && $row['image_url'] !== '' ? $row['image_url'] : null,
-                'avatar_url' => $row['avatar_url'] !== null && $row['avatar_url'] !== '' ? $row['avatar_url'] : null,
+                'avatar_url' => avatarUrlPublica($row['email'], $row['avatar_versao']),
                 'created_at' => $row['created_at'],
             ];
         }

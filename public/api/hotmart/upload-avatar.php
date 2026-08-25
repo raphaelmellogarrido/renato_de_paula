@@ -1,11 +1,14 @@
 <?php
 // Upload de foto de perfil (Configuracoes.jsx, campo "Foto de perfil").
 // POST multipart/form-data, campos "email" + "foto" -> recorta pra quadrado
-// 1:1, redimensiona pra 200x200, converte pra WebP (~<=30KB) e salva em
-// public/uploads/avatars/. Diferente de upload-imagem-comentario.php: este
-// endpoint já grava o caminho em alunos.avatar_url na mesma chamada (não
-// depende de um 2º POST separado), porque foto de perfil não tem um "dono"
-// (linha de comentário) pra anexar depois.
+// 1:1, redimensiona pra 200x200, converte pra WebP (~<=30KB) e grava em
+// alunos.avatar_blob (BLOB no banco, não arquivo em disco — bug reportado
+// 25/08: a foto salva como arquivo sumia a cada `git push`/deploy porque a
+// Hostinger recria a pasta do app do zero, apagando o que não veio do Git;
+// o banco não sofre disso, ver _conexao.php/avatar.php). Diferente de
+// upload-imagem-comentario.php: este endpoint já grava no banco na mesma
+// chamada (não depende de um 2º POST separado), porque foto de perfil não
+// tem um "dono" (linha de comentário) pra anexar depois.
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
@@ -13,7 +16,7 @@ header('Access-Control-Allow-Headers: Content-Type');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit; }
 
 require __DIR__ . '/_conexao.php';
-garantirEstruturaClube($mysqli); // garante alunos.avatar_url em ambientes onde ainda não existe
+garantirEstruturaClube($mysqli); // garante alunos.avatar_blob/avatar_versao em ambientes onde ainda não existem
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -30,7 +33,7 @@ if (!$email) {
     exit;
 }
 
-$check = $mysqli->prepare("SELECT avatar_url FROM alunos WHERE email = ? LIMIT 1");
+$check = $mysqli->prepare("SELECT avatar_versao FROM alunos WHERE email = ? LIMIT 1");
 $check->bind_param('s', $email);
 $check->execute();
 $aluno = $check->get_result()->fetch_assoc();
@@ -155,40 +158,16 @@ if (!$bytesWebp) {
     exit;
 }
 
-$pastaDestino = __DIR__ . '/../../uploads/avatars';
-if (!is_dir($pastaDestino)) {
-    mkdir($pastaDestino, 0755, true);
-}
+// avatar_versao incrementa a cada upload — funciona como cache-buster (?v=N
+// na URL, ver avatarUrlPublica em _conexao.php) e não depende de nenhum
+// arquivo em disco pra "saber" que mudou.
+$novaVersao = (int) ($aluno['avatar_versao'] ?? 0) + 1;
 
-// Nome único a partir do e-mail (sanitizado) + timestamp — nunca usa nome
-// original vindo do cliente (evita path traversal/colisão).
-$emailSanitizado = preg_replace('/[^a-z0-9]+/', '_', $email);
-$nomeUnico = trim($emailSanitizado, '_') . '_' . time() . '.webp';
-$caminhoDestino = $pastaDestino . '/' . $nomeUnico;
-
-if (file_put_contents($caminhoDestino, $bytesWebp) === false) {
-    http_response_code(500);
-    echo json_encode(['erro' => 'Não foi possível salvar a foto']);
-    exit;
-}
-
-$urlPublica = '/uploads/avatars/' . $nomeUnico;
-
-$stmt = $mysqli->prepare("UPDATE alunos SET avatar_url = ? WHERE email = ?");
-$stmt->bind_param('ss', $urlPublica, $email);
+$stmt = $mysqli->prepare("UPDATE alunos SET avatar_blob = ?, avatar_versao = ? WHERE email = ?");
+$stmt->bind_param('sis', $bytesWebp, $novaVersao, $email);
 $stmt->execute();
 $stmt->close();
 
-// Limpeza da foto anterior (se houver) só depois do UPDATE confirmar —
-// evita apagar o arquivo antigo e ficar sem nenhum se o UPDATE falhasse
-// antes. Só apaga se apontar pra dentro de uploads/avatars (nunca confia
-// em avatar_url pra apagar arquivo arbitrário fora dessa pasta).
-$avatarAntigo = $aluno['avatar_url'] ?? '';
-if ($avatarAntigo && preg_match('#^/uploads/avatars/[A-Za-z0-9_.-]+$#', $avatarAntigo)) {
-    $caminhoAntigo = __DIR__ . '/../../' . ltrim($avatarAntigo, '/');
-    if (is_file($caminhoAntigo)) {
-        @unlink($caminhoAntigo);
-    }
-}
+$urlPublica = avatarUrlPublica($email, $novaVersao);
 
 echo json_encode(['ok' => true, 'url' => $urlPublica]);

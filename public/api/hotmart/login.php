@@ -48,5 +48,7 @@ echo json_encode([
   // null se o aluno nunca subiu foto de perfil (Configuracoes.jsx) — sem
   // isso a sidebar só mostraria a foto depois de uma visita a
   // Configurações, já que é lá que comunidade_session ganharia avatarUrl.
-  'avatar_url'=> $aluno['avatar_url'] ?? null
+  // avatarUrlPublica (_conexao.php) monta a URL a partir de avatar_versao —
+  // ver bug reportado 25/08 (foto em BLOB, não mais arquivo em avatar_url).
+  'avatar_url'=> avatarUrlPublica($aluno['email'], $aluno['avatar_versao'] ?? 0)
 ]);

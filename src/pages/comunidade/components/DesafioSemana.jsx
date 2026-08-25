@@ -125,7 +125,14 @@ export default function DesafioSemana() {
   }, [email]);
 
   // Mescla com o PHP externo — nunca sobrescreve uma marca local já feita,
-  // só complementa (mesma regra da tela de aulas).
+  // só complementa (mesma regra da tela de aulas). EXCETO quando o admin
+  // resetou a semana (botão "Resetar desafios da semana" em /admin, bug
+  // reportado 25/08): resetadoEm vem do servidor e muda a cada reset; se for
+  // diferente do que este navegador guardou da última vez (_resetadoEm,
+  // salvo junto dos itens no mesmo objeto de localStorage), o progresso
+  // local está stale e é descartado ANTES do merge — senão um check marcado
+  // antes do reset nunca some daqui, já que a linha dele em desafio_semana
+  // simplesmente não existe mais pra "corrigir" o valor local.
   useEffect(() => {
     if (!email) return;
 
@@ -133,8 +140,10 @@ export default function DesafioSemana() {
       .then((r) => r.json())
       .then((data) => {
         const lista = Array.isArray(data?.itens) ? data.itens : [];
+        const resetadoEm = data?.resetadoEm || null;
         setConcluidos((atual) => {
-          const mesclado = { ...atual };
+          const stale = resetadoEm && atual._resetadoEm && atual._resetadoEm !== resetadoEm;
+          const mesclado = stale ? { _resetadoEm: resetadoEm } : { ...atual, _resetadoEm: resetadoEm || atual._resetadoEm };
           for (const item of lista) {
             if (!item.item_id || mesclado[item.item_id]) continue;
             mesclado[item.item_id] = !!item.concluido;

@@ -22,7 +22,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $stmt->bind_param('si', $email, $sem);
     $stmt->execute();
     $r = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    echo json_encode(['itens'=>$r, 'semana'=>$sem]);
+
+    // resetadoEm: timestamp do último "Resetar desafios da semana" em /admin
+    // pra esta semana (ver public/api/admin/resetar_desafios.php), null se
+    // nunca resetou. DesafioSemana.jsx compara isso com o que guardou da
+    // última vez que sincronizou; se mudou, descarta o progresso salvo em
+    // localStorage antes de mesclar com $r acima (senão um check marcado
+    // antes do reset nunca some do navegador do aluno, já que a linha dele
+    // aqui simplesmente não existe mais pra corrigir isso).
+    $resetadoEm = null;
+    $existeTabelaReset = $mysqli->query("SHOW TABLES LIKE 'desafio_semana_reset'");
+    if ($existeTabelaReset && $existeTabelaReset->num_rows > 0) {
+        $stmtReset = $mysqli->prepare("SELECT resetado_em FROM desafio_semana_reset WHERE semana = ?");
+        $stmtReset->bind_param('i', $sem);
+        $stmtReset->execute();
+        $resetadoEm = $stmtReset->get_result()->fetch_assoc()['resetado_em'] ?? null;
+        $stmtReset->close();
+    }
+
+    echo json_encode(['itens'=>$r, 'semana'=>$sem, 'resetadoEm'=>$resetadoEm]);
     exit;
 }
 
