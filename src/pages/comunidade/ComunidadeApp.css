@@ -4591,3 +4591,97 @@ h3.cm-config-subtitle {
   line-height: 1.35;
   margin-top: 2px;
 }
+
+/* Correção responsivo mobile (25/08) — "Sua prática hoje" quebrada no
+   celular: mensagem cortada, resposta do Administrador cortada à direita e
+   foto/data/lixeira do cabeçalho desalinhadas verticalmente. Bloco NOVO, no
+   fim do arquivo de propósito: precisa vencer por ORDEM (mesma
+   especificidade, ambos com !important) tanto o clamp de 2 linhas de
+   `.cm-duvida .cm-comentario-card-texto` (regra logo acima) quanto os 92px
+   fixos de `.cm-duvida .cm-comentario-card` (regra lá em cima, perto de
+   .cm-comentario-card) — os dois foram pensados só pro desktop (6 itens
+   de 92px = 624px), no celular a coluna é bem mais estreita e a MESMA
+   mensagem quebra em muito mais linhas, então o clamp/altura fixa cortavam
+   o texto no meio. Nota: "resposta do Administrador" é o MESMO
+   ComentarioCard.jsx renderizado aninhado dentro de
+   .cm-comentario-respostas (não existe um componente "resposta" à parte),
+   então a correção da largura mira `.cm-comentario-respostas
+   .cm-comentario-card`. */
+@media (max-width: 768px) {
+  /* PROBLEMA 1: destrava a altura fixa de 92px só no mobile — no desktop
+     continua 92px (regra .cm-duvida .cm-comentario-card lá em cima,
+     intocada). align-items:flex-start porque agora o card cresce em altura
+     com o texto; centralizar o avatar (36px) contra um card alto ficaria
+     estranho, ele deve ficar ancorado no topo, igual a maioria dos feeds de
+     comentário. */
+  .cm-duvida .cm-comentario-card {
+    min-height: 110px;
+    height: auto;
+    max-height: none;
+    overflow: visible;
+    padding: 12px 14px;
+    align-items: flex-start;
+  }
+
+  /* Mensagem inteira em vez de cortada em 2 linhas — !important pra vencer
+     a regra .cm-duvida .cm-comentario-card-texto logo acima (mesma
+     especificidade de 2 classes, essa aqui ganha por vir depois no
+     arquivo). 4 linhas de clamp em vez de "normal" sem limite nenhum:
+     evita que um comentário gigante estoure o card indefinidamente, mas já
+     é o suficiente pra caber a mensagem inteira dos casos reportados. */
+  .cm-duvida .cm-comentario-card-texto {
+    display: -webkit-box !important;
+    -webkit-line-clamp: 4 !important;
+    line-clamp: 4 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: visible !important;
+    max-height: none !important;
+    font-size: 14px;
+    line-height: 1.4;
+    word-break: break-word;
+    margin-top: 4px;
+  }
+
+  /* PROBLEMA 2: bloco do Administrador/Orientador cortado na direita.
+     .cm-comentario-respostas já indenta com padding-left:16px (traço de
+     vínculo) — o card da resposta em si só precisa ficar travado dentro
+     dessa largura já reduzida, nunca mais largo que o espaço disponível, e
+     quebrar palavra em vez de estourar a lateral do card. */
+  .cm-comentario-respostas {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .cm-comentario-respostas .cm-comentario-card {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+  }
+
+  /* PROBLEMA 3: foto mini/data/lixeira do cabeçalho (cluster
+     .cm-comentario-card-topo-direita) — encolhe a foto de 40px pra 32px no
+     celular (card mais estreito) mantendo a centralização vertical que já
+     existe via align-items:center (.cm-comentario-card-topo) e
+     align-self:center (.cm-comentario-card-topo-direita > *, ambos lá em
+     cima) — aqui só reforça o mesmo eixo pro cluster inteiro, garantindo
+     que sobrevive mesmo com o card agora de altura variável (Problema 1). */
+  .cm-comentario-card-topo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .cm-comentario-card-topo-direita {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .cm-comentario-card-foto-mini,
+  .cm-comentario-card-foto-mini img {
+    width: 32px;
+    height: 32px;
+  }
+}
