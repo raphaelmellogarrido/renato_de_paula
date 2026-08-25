@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Send } from "lucide-react";
 import { useEmailSessao, useAvatarUrlSessao, lerNomeSessao } from "./components/usuarioStorage";
-import { EMAIL_ADMINISTRADOR, EMAIL_ORIENTADOR } from "./components/ComentarioCard";
+import { EMAIL_ADMINISTRADOR } from "./components/ComentarioCard";
 import { EVENTO_MENSAGENS_ATUALIZOU } from "./components/useMensagensNaoLidas";
 import { formatarDataBr, iniciais } from "./components/comentariosUtils";
 
@@ -43,6 +43,18 @@ function Mensagens() {
     carregar();
   }, [carregar]);
 
+  // Realtime "pobre" (sem WebSocket): repolla o thread a cada 3s enquanto a
+  // página está aberta, pra mensagem nova da equipe aparecer sem precisar
+  // de F5. carregar() já é cache: no-store, então sempre pega o estado
+  // atual do banco; se a resposta chegar fora de ordem (POST lento
+  // atravessando um tick do polling) não tem problema, o próximo tick de 3s
+  // corrige sozinho.
+  useEffect(() => {
+    if (!email) return;
+    const id = setInterval(carregar, 3000);
+    return () => clearInterval(id);
+  }, [email, carregar]);
+
   // Marca como lida assim que a página abre (uma vez, não a cada refetch de
   // carregar() — senão uma mensagem que chegasse enquanto o aluno já está
   // com a página aberta seria marcada como lida sem ele nem ver).
@@ -81,20 +93,43 @@ function Mensagens() {
     const valor = texto.trim();
     if (!valor || !email || enviando) return;
 
+    const paraEmail = destinatarioPadrao();
+    // Optimistic update: mostra a mensagem na hora, sem esperar o
+    // round-trip do POST nem o próximo tick do polling de 3s. id string
+    // (não colide com id numérico do banco) só pra existir uma `key` React
+    // e pra dar pra remover essa entrada específica se o envio falhar.
+    const idOtimista = `otimista-${Date.now()}`;
+    const mensagemOtimista = {
+      id: idOtimista,
+      de_email: email,
+      de_nome: nomeSessao,
+      de_avatar_url: avatarUrlSessao || null,
+      para_email: paraEmail,
+      mensagem: valor,
+      lida: false,
+      created_at: new Date().toISOString(),
+    };
+    setItens((prev) => [...prev, mensagemOtimista]);
+    setTexto("");
     setEnviando(true);
     try {
       const resposta = await fetch(ENVIAR_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ de_email: email, para_email: destinatarioPadrao(), mensagem: valor }),
+        body: JSON.stringify({ de_email: email, para_email: paraEmail, mensagem: valor }),
       });
       const data = await resposta.json();
       if (data?.erro) throw new Error(data.erro);
-      setTexto("");
+      // Troca a otimista pela lista real do banco (pega o id/created_at
+      // definitivos e qualquer mensagem que tenha chegado nesse meio-tempo).
       carregar();
     } catch (err) {
       console.error("[Clube Presença] falha ao enviar mensagem:", err);
       window.alert("Não foi possível enviar a mensagem.");
+      // Remove a bolha otimista (nunca chegou ao servidor de verdade) e
+      // devolve o texto pro campo, pro aluno não perder o que escreveu.
+      setItens((prev) => prev.filter((m) => m.id !== idOtimista));
+      setTexto(valor);
     } finally {
       setEnviando(false);
     }
@@ -120,23 +155,23 @@ function Mensagens() {
           <div className="cm-mensagens-lista">
             {itens.map((msg) => {
               const souEuQueEnviei = msg.de_email?.toLowerCase() === email?.toLowerCase();
-              // Não há foto de perfil da equipe salva em mensagens_privadas
-              // (thread é só de_email/para_email, sem JOIN em alunos como
-              // comentarios.php faz) — só o remetente "eu" tem avatarUrl de
-              // verdade, o lado equipe sempre cai nas iniciais, igual ao
-              // fallback de ComentarioCard quando avatar_url vem nulo.
-              const nomeRemetente = souEuQueEnviei
-                ? "Você"
-                : msg.de_email?.toLowerCase() === EMAIL_ORIENTADOR
-                ? "Orientador"
-                : "Administrador";
-              const avatarUrl = souEuQueEnviei ? avatarUrlSessao : "";
+              // Nome e foto de quem enviou já vêm prontos do back
+              // (listar.php faz LEFT JOIN em alunos) — nunca mais hardcoda
+              // "Administrador"/"Orientador" aqui; se o remetente mudar o
+              // nome/foto em /configurações, a próxima leitura já reflete.
+              // A bolha "eu" continua usando avatarUrlSessao/nomeSessao (não
+              // msg.de_avatar_url/de_nome) pra refletir uma troca feita em
+              // /configurações na hora, sem esperar o próximo tick do
+              // polling de 3s.
+              const nomeRemetente = souEuQueEnviei ? "Você" : msg.de_nome || "Equipe";
+              const avatarUrl = souEuQueEnviei ? avatarUrlSessao : msg.de_avatar_url || "";
+              const nomeParaIniciais = souEuQueEnviei ? nomeSessao : nomeRemetente;
               return (
                 <div key={msg.id} className={`cm-mensagem-bolha-linha ${souEuQueEnviei ? "is-eu" : "is-equipe"}`}>
                   {avatarUrl ? (
                     <img src={avatarUrl} alt="" className="cm-mensagem-avatar cm-mensagem-avatar-img" />
                   ) : (
-                    <div className="cm-mensagem-avatar">{iniciais(souEuQueEnviei ? nomeSessao : nomeRemetente)}</div>
+                    <div className="cm-mensagem-avatar">{iniciais(nomeParaIniciais)}</div>
                   )}
                   <div className="cm-mensagem-corpo">
                     <span className="cm-mensagem-nome">{nomeRemetente}</span>
