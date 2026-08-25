@@ -26,7 +26,7 @@ const LIMITE_TEXTO = 140;
 // Auto-grow do textarea (item 2 do redesign): cresce junto com o texto até
 // esse teto, depois vira scroll interno — nunca deixa o card esticar
 // infinito nem mostra o handle de arraste do canto (resize:none no CSS).
-const ALTURA_MAX_TEXTAREA = 200;
+const ALTURA_MAX_TEXTAREA = 120;
 // Mesmo padrão de acoplamento por evento global (literal, não import) já
 // usado em useMeditacaoHoje.js/RankingPresenca.jsx/MeditandoJunto.jsx —
 // avisa o card "Meditando junto" que uma partilha nova acabou de entrar,
@@ -291,20 +291,24 @@ function DificuldadeDoDia() {
 
   return (
     <div className="cm-duvida">
-      <span className="cm-duvida-eyebrow">Sua prática hoje</span>
-      <h2 className="cm-duvida-titulo">Qual foi sua dificuldade ao meditar hoje?</h2>
-      <p className="cm-duvida-sub">Compartilhe aqui. Sua experiência pode acolher outra pessoa.</p>
+      {/* Cabeçalho: avatar redondo pequeno (não estica a linha, só
+          acompanha a altura das 3 linhas de texto ao lado — flex
+          align-items:center faz a centralização vertical, ver
+          .cm-duvida-cabecalho no CSS) + eyebrow/título/subtítulo. */}
+      <div className="cm-duvida-cabecalho">
+        {session?.avatarUrl ? (
+          <img src={session.avatarUrl} alt="" className="cm-duvida-avatar cm-duvida-avatar-img" />
+        ) : (
+          <div className="cm-duvida-avatar">{iniciais(nomeSessao)}</div>
+        )}
+        <div className="cm-duvida-cabecalho-textos">
+          <span className="cm-duvida-eyebrow">Sua prática hoje</span>
+          <h2 className="cm-duvida-titulo">Qual foi sua dificuldade ao meditar hoje?</h2>
+          <p className="cm-duvida-sub">Compartilhe aqui. Sua experiência pode acolher outra pessoa.</p>
+        </div>
+      </div>
 
       <form className="cm-duvida-form" onSubmit={handleEnviar}>
-        <div className="cm-duvida-form-topo">
-          {session?.avatarUrl ? (
-            <img src={session.avatarUrl} alt="" className="cm-duvida-form-avatar cm-duvida-form-avatar-img" />
-          ) : (
-            <div className="cm-duvida-form-avatar">{iniciais(nomeSessao)}</div>
-          )}
-          <span className="cm-duvida-form-rotulo">Escreva sua reflexão</span>
-        </div>
-
         <textarea
           ref={textareaRef}
           className="cm-duvida-textarea"

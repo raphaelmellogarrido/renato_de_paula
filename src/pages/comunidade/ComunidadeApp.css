@@ -515,45 +515,182 @@
   flex: 1;
 }
 
+/* Cabeçalho (item 1 do redesign): avatar redondo pequeno à esquerda + bloco
+   de texto (eyebrow/título/subtítulo) à direita, em flex row. O avatar é
+   menor que a altura do bloco de texto (48px vs. ~58px das 3 linhas), então
+   ele nunca estica a linha — quem dita a altura do cabeçalho é sempre o
+   texto, o avatar só centraliza dentro dela (align-items:center). */
+.cm-duvida-cabecalho {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.cm-duvida-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--cm-sage-soft);
+  color: var(--cm-sage-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.cm-duvida-avatar-img {
+  object-fit: cover;
+  background: var(--cm-beige-soft);
+}
+
+.cm-duvida-cabecalho-textos {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
 .cm-duvida-eyebrow {
   display: block;
-  font-size: 0.75rem;
+  font-size: 11px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   font-weight: 700;
-  color: var(--cm-sage-dark);
-  margin-bottom: 10px;
+  color: var(--cm-text-soft);
+  margin: 0;
 }
 
 .cm-duvida-titulo {
-  font-size: 1.5rem;
+  font-size: 18px;
+  font-weight: 700;
   color: #1a1a1a;
-  margin: 0 0 8px;
+  margin: 0;
+  line-height: 1.3;
 }
 
 .cm-duvida-sub {
-  font-size: 0.92rem;
-  color: #4a4a4a;
-  margin: 0 0 20px;
+  font-size: 13px;
+  color: var(--cm-text-soft);
+  margin: 0;
+  line-height: 1.4;
   max-width: 480px;
 }
 
-.cm-duvida-form textarea {
+.cm-duvida-form {
+  /* Ancora o popover de emoji (position:absolute), que precisa flutuar
+     relativo ao form e não à página. */
+  position: relative;
+}
+
+/* Textarea com borda suave e resize:none (item 2) — cresce sozinho via JS
+   (ajustarAlturaTextarea em DificuldadeDoDia.jsx) até ALTURA_MAX_TEXTAREA
+   (120px), depois vira scroll interno. */
+.cm-duvida-textarea {
   width: 100%;
   box-sizing: border-box;
   background: #fff;
-  border: 1px solid #e5e0d8;
-  border-radius: 14px;
-  padding: 14px 16px;
+  border: 1px solid var(--cm-border);
+  border-radius: 12px;
+  padding: 10px 12px;
   font-family: inherit;
   font-size: 0.92rem;
   color: #1a1a1a;
-  resize: vertical;
+  resize: none;
   min-height: 76px;
+  max-height: 120px;
+  overflow-y: auto;
 }
 
-.cm-duvida-form textarea::placeholder {
-  color: #9a948a;
+.cm-duvida-textarea:focus {
+  outline: none;
+}
+
+.cm-duvida-textarea::placeholder {
+  color: #b3ada2;
+  font-style: italic;
+}
+
+/* Toolbar em pílula (item 3): Negrito / Itálico / Emoji / Foto, logo abaixo
+   do textarea — substitui o antigo botão solto de anexar. */
+.cm-duvida-toolbar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  background: var(--cm-sage-soft, #f3f1ec);
+  border-radius: 999px;
+  padding: 6px;
+  margin-top: 10px;
+}
+
+.cm-duvida-anexar-input {
+  display: none;
+}
+
+.cm-duvida-toolbar-btn {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  border-radius: 999px;
+  color: var(--cm-sage-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.cm-duvida-toolbar-btn:hover:not(:disabled),
+.cm-duvida-toolbar-btn.is-ativo {
+  background: #fff;
+}
+
+.cm-duvida-toolbar-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Popover de emoji (item 4): flutua acima da toolbar, grid de 4 colunas com
+   os 20 emojis de meditação. */
+.cm-duvida-emoji-popover {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  background: #fff;
+  border: 1px solid #e5e0d8;
+  border-radius: 14px;
+  box-shadow: var(--cm-shadow);
+  padding: 10px;
+  z-index: 5;
+}
+
+.cm-duvida-emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2px;
+}
+
+.cm-duvida-emoji-btn {
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.cm-duvida-emoji-btn:hover {
+  background: var(--cm-sage-soft);
 }
 
 .cm-duvida-form-acoes {
@@ -568,55 +705,26 @@
   color: var(--cm-text-soft);
 }
 
-.cm-duvida-form-acoes-direita {
+.cm-duvida-enviar {
   display: flex;
   align-items: center;
-  gap: 10px;
-}
-
-.cm-duvida-form-acoes button[type="submit"] {
+  gap: 6px;
   background: #1a1a1a;
   color: #fff;
   border: none;
   border-radius: 999px;
-  padding: 10px 26px;
+  padding: 10px 22px;
   font-weight: 600;
   font-size: 0.88rem;
 }
 
-.cm-duvida-form-acoes button[type="submit"]:hover:not(:disabled) {
+.cm-duvida-enviar:hover:not(:disabled) {
   background: #000;
 }
 
-.cm-duvida-form-acoes button:disabled {
+.cm-duvida-enviar:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-}
-
-/* Botão de clipe (anexar foto), ao lado de "Compartilhar" — ícone-only,
-   estilo ghost pra não competir visualmente com o botão preto principal. */
-.cm-duvida-anexar-input {
-  display: none;
-}
-
-.cm-duvida-anexar {
-  width: 36px;
-  height: 36px;
-  flex-shrink: 0;
-  background: none;
-  border: 1px solid #e5e0d8;
-  border-radius: 999px;
-  color: var(--cm-text-soft);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.cm-duvida-anexar:hover:not(:disabled) {
-  background: var(--cm-sage-soft);
-  border-color: var(--cm-sage-soft);
-  color: var(--cm-sage-dark);
 }
 
 /* Preview quadradinho da foto selecionada, entre o textarea e a linha de
@@ -2976,6 +3084,38 @@
   text-align: center;
 }
 
+/* Card "Frase Motivacional da Semana" (FraseMotivacionalSemana.jsx) —
+   substitui o Ranking de Presença no fim da coluna 3 (ver comentário em
+   ColunaEncontros.jsx). Card branco simples (herda fundo/borda de
+   .cm-widget), sem h3/título — só aspas decorativas + frase + subfrase. */
+.cm-frase-semana {
+  border-radius: 20px;
+  text-align: center;
+}
+
+.cm-frase-aspas {
+  display: block;
+  font-size: 2.6rem;
+  line-height: 1;
+  color: var(--cm-sage);
+  font-family: Georgia, "Times New Roman", serif;
+  margin-bottom: 4px;
+}
+
+.cm-frase-texto {
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.4;
+  margin: 0 0 8px;
+}
+
+.cm-frase-subtexto {
+  font-size: 0.875rem;
+  font-style: italic;
+  color: var(--cm-text-soft);
+  margin: 0;
+}
+
 /* Sidebar: variante escura (Ranking de Presença, "fundo preto" do print) */
 .cm-widget-escuro {
   background: var(--cm-text);
@@ -3707,7 +3847,8 @@ h3.cm-config-subtitle {
   .cm-duvida,
   .cm-grid-pulso,
   .cm-grid-desafio,
-  .cm-grid-ranking {
+  .cm-grid-ranking,
+  .cm-grid-frase {
     grid-column: 1 / -1;
   }
 
@@ -3764,6 +3905,15 @@ h3.cm-config-subtitle {
     min-height: 0 !important;
     padding: 22px !important;
     justify-content: flex-start !important;
+  }
+
+  /* Frase Motivacional da Semana ocupa a mesma posição (order:9, último
+     widget da coluna 3) que o Ranking de Presença ocupava antes — card
+     branco de altura automática, sem precisar do min-height/!important
+     específico do card escuro acima. */
+  .cm-grid-frase {
+    order: 9;
+    padding: 22px;
   }
 }
 

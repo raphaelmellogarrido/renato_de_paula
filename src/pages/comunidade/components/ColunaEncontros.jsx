@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Check, CheckCircle2, XCircle } from "lucide-react";
 import { PROXIMO_ENCONTRO_VIVO } from "../data/mockData";
 import DesafioSemana from "./DesafioSemana";
-import RankingPresenca from "./RankingPresenca";
+import FraseMotivacionalSemana from "./FraseMotivacionalSemana";
 import { useEmailSessao } from "./usuarioStorage";
 import { snapshotLocalSincrono, buscarReservas, reservarVaga, cancelarReserva } from "./reservasLive";
 
@@ -18,10 +18,12 @@ function lerNomeSessao() {
 // pedido explícito do cliente.
 const EMAIL_TESTE = "teste@meditacaoraiz.com";
 
-// Próximo encontro + Desafio da Semana + Ranking de Presença da coluna 3
-// do dashboard (Meditando junto trocou de lugar com Ranking de Presença
-// de novo, pedido do cliente — ver
-// MeditandoJunto.jsx/ColunaProgresso.jsx). Fragment (sem wrapper) de
+// Próximo encontro + Desafio da Semana + Frase Motivacional da Semana da
+// coluna 3 do dashboard. O último widget era o Ranking de Presença
+// (RankingPresenca.jsx, arquivo mantido no disco mas sem uso — ranking.php
+// continua vivo, ainda é consumido por useSequenciaMeditacao.js pro
+// percentil de Sequencia.jsx), trocado por pedido do cliente. Fragment
+// (sem wrapper) de
 // propósito: quem controla o empilhamento vertical (gap:20px) é o
 // `.cm-coluna-direita` em Dashboard.jsx/ComunidadeApp.css, então os três
 // `.cm-widget` ficam diretos dentro daquele flex column, sem outro
@@ -237,7 +239,7 @@ function ColunaEncontros() {
 
       <DesafioSemana />
 
-      <RankingPresenca />
+      <FraseMotivacionalSemana />
     </>
   );
 }

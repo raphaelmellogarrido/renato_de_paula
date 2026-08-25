@@ -111,6 +111,17 @@ function AdminMeditacao() {
   const [desafiosSucesso, setDesafiosSucesso] = useState(false);
   const [desafiosErro, setDesafiosErro] = useState("");
 
+  // Seção "Frase Motivacional da Semana" — edita o card que o aluno vê em
+  // /comunidade (FraseMotivacionalSemana.jsx, fim da coluna 3, no lugar do
+  // antigo Ranking de Presença). Leitura pública é
+  // public/api/get_frase_semana.php; salvar é public/api/update_frase_semana.php
+  // (POST protegido por X-Admin-Secret, mesmo padrão das seções acima) —
+  // faz INSERT (mantém histórico), nunca UPDATE.
+  const [fraseForm, setFraseForm] = useState({ frase: "", subfrase: "" });
+  const [salvandoFrase, setSalvandoFrase] = useState(false);
+  const [fraseSucesso, setFraseSucesso] = useState(false);
+  const [fraseErro, setFraseErro] = useState("");
+
   // Seção "Acesso de Teste" — libera amigos na comunidade sem compra
   // Hotmart, sem precisar mexer no SQL manualmente
   // (public/api/admin/teste-emails.php). Mesmo padrão de auth
@@ -241,6 +252,65 @@ function AdminMeditacao() {
       const valor = e.target.value;
       setDesafiosForm((atual) => atual.map((item, i) => (i === index ? { ...item, [campo]: valor } : item)));
     };
+  }
+
+  // Pré-carrega o form com a última frase salva — usa o endpoint público
+  // get_frase_semana.php (sem precisar de X-Admin-Secret pra leitura, só
+  // pra salvar).
+  useEffect(() => {
+    if (!autenticado) return;
+    let cancelado = false;
+    fetch("/api/get_frase_semana.php")
+      .then((r) => r.json())
+      .then((dados) => {
+        if (!cancelado && dados?.ok) {
+          setFraseForm({ frase: dados.frase || "", subfrase: dados.subfrase || "" });
+        }
+      })
+      .catch(() => {
+        // Endpoint PHP indisponível (ex: dev local sem PHP rodando) — o
+        // formulário fica vazio, mas não trava o resto da página.
+      });
+    return () => {
+      cancelado = true;
+    };
+  }, [autenticado]);
+
+  useEffect(() => {
+    if (!fraseSucesso) return;
+    const t = setTimeout(() => setFraseSucesso(false), 3000);
+    return () => clearTimeout(t);
+  }, [fraseSucesso]);
+
+  function handleFraseChange(campo) {
+    return (e) => setFraseForm((atual) => ({ ...atual, [campo]: e.target.value }));
+  }
+
+  async function handleSalvarFrase(e) {
+    e.preventDefault();
+    setFraseErro("");
+    setFraseSucesso(false);
+    setSalvandoFrase(true);
+
+    try {
+      const res = await fetch("/api/update_frase_semana.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Admin-Secret": secret },
+        body: JSON.stringify(fraseForm),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(res.status === 401 ? "Senha incorreta." : data.erro || "Falha ao salvar.");
+      }
+
+      setFraseForm({ frase: data.frase || "", subfrase: data.subfrase || "" });
+      setFraseSucesso(true);
+    } catch (err) {
+      setFraseErro(err.message || "Não foi possível salvar.");
+    } finally {
+      setSalvandoFrase(false);
+    }
   }
 
   async function handleSalvarDesafios(e) {
@@ -972,6 +1042,66 @@ function AdminMeditacao() {
               </button>
             </form>
           )}
+        </div>
+
+        <div className="form-card" style={{ marginTop: 40 }}>
+          <h3>Frase Motivacional da Semana</h3>
+          <p style={{ marginTop: -8, marginBottom: 16, color: "#666" }}>
+            Edita o card "Frase Motivacional da Semana" que o aluno vê em /comunidade (fim da coluna da direita).
+          </p>
+          {fraseSucesso && <div className="success-box">Atualizado</div>}
+          {fraseErro && <div className="error-box">{fraseErro}</div>}
+          <form onSubmit={handleSalvarFrase} noValidate>
+            <div className="field">
+              <label htmlFor="frase-principal">Frase principal</label>
+              <textarea
+                id="frase-principal"
+                rows={3}
+                required
+                value={fraseForm.frase}
+                onChange={handleFraseChange("frase")}
+                placeholder="Cada momento de presença é uma semente de transformação."
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="frase-subfrase">Subfrase</label>
+              <input
+                id="frase-subfrase"
+                type="text"
+                value={fraseForm.subfrase}
+                onChange={handleFraseChange("subfrase")}
+                placeholder="frase teste"
+              />
+            </div>
+            <button type="submit" className="btn btn-primary btn-block" disabled={!fraseForm.frase.trim() || salvandoFrase}>
+              {salvandoFrase ? "Salvando..." : "Salvar"}
+            </button>
+          </form>
+
+          {/* Prévia de conteúdo (não é um clone pixel-perfect do card real —
+              essa página não importa o CSS da comunidade de propósito, pra
+              não acoplar/arriscar CSS de uma área na outra). */}
+          <div
+            style={{
+              marginTop: 24,
+              padding: 20,
+              border: "1px solid #ddd",
+              borderRadius: 20,
+              maxWidth: 360,
+              textAlign: "center",
+            }}
+          >
+            <p style={{ margin: "0 0 4px", fontSize: 12, textTransform: "uppercase", color: "#999" }}>Prévia</p>
+            <span style={{ display: "block", fontSize: 40, lineHeight: 1, fontFamily: "Georgia, serif", color: "#7c9473" }}>
+              “
+            </span>
+            <strong style={{ display: "block", marginBottom: 8, fontSize: 18 }}>
+              {fraseForm.frase || "—"}
+            </strong>
+            <span style={{ display: "block", fontSize: 14, fontStyle: "italic", color: "#666" }}>
+              {fraseForm.subfrase || "—"}
+            </span>
+          </div>
         </div>
 
         <div className="form-card" style={{ marginTop: 40 }}>
