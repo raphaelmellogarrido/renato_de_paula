@@ -852,8 +852,10 @@
    esticava junto, e sobrava espaço em branco depois do último
    comentário). Correção 25/08 (pedido do cliente): volta a ser altura
    TRAVADA, mas agora calculada pra mostrar exatamente 6 comentários por
-   vez — cada .cm-comentario-card tem 78px fixos (ver regra mais abaixo) +
-   gap de 12px entre eles, então 6 itens = 6×90px = 540px. .cm-duvida
+   vez — cada .cm-comentario-card tem 92px fixos (ver regra mais abaixo,
+   aumentado de 78px em 25/08 pra fila de 6 encostar embaixo no "Meditando
+   junto"/citação da coluna 3) + gap de 12px entre eles, então 6 itens =
+   6×104px = 624px. .cm-duvida
    também não estica mais pra bater com as colunas 2/3 (flex:0 1 auto na
    regra .cm-grid-feed .cm-duvida acima), então não sobra vão nenhum: o
    7º comentário em diante só aparece rolando o scroll DENTRO desta lista
@@ -861,10 +863,10 @@
    dispara carregarMais() (+10) perto do fim desse scroll interno — ver
    DificuldadeDoDia.jsx. ComentariosFeed.jsx (mural "Comentários" em
    Aulas, fora de .cm-duvida) não é afetado por esta regra nem pela de
-   78px do card — continua com altura automática e a página inteira
+   92px do card — continua com altura automática e a página inteira
    rolando. */
 .cm-duvida .cm-comentarios-lista {
-  max-height: calc(6 * 90px); /* = 540px: 6 comentários de 78px + gap 12px */
+  max-height: calc(6 * 104px); /* = 624px: 6 comentários de 92px + gap 12px */
   gap: 12px;
   overflow-y: auto;
   padding-right: 4px;
@@ -902,25 +904,26 @@
   border-radius: 14px;
 }
 
-/* Só em "Sua prática hoje" (DificuldadeDoDia.jsx): altura FIXA de 78px por
-   comentário (25/08, pedido do cliente) — é essa medida fixa que permite o
-   container calcular "6 itens visíveis = 540px" acima (.cm-duvida
-   .cm-comentarios-lista). min-height + max-height travam o bloco no mesmo
-   tamanho tenha o comentário 1 linha, 2 linhas ou foto anexada; overflow:
-   hidden corta o que não couber (nome+badges+foto 40px no topo, texto
-   clampado em 2 linhas — ver override de .cm-comentario-card-texto no fim
-   do arquivo) em vez de esticar a linha. flex-shrink:0 evita que o flex
-   column da lista espreme os cards pra caber mais que 6. ComentariosFeed.jsx
+/* Só em "Sua prática hoje" (DificuldadeDoDia.jsx): altura FIXA de 92px por
+   comentário (25/08, pedido do cliente — subiu de 78px pra fila de 6 encostar
+   embaixo no card "Meditando junto"/citação do monge da coluna 3) — é essa
+   medida fixa que permite o container calcular "6 itens visíveis = 624px"
+   acima (.cm-duvida .cm-comentarios-lista). min-height + max-height travam o
+   bloco no mesmo tamanho tenha o comentário 1 linha, 2 linhas ou foto
+   anexada; overflow: hidden corta o que não couber (nome+badges+foto 40px no
+   topo, texto clampado em 2 linhas — ver override de .cm-comentario-card-texto
+   no fim do arquivo) em vez de esticar a linha. flex-shrink:0 evita que o
+   flex column da lista espreme os cards pra caber mais que 6. ComentariosFeed.jsx
    (mural em Aulas, fora de .cm-duvida) mantém altura automática — mesmo
    componente ComentarioCard.jsx, visual diferente só aqui dentro. */
 .cm-duvida .cm-comentario-card {
-  min-height: 78px;
-  max-height: 78px;
+  min-height: 92px;
+  max-height: 92px;
   overflow: hidden;
   flex-shrink: 0;
 }
 
-/* Destrava a altura fixa de 78px acima quando o card tem o formulário de
+/* Destrava a altura fixa de 92px acima quando o card tem o formulário de
    resposta aberto ou já tem respostas pra mostrar (Tarefa 1) — sem isso o
    botão "Responder" e as respostas ficariam cortados pelo overflow:hidden.
    Classe calculada em ComentarioCard.jsx (classeExpandido). */
@@ -930,8 +933,11 @@
 }
 
 .cm-duvida .cm-comentario-skeleton-msg {
-  min-height: 78px;
-  max-height: 78px;
+  /* mesma altura de .cm-duvida .cm-comentario-card acima — sem isso o
+     skeleton (78px) e o card real (92px) trocam de tamanho quando o fetch
+     resolve, pulando o layout da lista. */
+  min-height: 92px;
+  max-height: 92px;
   overflow: hidden;
   flex-shrink: 0;
   box-sizing: border-box;
@@ -1066,15 +1072,27 @@
 .cm-comentario-card-topo-direita {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
+  height: 100%;
   margin-left: auto;
   padding-left: 8px;
+}
+
+/* Foto/data/lixeira têm alturas intrínsecas diferentes (img 40px, texto,
+   botão) — sem isso ficam "tortos", um mais alto/baixo que o outro dentro
+   do cluster (bug reportado 25/08). align-self centraliza cada um na altura
+   do cluster; vertical-align cobre o caso do <img> dentro do botão -mini. */
+.cm-comentario-card-topo-direita > * {
+  align-self: center;
+  vertical-align: middle;
 }
 
 .cm-comentario-card-quando {
   font-size: 0.76rem;
   font-weight: 400;
   color: var(--cm-text-soft);
+  line-height: 1;
   white-space: nowrap;
 }
 
@@ -1129,6 +1147,9 @@
 }
 
 .cm-comentario-card-excluir {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
   background: none;
   border: none;
@@ -4547,7 +4568,7 @@ h3.cm-config-subtitle {
    zera line-clamp/max-height em QUALQUER <p> com "comentario" na classe
    pra corrigir o truncamento de 1 linha no celular — sem essa exceção
    aqui, .cm-comentario-card-texto nunca ficaria em 2 linhas e o card de
-   78px fixo (regra .cm-duvida .cm-comentario-card acima) cortaria o
+   92px fixo (regra .cm-duvida .cm-comentario-card acima) cortaria o
    parágrafo no meio de qualquer jeito, feio, em vez de terminar em "…".
    `.cm-duvida .cm-comentario-card-texto` tem 2 classes de especificidade
    (0,2,0), maior que o seletor de atributo de 1 classe da regra acima
@@ -4564,7 +4585,7 @@ h3.cm-config-subtitle {
   white-space: normal !important;
   max-height: none !important; /* o clamp já limita a 2 linhas, não precisa de teto em px */
   /* line-height/margin mais enxutos que o padrão (1.5/4px) só aqui — é o
-     que faz as 2 linhas do clamp caberem dentro do card de 78px fixo
+     que faz as 2 linhas do clamp caberem dentro do card de 92px fixo
      (padding 8px + linha do nome/badges ~25px + este bloco) sem cortar a
      2ª linha visualmente na maioria dos comentários. */
   line-height: 1.35;
