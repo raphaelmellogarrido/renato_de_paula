@@ -64,7 +64,11 @@ function ComunidadeSidebar({ session, onSair }) {
         </div>
 
         <div className="cm-sidebar-user-card">
-          <div className="cm-sidebar-avatar">{iniciais(nome)}</div>
+          {session?.avatarUrl ? (
+            <img src={session.avatarUrl} alt="" className="cm-sidebar-avatar cm-sidebar-avatar-img" />
+          ) : (
+            <div className="cm-sidebar-avatar">{iniciais(nome)}</div>
+          )}
           <div className="cm-sidebar-user-info">
             <strong>Olá, {primeiroNome}</strong>
             <span className="cm-badge-membro">Membro da comunidade</span>

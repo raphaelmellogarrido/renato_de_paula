@@ -234,6 +234,13 @@
   flex-shrink: 0;
 }
 
+/* Foto de perfil real (Configuracoes.jsx) no lugar das iniciais — mesmo
+   tamanho/formato de .cm-sidebar-avatar, só troca background por imagem. */
+.cm-sidebar-avatar-img {
+  object-fit: cover;
+  background: var(--cm-beige-soft);
+}
+
 .cm-sidebar-user-info {
   flex: 1;
   min-width: 0;
@@ -561,7 +568,13 @@
   color: var(--cm-text-soft);
 }
 
-.cm-duvida-form-acoes button {
+.cm-duvida-form-acoes-direita {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cm-duvida-form-acoes button[type="submit"] {
   background: #1a1a1a;
   color: #fff;
   border: none;
@@ -571,13 +584,84 @@
   font-size: 0.88rem;
 }
 
-.cm-duvida-form-acoes button:hover:not(:disabled) {
+.cm-duvida-form-acoes button[type="submit"]:hover:not(:disabled) {
   background: #000;
 }
 
 .cm-duvida-form-acoes button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+
+/* Botão de clipe (anexar foto), ao lado de "Compartilhar" — ícone-only,
+   estilo ghost pra não competir visualmente com o botão preto principal. */
+.cm-duvida-anexar-input {
+  display: none;
+}
+
+.cm-duvida-anexar {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid #e5e0d8;
+  border-radius: 999px;
+  color: var(--cm-text-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.cm-duvida-anexar:hover:not(:disabled) {
+  background: var(--cm-sage-soft);
+  border-color: var(--cm-sage-soft);
+  color: var(--cm-sage-dark);
+}
+
+/* Preview quadradinho da foto selecionada, entre o textarea e a linha de
+   ações — some assim que a foto é removida ou o post é enviado. */
+.cm-duvida-foto-preview {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  margin-top: 10px;
+}
+
+.cm-duvida-foto-preview img {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  object-fit: cover;
+  display: block;
+  border: 1px solid #e5e0d8;
+}
+
+.cm-duvida-foto-remover {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border-radius: 50%;
+  background: #1a1a1a;
+  color: #fff;
+  border: 2px solid #f9f7f2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.cm-duvida-foto-remover:hover {
+  background: #000;
+}
+
+.cm-duvida-foto-erro {
+  color: #a4442f;
+  font-size: 0.78rem;
+  margin: 8px 0 0;
 }
 
 .cm-duvida-divider {
@@ -656,6 +740,13 @@
   flex-shrink: 0;
 }
 
+/* Foto de perfil do autor (JOIN em comentarios.php) no lugar das iniciais —
+   mesmo tamanho/formato de .cm-comentario-card-avatar. */
+.cm-comentario-card-avatar-img {
+  object-fit: cover;
+  background: var(--cm-beige-soft);
+}
+
 .cm-comentario-card-corpo {
   flex: 1;
   min-width: 0;
@@ -697,6 +788,33 @@
   word-break: break-word;
   line-height: 1.5;
   word-break: break-word;
+}
+
+/* Quadradinho da foto anexada a um comentário (image_url), embaixo do
+   texto. Clique abre o lightbox (ImageLightbox.jsx). */
+.cm-comentario-card-foto {
+  display: block;
+  width: 64px;
+  height: 64px;
+  margin-top: 8px;
+  padding: 0;
+  background: none;
+  border: 1px solid var(--cm-border);
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: zoom-in;
+}
+
+.cm-comentario-card-foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.cm-comentario-card-admin .cm-comentario-card-foto,
+.cm-comentario-card-orientador .cm-comentario-card-foto {
+  border-color: rgba(255, 255, 255, 0.25);
 }
 
 .cm-comentario-card-excluir {
@@ -750,6 +868,159 @@
 .cm-comentario-card-admin .cm-comentario-card-excluir,
 .cm-comentario-card-orientador .cm-comentario-card-excluir {
   color: rgba(241, 245, 249, 0.65);
+}
+
+/* Lightbox (ImageLightbox.jsx) — abre ao clicar no quadradinho de foto de
+   um comentário. z-index acima de tudo no app (maior uso existente era 60,
+   ver .cm-*-overlay). Fecha no X, clique fora (no fundo) ou ESC. */
+.cm-lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+  cursor: zoom-out;
+  z-index: 200;
+}
+
+.cm-lightbox img {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 4px;
+  cursor: default;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.cm-lightbox-fechar {
+  position: fixed;
+  top: 20px;
+  right: 24px;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.cm-lightbox-fechar:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* Modal de recorte da foto de perfil (AvatarCropModal.jsx) — mesmo overlay
+   escuro fixo do lightbox acima, mas com um cartão central (não a foto
+   direto) porque aqui tem controles (slider de zoom, botões). */
+.cm-avatar-crop-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+  z-index: 200;
+}
+
+.cm-avatar-crop-card {
+  position: relative;
+  background: var(--cm-bg);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: var(--cm-shadow);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  max-width: calc(100vw - 32px);
+}
+
+.cm-avatar-crop-fechar {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--cm-beige-soft);
+  color: var(--cm-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.cm-avatar-crop-fechar:hover {
+  background: var(--cm-border);
+}
+
+.cm-avatar-crop-titulo {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--cm-text);
+}
+
+/* Viewport quadrado com overflow escondido — a <img> é maior que ele e se
+   move por dentro (transform translate) conforme o usuário arrasta. */
+.cm-avatar-crop-viewport {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--cm-beige-soft);
+  touch-action: none;
+  user-select: none;
+}
+
+.cm-avatar-crop-viewport img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  max-width: none;
+  pointer-events: none;
+}
+
+/* Máscara circular por cima da imagem, só decorativa — mostra ao usuário
+   qual área vai virar o avatar redondo de verdade, mesmo o recorte
+   exportado sendo o quadrado inteiro do viewport. */
+.cm-avatar-crop-mascara {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+
+.cm-avatar-crop-zoom {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--cm-text-soft);
+}
+
+.cm-avatar-crop-zoom input[type="range"] {
+  flex: 1;
+  accent-color: var(--cm-sage-dark);
+}
+
+.cm-avatar-crop-acoes {
+  display: flex;
+  gap: 10px;
+}
+
+.cm-avatar-crop-acoes .cm-config-btn {
+  margin-top: 0;
 }
 
 .cm-duvida-paginacao,
@@ -3165,6 +3436,69 @@ h3.cm-config-subtitle {
 .cm-config-check-item.is-ok .cm-config-check-dot {
   background: var(--cm-green);
   border-color: var(--cm-green);
+}
+
+/* Campo "Foto de perfil" (Configuracoes.jsx) — preview circular + botão
+   "Escolher foto", lado a lado. */
+.cm-config-avatar-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.cm-config-avatar-preview {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: var(--cm-sage-soft);
+  color: var(--cm-sage-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.cm-config-avatar-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cm-config-avatar-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+/* Botão secundário (contorno) — usado aqui pro "Escolher foto" e no rodapé
+   do AvatarCropModal ("Cancelar"), pra não competir visualmente com
+   .cm-config-btn.is-ready (preto sólido, ação principal do card). */
+.cm-config-btn-secundario {
+  height: 40px;
+  padding: 0 18px;
+  border: 1.5px solid var(--cm-border);
+  border-radius: 12px;
+  background: var(--cm-bg);
+  color: var(--cm-text);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 200ms ease,
+    background-color 200ms ease;
+}
+
+.cm-config-btn-secundario:hover {
+  border-color: var(--cm-text);
+}
+
+.cm-config-btn-secundario:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .cm-config-btn {

@@ -44,5 +44,9 @@ echo json_encode([
   'ok'=>true,
   'email'=>$aluno['email'],
   'nome'=> $aluno['nome'],
-  'apelido'=> $aluno['apelido'] ?: $primeiroNomeFallback
+  'apelido'=> $aluno['apelido'] ?: $primeiroNomeFallback,
+  // null se o aluno nunca subiu foto de perfil (Configuracoes.jsx) — sem
+  // isso a sidebar só mostraria a foto depois de uma visita a
+  // Configurações, já que é lá que comunidade_session ganharia avatarUrl.
+  'avatar_url'=> $aluno['avatar_url'] ?? null
 ]);

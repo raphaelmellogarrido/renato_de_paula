@@ -78,7 +78,12 @@ export default function ComunidadeLogin() {
     localStorage.setItem("user_email", dados.email);
     // Chave legada global, lida por lerNomeSessao()/RankingPresenca.jsx.
     localStorage.setItem("userName", nomeFinal);
-    localStorage.setItem("comunidade_session", JSON.stringify({ email: dados.email, nome: nomeFinal, primeiroNome: primeiroNomeFinal }));
+    localStorage.setItem(
+      "comunidade_session",
+      // avatarUrl: null quando o aluno nunca subiu foto (Configuracoes.jsx)
+      // — sidebar cai pra iniciais nesse caso (ComunidadeSidebar.jsx).
+      JSON.stringify({ email: dados.email, nome: nomeFinal, primeiroNome: primeiroNomeFinal, avatarUrl: dados.avatar_url || null }),
+    );
     // Chaves por-usuário, as mesmas que Configuracoes.jsx lê no card Perfil
     // — sem isso "Nome e sobrenome"/"Primeiro nome" carregam errado na
     // primeira visita à tela de Configurações.

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Check, CheckCircle2, XCircle } from "lucide-react";
 import { PROXIMO_ENCONTRO_VIVO } from "../data/mockData";
 import DesafioSemana from "./DesafioSemana";
-import MeditandoJunto from "./MeditandoJunto";
+import RankingPresenca from "./RankingPresenca";
 import { useEmailSessao } from "./usuarioStorage";
 import { snapshotLocalSincrono, buscarReservas, reservarVaga, cancelarReserva } from "./reservasLive";
 
@@ -18,13 +18,14 @@ function lerNomeSessao() {
 // pedido explícito do cliente.
 const EMAIL_TESTE = "teste@meditacaoraiz.com";
 
-// Próximo encontro + Desafio da Semana + Meditando junto da coluna 3 do
-// dashboard (Ranking de Presença trocou de lugar com Meditando junto,
-// pedido do cliente — ver RankingPresenca.jsx/ColunaProgresso.jsx).
-// Fragment (sem wrapper) de propósito: quem controla o empilhamento
-// vertical (gap:20px) é o `.cm-coluna-direita` em
-// Dashboard.jsx/ComunidadeApp.css, então os três `.cm-widget` ficam
-// diretos dentro daquele flex column, sem outro wrapper no meio.
+// Próximo encontro + Desafio da Semana + Ranking de Presença da coluna 3
+// do dashboard (Meditando junto trocou de lugar com Ranking de Presença
+// de novo, pedido do cliente — ver
+// MeditandoJunto.jsx/ColunaProgresso.jsx). Fragment (sem wrapper) de
+// propósito: quem controla o empilhamento vertical (gap:20px) é o
+// `.cm-coluna-direita` em Dashboard.jsx/ComunidadeApp.css, então os três
+// `.cm-widget` ficam diretos dentro daquele flex column, sem outro
+// wrapper no meio.
 function ColunaEncontros() {
   const nome = lerNomeSessao();
 
@@ -236,7 +237,7 @@ function ColunaEncontros() {
 
       <DesafioSemana />
 
-      <MeditandoJunto />
+      <RankingPresenca />
     </>
   );
 }

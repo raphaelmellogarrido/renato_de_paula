@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Check, Eye, EyeOff, ShieldCheck, CheckCircle2, XCircle } from "lucide-react";
 import {
   useEmailSessao,
@@ -10,6 +10,8 @@ import {
   CHAVE_BASE_PRIMEIRO_NOME,
 } from "./components/usuarioStorage";
 import { checarRequisitosSenha } from "./components/senhaForte";
+import { iniciais } from "./components/comentariosUtils";
+import AvatarCropModal from "./components/AvatarCropModal";
 
 // Endpoints assumidos por analogia com os demais deste app (login.php,
 // register.php, presenca.php sempre em /api/hotmart/*) — não existem neste
@@ -18,6 +20,11 @@ import { checarRequisitosSenha } from "./components/senhaForte";
 // campo/rota, é só ajustar aqui.
 const PERFIL_URL = "/api/hotmart/user.php";
 const SENHA_URL = "/api/hotmart/user/change-password.php";
+// Este endpoint existe no repo (não é suposição por analogia como os 2
+// acima) — ver public/api/hotmart/upload-avatar.php.
+const FOTO_URL = "/api/hotmart/upload-avatar.php";
+const TIPOS_FOTO_ACEITOS = ["image/jpeg", "image/png", "image/webp"];
+const LIMITE_FOTO_BYTES = 5 * 1024 * 1024; // 5MB — mesmo limite validado no backend
 
 // TODO: reativar lembrete quando configurar Resend + Cron Hostinger
 //
@@ -72,6 +79,19 @@ function lerNomeSessaoAtual() {
   }
 }
 
+// Foto de perfil não tem rascunho por usuário como nome/apelido (o upload
+// já salva na hora, sem esperar o botão "Salvar perfil") — só reflete o que
+// já está em comunidade_session.avatarUrl (gravado no login e atualizado
+// aqui mesmo depois de um upload bem-sucedido).
+function lerAvatarUrlSessaoAtual() {
+  try {
+    const sess = JSON.parse(localStorage.getItem("comunidade_session") || "{}");
+    return sess.avatarUrl || "";
+  } catch {
+    return "";
+  }
+}
+
 // Mesmo regex de Login.jsx — só letras (com acentos pt-BR) e espaço, usado
 // nos dois campos porque os dois aparecem no Ranking/Comunidade.
 const REGEX_NOME = /^[A-Za-zÀ-ÖØ-öø-ÿ' ]{2,}$/;
@@ -120,6 +140,9 @@ function Configuracoes() {
   const [emailAnterior, setEmailAnterior] = useState(email);
   const [nomeSobrenome, setNomeSobrenome] = useState(() => lerNomeSobrenomeInicial(email));
   const [primeiroNome, setPrimeiroNome] = useState(() => lerPrimeiroNomeInicial(email, nomeSobrenome));
+  // avatarUrl: foto de perfil já salva (sessão) — precisa estar declarado
+  // antes do bloco de troca de conta abaixo, que já grava nele.
+  const [avatarUrl, setAvatarUrl] = useState(lerAvatarUrlSessaoAtual);
 
   // Borda só fica verde enquanto o campo está focado e válido; ao sair do
   // campo (blur) ela volta pra cor neutra (var(--cm-border)), em vez de
@@ -136,7 +159,15 @@ function Configuracoes() {
     const novoNomeSobrenome = lerNomeSobrenomeInicial(email);
     setNomeSobrenome(novoNomeSobrenome);
     setPrimeiroNome(lerPrimeiroNomeInicial(email, novoNomeSobrenome));
+    setAvatarUrl(lerAvatarUrlSessaoAtual());
   }
+
+  // arquivoCrop: File selecionado no <input>, abre o AvatarCropModal
+  // enquanto truthy.
+  const [arquivoCrop, setArquivoCrop] = useState(null);
+  const [enviandoFoto, setEnviandoFoto] = useState(false);
+  const [erroArquivoFoto, setErroArquivoFoto] = useState("");
+  const inputFotoRef = useRef(null);
 
   const [salvandoPerfil, setSalvandoPerfil] = useState(false);
   const [senhaAtual, setSenhaAtual] = useState("");
@@ -213,6 +244,59 @@ function Configuracoes() {
       mostrarToast("erro", err.message || "Erro ao salvar perfil");
     } finally {
       setSalvandoPerfil(false);
+    }
+  }
+
+  // Validação client-side de tipo/tamanho ANTES de abrir o crop — o
+  // backend (upload-avatar.php) revalida os dois com finfo/bytes reais, mas
+  // sem isso o usuário só descobriria um arquivo inválido depois de já ter
+  // ajustado o recorte.
+  function aoSelecionarArquivoFoto(e) {
+    const arquivo = e.target.files?.[0];
+    e.target.value = ""; // permite escolher o mesmo arquivo de novo depois (ex: após corrigir e tentar de novo)
+    if (!arquivo) return;
+
+    if (!TIPOS_FOTO_ACEITOS.includes(arquivo.type)) {
+      setErroArquivoFoto("Use uma imagem JPG, PNG ou WEBP");
+      return;
+    }
+    if (arquivo.size > LIMITE_FOTO_BYTES) {
+      setErroArquivoFoto("A imagem deve ter no máximo 5MB");
+      return;
+    }
+    setErroArquivoFoto("");
+    setArquivoCrop(arquivo);
+  }
+
+  // Chamado pelo AvatarCropModal com o PNG já recortado quadrado. Diferente
+  // do perfil (nome/apelido), a foto sobe na hora — não espera o botão
+  // "Salvar perfil" — mesmo padrão de apps com preview de avatar imediato.
+  async function aoConfirmarCropFoto(blob) {
+    setArquivoCrop(null);
+    setEnviandoFoto(true);
+    logSalvandoParaUsuario("Configuracoes/Foto", email);
+    try {
+      const formData = new FormData();
+      formData.append("email", email);
+      formData.append("foto", blob, "foto.png");
+      const res = await fetch(FOTO_URL, { method: "POST", body: formData });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.erro || "Não foi possível salvar a foto");
+
+      setAvatarUrl(data.url);
+      const sessaoAntiga = JSON.parse(localStorage.getItem("comunidade_session") || "{}");
+      localStorage.setItem("comunidade_session", JSON.stringify({ ...sessaoAntiga, email, avatarUrl: data.url }));
+      // Mesmos 3 disparos de handleSalvarPerfil — sidebar e afins reagem sem
+      // precisar de reload nem esperar um refetch.
+      avisarSessaoMudou();
+      window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(new CustomEvent("perfil-atualizado", { detail: { avatarUrl: data.url } }));
+
+      mostrarToast("sucesso", "Foto de perfil atualizada");
+    } catch (err) {
+      mostrarToast("erro", err.message || "Erro ao enviar foto");
+    } finally {
+      setEnviandoFoto(false);
     }
   }
 
@@ -313,6 +397,35 @@ function Configuracoes() {
             <span className="cm-config-counter">{primeiroNome.length}/11</span>
           </div>
           {primeiroNome && !primeiroNomeOk && <span className="cm-config-error">Use apenas letras e espaço (mínimo 2 caracteres)</span>}
+        </div>
+
+        <div className="cm-config-field">
+          <label>Foto de perfil</label>
+          <div className="cm-config-avatar-row">
+            <div className="cm-config-avatar-preview">
+              {avatarUrl ? <img src={avatarUrl} alt="" /> : <span>{iniciais(nomeSobrenome)}</span>}
+            </div>
+            <div className="cm-config-avatar-info">
+              {/* type="button": este campo não faz parte do submit de "Salvar perfil" — a foto sobe na hora, ver aoConfirmarCropFoto */}
+              <button
+                type="button"
+                className="cm-config-btn-secundario"
+                onClick={() => inputFotoRef.current?.click()}
+                disabled={enviandoFoto}
+              >
+                {enviandoFoto ? "Enviando..." : "Escolher foto"}
+              </button>
+              <span className="cm-config-hint">JPG, PNG ou WEBP, até 5MB</span>
+              {erroArquivoFoto && <span className="cm-config-error">{erroArquivoFoto}</span>}
+            </div>
+            <input
+              ref={inputFotoRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              hidden
+              onChange={aoSelecionarArquivoFoto}
+            />
+          </div>
         </div>
 
         <button type="submit" disabled={!podeSalvarPerfil} className={`cm-config-btn ${podeSalvarPerfil ? "is-ready" : ""}`}>
@@ -444,6 +557,10 @@ function Configuracoes() {
           {toast.tipo === "erro" ? <XCircle size={16} /> : <CheckCircle2 size={16} />}
           {toast.texto}
         </div>
+      )}
+
+      {arquivoCrop && (
+        <AvatarCropModal file={arquivoCrop} onCancel={() => setArquivoCrop(null)} onConfirm={aoConfirmarCropFoto} />
       )}
     </div>
   );

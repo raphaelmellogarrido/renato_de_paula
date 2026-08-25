@@ -37,9 +37,16 @@ if ($metodo === 'GET') {
         $offset = ($page - 1) * $porPagina;
     }
 
+    // LEFT JOIN alunos pelo email pra trazer o avatar_url ATUAL do autor
+    // (não o congelado no momento do comentário) — se o aluno trocar de
+    // foto depois, comentários antigos também mostram a foto nova. LEFT (não
+    // INNER) porque o autor pode ter sido removido de `alunos` e o
+    // comentário continua existindo; nesse caso avatar_url só vem null.
     $stmt = $mysqli->prepare(
-        "SELECT id, email, nome, comentario, created_at FROM comentarios
-         WHERE aula_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?"
+        "SELECT c.id, c.email, c.nome, c.comentario, c.image_url, c.created_at, a.avatar_url
+         FROM comentarios c
+         LEFT JOIN alunos a ON a.email = c.email
+         WHERE c.aula_id = ? ORDER BY c.created_at DESC LIMIT ? OFFSET ?"
     );
     $stmt->bind_param('sii', $aulaId, $porPagina, $offset);
     $stmt->execute();
@@ -53,6 +60,12 @@ if ($metodo === 'GET') {
             'email' => $row['email'],
             'nome' => $row['nome'] !== null && $row['nome'] !== '' ? $row['nome'] : 'Aluno',
             'comentario' => $row['comentario'],
+            // null quando o comentário não tem foto — front (ComentarioCard.jsx)
+            // só mostra o quadradinho/lightbox se isso vier truthy.
+            'image_url' => $row['image_url'] !== null && $row['image_url'] !== '' ? $row['image_url'] : null,
+            // null quando o autor não tem foto de perfil — front mostra as
+            // iniciais nesse caso (mesmo fallback de image_url acima).
+            'avatar_url' => $row['avatar_url'] !== null && $row['avatar_url'] !== '' ? $row['avatar_url'] : null,
             'created_at' => $row['created_at'], // já em horário de Brasília (SET time_zone em _conexao.php)
         ];
     }
@@ -80,10 +93,20 @@ if ($metodo === 'POST') {
         $comentario = mb_substr($comentario, 0, 2000);
     }
 
+    // Foto opcional (upload já feito antes por upload-imagem-comentario.php,
+    // que devolve o caminho). Só aceita o formato exato que aquele endpoint
+    // gera — qualquer outra coisa é ignorada (nunca guarda URL arbitrária
+    // mandada no corpo do POST).
+    $imageUrl = trim($input['image_url'] ?? '');
+    if ($imageUrl !== '' && !preg_match('#^/uploads/posts/[A-Za-z0-9_.-]+$#', $imageUrl)) {
+        $imageUrl = '';
+    }
+    $imageUrlParam = $imageUrl !== '' ? $imageUrl : null;
+
     $stmt = $mysqli->prepare(
-        "INSERT INTO comentarios (email, nome, aula_id, comentario) VALUES (?, ?, ?, ?)"
+        "INSERT INTO comentarios (email, nome, aula_id, comentario, image_url) VALUES (?, ?, ?, ?, ?)"
     );
-    $stmt->bind_param('ssss', $email, $nome, $aulaId, $comentario);
+    $stmt->bind_param('sssss', $email, $nome, $aulaId, $comentario, $imageUrlParam);
     $stmt->execute();
     $novoId = $stmt->insert_id;
     $stmt->close();

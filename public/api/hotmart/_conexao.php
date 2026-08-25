@@ -81,7 +81,7 @@ function garantirEstruturaClube(mysqli $mysqli): void
 {
     // (não pode ser `const` aqui dentro — PHP só aceita const no nível do
     // arquivo/classe, não dentro do corpo de uma função)
-    $estruturaClubeVersao = 1;
+    $estruturaClubeVersao = 3;
     $marcador = sys_get_temp_dir() . '/comunidade_estrutura_v' . $estruturaClubeVersao . '.ok';
     if (file_exists($marcador)) {
         return;
@@ -186,6 +186,34 @@ function garantirEstruturaClube(mysqli $mysqli): void
         );
         if ($temLiveLiberada && $temLiveLiberada->num_rows === 0) {
             $mysqli->query("ALTER TABLE config_encontro ADD COLUMN live_liberada TINYINT(1) NOT NULL DEFAULT 0");
+        }
+
+        // Foto opcional em "Sua prática hoje" (DificuldadeDoDia.jsx) — caminho
+        // público (ex: /uploads/posts/xxx.jpg) gravado por comentarios.php,
+        // arquivo salvo por upload-imagem-comentario.php. NULL = sem foto
+        // (maioria dos comentários). Mesmo padrão de ALTER condicional acima.
+        $temImageUrl = $mysqli->query(
+            "SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'comentarios' AND COLUMN_NAME = 'image_url'"
+        );
+        if ($temImageUrl && $temImageUrl->num_rows === 0) {
+            $mysqli->query("ALTER TABLE comentarios ADD COLUMN image_url VARCHAR(255) NULL AFTER comentario");
+        }
+
+        // Foto de perfil (Configuracoes.jsx + upload-avatar.php) — caminho
+        // público (ex: /uploads/avatars/xxx.webp) gravado direto por
+        // upload-avatar.php (diferente de image_url dos comentários, aqui o
+        // próprio endpoint de upload já grava no banco). NULL = sem foto
+        // (mostra iniciais). Coluna pode já existir manualmente em produção
+        // (feito direto no banco) — este bloco só garante que outros
+        // ambientes (local/staging) também tenham ela, mesmo padrão de ALTER
+        // condicional acima.
+        $temAvatar = $mysqli->query(
+            "SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'alunos' AND COLUMN_NAME = 'avatar_url'"
+        );
+        if ($temAvatar && $temAvatar->num_rows === 0) {
+            $mysqli->query("ALTER TABLE alunos ADD COLUMN avatar_url VARCHAR(255) NULL AFTER apelido");
         }
 
         // Acesso de Teste (painel /admin, seção "Acesso de Teste") — lista de

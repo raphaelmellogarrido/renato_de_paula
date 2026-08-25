@@ -23,7 +23,8 @@ const FAIXAS_PERCENTUAL_FALLBACK = [
   { min: 1, percentual: 45 },
 ];
 
-const LABELS_SEMANA = ["S", "T", "Q", "Q", "S", "S", "D"];
+// Label de dia-da-semana a partir de `Date#getDay()` (0 = domingo).
+const LABEL_POR_DIA_SEMANA = ["D", "S", "T", "Q", "Q", "S", "S"];
 
 // Mesmo fuso travado que useMeditacaoHoje.js usa pra gravar `hojeIso()` no
 // histórico (America/Sao_Paulo, não o fuso do sistema operacional). Bug
@@ -101,28 +102,30 @@ function calcularStreak(historico) {
   return streak;
 }
 
-// Segunda-feira (00:00 local) da semana que contém `data`.
-function segundaDaSemana(data) {
-  const d = new Date(data);
-  const diaSemana = d.getDay(); // 0 = domingo ... 6 = sábado
-  const deslocamento = diaSemana === 0 ? -6 : 1 - diaSemana;
-  d.setDate(d.getDate() + deslocamento);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-// As 7 bolinhas Seg-Dom da semana atual, cada uma com a data real do dia.
-function calcularBolinhasSemana(historico) {
+// As 7 bolinhas do card "Sequência". NÃO são mais a semana-calendário
+// (Seg-Dom fixo) — isso fazia as bolinhas "apagarem sozinhas" toda virada de
+// semana mesmo com a sequência intacta. Agora é uma janela rolante dos
+// últimos 7 dias terminando hoje, e uma bolinha só fica preenchida se aquele
+// dia faz parte da sequência ATUAL (`streak`, já quebrada por buraco em
+// `calcularStreak`) — nunca por estar "marcado" isoladamente no histórico.
+// Efeito: bolinha nunca apaga enquanto a sequência continua (ela só cresce,
+// um dia de cada vez), e quando a sequência quebra (1 dia sem meditar) o
+// `streak` vira 0 e TODAS as bolinhas zeram juntas — exatamente o pedido.
+function calcularBolinhasSemana(historico, streak) {
   const marcados = new Set(historico);
-  const segunda = segundaDaSemana(hojeBrasil());
-  const hojeIsoStr = isoLocal(hojeBrasil());
+  const hoje = hojeBrasil();
+  // Mesma regra do `calcularStreak`: se hoje ainda não foi marcado, a
+  // sequência (e a janela de dias preenchidos) termina em ontem, não hoje.
+  const offsetAncora = marcados.has(isoLocal(hoje)) ? 0 : 1;
 
-  return LABELS_SEMANA.map((label, i) => {
-    const data = new Date(segunda);
-    data.setDate(segunda.getDate() + i);
-    const iso = isoLocal(data);
-    return { iso, label, concluido: marcados.has(iso), hoje: iso === hojeIsoStr };
-  });
+  const bolinhas = [];
+  for (let diasAtras = 6; diasAtras >= 0; diasAtras -= 1) {
+    const data = new Date(hoje);
+    data.setDate(hoje.getDate() - diasAtras);
+    const concluido = diasAtras >= offsetAncora && diasAtras < offsetAncora + streak;
+    bolinhas.push({ iso: isoLocal(data), label: LABEL_POR_DIA_SEMANA[data.getDay()], concluido, hoje: diasAtras === 0 });
+  }
+  return bolinhas;
 }
 
 function percentualFallback(streak) {
@@ -217,7 +220,7 @@ export function useSequenciaMeditacao() {
     };
   }, [email, streak]);
 
-  const bolinhas = calcularBolinhasSemana(historico);
+  const bolinhas = calcularBolinhasSemana(historico, streak);
   const percentual = percentualApi ?? percentualFallback(streak);
   const primeiraData = historico.length ? [...historico].sort()[0] : null;
   const ludico = streak === 1 || streak === 2 ? mensagemLudica(primeiraData) : null;

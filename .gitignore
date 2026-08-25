@@ -27,6 +27,17 @@ server/curso-meditacao-raiz/*
 # comitado em public/api/hotmart/config.example.php.
 # public/api/hotmart/config.php
 
+# Fotos anexadas em "Sua prática hoje" (upload-imagem-comentario.php) -
+# conteúdo gerado em runtime pelos alunos, nunca deve ir pro Git (mesma
+# lógica dos vídeos acima). ATENÇÃO: como o build (`vite build`) copia
+# public/ pra dist/ do zero, se o deploy da Hostinger reconstruir dist/ a
+# partir do Git a cada push, fotos enviadas por aluno em produção podem
+# não sobreviver a um novo deploy - mesmo problema documentado em
+# HANDOFF.md (Problema 1) pra server/videos. Ainda não confirmado se esse
+# comportamento também afeta a pasta pública servida via PHP (public/api).
+public/uploads/posts/*
+!public/uploads/posts/.gitkeep
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
