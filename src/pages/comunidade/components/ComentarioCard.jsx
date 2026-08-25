@@ -57,31 +57,40 @@ function ComentarioCard({ comentario, podeExcluir, onExcluir }) {
             </span>
           )}
           {autorAdmin && <span className="cm-badge-admin">Administrador</span>}
-          <span className="cm-comentario-card-quando">{formatarDataBr(comentario.created_at)}</span>
+          {/* Cluster da direita, empurrado pro fim da linha em bloco (o
+              margin-left:auto está no wrapper, não mais em -quando sozinho):
+              foto (se tiver) -> data -> lixeira (se podeExcluir), sempre
+              nessa ordem, gap:8px entre eles, centralizados verticalmente.
+              Miniatura 40x40 — nunca mais o bloco de 78px que ficava fora do
+              header como irmão de -corpo; a linha inteira do comentário só
+              cresce com o conteúdo de texto, não com a foto. */}
+          <span className="cm-comentario-card-topo-direita">
+            {comentario.image_url && (
+              <button
+                type="button"
+                className="cm-comentario-card-foto-mini"
+                aria-label="Ampliar foto"
+                onClick={() => setLightboxAberto(true)}
+              >
+                <img src={comentario.image_url} alt="" />
+              </button>
+            )}
+            <span className="cm-comentario-card-quando">{formatarDataBr(comentario.created_at)}</span>
+            {podeExcluir && (
+              <button
+                type="button"
+                className="cm-comentario-card-excluir"
+                aria-label="Excluir comentário"
+                title="Excluir comentário"
+                onClick={() => onExcluir(comentario.id)}
+              >
+                <Trash2 size={15} />
+              </button>
+            )}
+          </span>
         </div>
         <p className="cm-comentario-card-texto">{comentario.comentario}</p>
       </div>
-      {comentario.image_url && (
-        <button
-          type="button"
-          className="cm-comentario-card-foto"
-          aria-label="Ampliar foto"
-          onClick={() => setLightboxAberto(true)}
-        >
-          <img src={comentario.image_url} alt="" />
-        </button>
-      )}
-      {podeExcluir && (
-        <button
-          type="button"
-          className="cm-comentario-card-excluir"
-          aria-label="Excluir comentário"
-          title="Excluir comentário"
-          onClick={() => onExcluir(comentario.id)}
-        >
-          <Trash2 size={15} />
-        </button>
-      )}
       {lightboxAberto && <ImageLightbox src={comentario.image_url} onClose={() => setLightboxAberto(false)} />}
     </div>
   );

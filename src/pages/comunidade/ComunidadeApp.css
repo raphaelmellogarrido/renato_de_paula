@@ -809,19 +809,24 @@
 }
 
 /* Só em DificuldadeDoDia.jsx ("Sua prática hoje", coluna 1 do dashboard):
-   trava a altura da lista com scroll PRÓPRIO em vez de deixar o card
-   esticar pra sempre com o scroll infinito (ele tem flex:1 1 auto pra
-   igualar a altura das colunas 2/3 — ver .cm-grid-feed .cm-duvida acima —
-   e antes disso era seguro porque a paginação fixa de 6 comentários dava
-   sempre a mesma altura; agora o total cresce sem limite). Sem isso,
-   carregar mais comentários estica a coluna 1 e deixa "Sua Jornada"/
-   "Desafios da semana", nas colunas ao lado, com um vão vazio embaixo cada
-   vez maior. 420px ~ visão de uns 4-5 comentários por vez — ajuste esse
-   número se quiser mostrar mais/menos antes do scroll interno começar.
-   ComentariosFeed.jsx (mural "Comentários" em Aulas, fora de .cm-duvida)
-   não é afetado por esta regra — continua com a página inteira rolando. */
+   scroll PRÓPRIO em vez de deixar o card esticar pra sempre com o scroll
+   infinito (.cm-duvida tem flex:1 1 auto pra igualar a altura das colunas
+   2/3 — ver .cm-grid-feed .cm-duvida acima). Antes isso era um max-height
+   fixo (420px) — só que como .cm-duvida estica pra bater com colunas 2/3
+   (que costumam ser mais altas) e nenhum filho dele crescia pra acompanhar,
+   sobrava um vão branco enorme ABAIXO da lista, dentro do próprio card.
+   Troca pra flex:1 (cresce pra preencher o que sobrar de .cm-duvida, que já
+   é flex-direction:column — ver mesma regra acima) + min-height:0
+   (necessário pra um item flex conseguir ficar menor que o próprio
+   conteúdo e o overflow-y:auto realmente entrar em ação) — a lista some o
+   vão sozinha, ocupando exatamente a altura disponível, com scroll interno
+   só aparecendo quando o conteúdo passa disso. ComentariosFeed.jsx (mural
+   "Comentários" em Aulas, fora de .cm-duvida) não é afetado por esta regra
+   — continua com a página inteira rolando. */
 .cm-duvida .cm-comentarios-lista {
-  max-height: 420px;
+  height: auto;
+  min-height: 0;
+  flex: 1;
   overflow-y: auto;
   padding-right: 4px;
 }
@@ -838,12 +843,10 @@
 .cm-comentario-card {
   position: relative;
   display: flex;
-  /* center (não flex-start): quando tem foto (bloco fixo de 78px, ver
-     .cm-comentario-card-foto) ela vira o item mais alto da linha e passa a
-     ditar a altura da linha toda — sem center, avatar/texto ficariam
-     "colados" no topo em vez de acompanhar o meio da foto. Comentário sem
-     foto não muda de aparência (a linha já é mais baixa que 78px de qualquer
-     jeito, então centralizar ou não dá o mesmo resultado visual). */
+  /* avatar (36px) + corpo são os 2 únicos filhos diretos agora — foto e
+     lixeira moraram pra dentro de -topo-direita (ver comentário lá embaixo),
+     então quem dita a altura da linha é sempre o conteúdo de texto, nunca
+     mais um bloco de foto de 78px puxando a linha inteira pra baixo. */
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
@@ -971,9 +974,22 @@
   color: var(--cm-text);
 }
 
-.cm-comentario-card-quando {
+/* Cluster da direita do header: foto mini (se tiver) -> data -> lixeira (se
+   podeExcluir), nessa ordem, gap:8px entre eles, centralizados verticalmente
+   (align-items:center herdado do flex column do card via -topo). O
+   margin-left:auto mora AQUI (não em -quando sozinho) pra empurrar o
+   cluster inteiro pro fim da linha em bloco — se tivesse só em -quando, a
+   foto (que vem antes dela agora) ficaria "solta" grudada no nome em vez de
+   acompanhar a data pro lado direito. */
+.cm-comentario-card-topo-direita {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-left: auto;
   padding-left: 8px;
+}
+
+.cm-comentario-card-quando {
   font-size: 0.76rem;
   font-weight: 400;
   color: var(--cm-text-soft);
@@ -996,46 +1012,42 @@
   word-break: break-word;
 }
 
-/* Quadradinho da foto anexada a um comentário (image_url) — à direita do
-   texto (irmão de .cm-comentario-card-corpo, não mais filho), centralizado
-   verticalmente na linha. O botão inteiro é o "bloco": altura fixa de 78px
-   SEMPRE, independente do comentário ao lado ter 1 ou 2 linhas — é esse
-   bloco de 78px que também vira a altura mínima da linha toda (ver
-   align-items:center em .cm-comentario-card), deixando o card uniforme em
-   vez de pular de tamanho conforme o texto. A imagem em si (56x56) fica
-   centralizada dentro do bloco via flex. Clique abre o lightbox
+/* Miniatura da foto anexada a um comentário (image_url) — dentro do cluster
+   -topo-direita, ANTES da data (ver ordem no JSX/comentário em -topo-direita
+   acima). 40x40, rounded 6px, flex-shrink:0 — nunca estica a linha: a altura
+   do card volta a ser ditada só pelo header de texto + parágrafo (2 linhas
+   clamp), igual um comentário sem foto. Clique abre o lightbox
    (ImageLightbox.jsx). */
-.cm-comentario-card-foto {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 56px;
-  height: 78px;
-  margin: 0 0 0 4px;
+.cm-comentario-card-foto-mini {
+  display: block;
+  width: 40px;
+  height: 40px;
+  margin: 0;
   padding: 0;
   background: none;
   border: none;
+  border-radius: 6px;
   flex-shrink: 0;
+  line-height: 0;
   cursor: zoom-in;
 }
 
-.cm-comentario-card-foto img {
-  width: 56px;
-  height: 56px;
+.cm-comentario-card-foto-mini img {
+  width: 40px;
+  height: 40px;
   object-fit: cover;
   border: 1px solid var(--cm-border);
-  border-radius: 8px;
+  border-radius: 6px;
   display: block;
 }
 
-.cm-comentario-card-admin .cm-comentario-card-foto img,
-.cm-comentario-card-orientador .cm-comentario-card-foto img {
+.cm-comentario-card-admin .cm-comentario-card-foto-mini img,
+.cm-comentario-card-orientador .cm-comentario-card-foto-mini img {
   border-color: rgba(255, 255, 255, 0.25);
 }
 
 .cm-comentario-card-excluir {
   flex-shrink: 0;
-  align-self: flex-start;
   background: none;
   border: none;
   color: var(--cm-text-soft);
@@ -1718,12 +1730,13 @@
 }
 
 /* Ajuste fino (23/08, herdado de quando "Sua prática hoje" tinha paginação
-   fixa de 6 comentários — 25/08: virou scroll infinito com altura travada
-   em max-height, ver .cm-duvida .cm-comentarios-lista acima; a lógica de
-   igualar as 3 colunas com flex:1 1 auto continua a mesma, só não depende
-   mais de contar comentário). Reduz ~70px de altura interna do card. Só
-   encolhe o miolo (padding do card + espaçamento entre os 3 itens) — não mexe no
-   conteúdo/textos.
+   fixa de 6 comentários — 25/08: virou scroll infinito, lista com
+   flex:1+min-height:0 pra ocupar só o espaço disponível dentro de .cm-duvida
+   sem sobrar vão embaixo, ver .cm-duvida .cm-comentarios-lista acima; a
+   lógica de igualar as 3 colunas com flex:1 1 auto continua a mesma, só não
+   depende mais de contar comentário). Reduz ~70px de altura interna do
+   card. Só encolhe o miolo (padding do card + espaçamento entre os 3 itens)
+   — não mexe no conteúdo/textos.
    justify-content:center (era flex-start, herdado da regra base lá em
    cima) porque .cm-coluna-direita .cm-grid-desafio tem flex:1 1 auto —
    sem isso o título "Desafios da semana" ficava colado no topo e toda a
@@ -2194,11 +2207,12 @@
 }
 
 /* Ajuste fino (23/08, herdado de quando "Sua prática hoje" tinha paginação
-   fixa de 6 comentários — 25/08: virou scroll infinito com altura travada
-   em max-height, ver .cm-duvida .cm-comentarios-lista acima; a lógica de
-   igualar as 3 colunas com flex:1 1 auto continua a mesma, só não depende
-   mais de contar comentário). Reduz ~70px de altura interna do card. Só
-   encolhe o miolo (anel + trilha) — não mexe no conteúdo/textos.
+   fixa de 6 comentários — 25/08: virou scroll infinito, lista com
+   flex:1+min-height:0 pra ocupar só o espaço disponível dentro de .cm-duvida
+   sem sobrar vão embaixo, ver .cm-duvida .cm-comentarios-lista acima; a
+   lógica de igualar as 3 colunas com flex:1 1 auto continua a mesma, só não
+   depende mais de contar comentário). Reduz ~70px de altura interna do
+   card. Só encolhe o miolo (anel + trilha) — não mexe no conteúdo/textos.
    display:flex + justify-content:center porque .cm-coluna-meio .cm-jornada
    tem flex:1 1 auto (cresce pra igualar a altura da coluna) — sem isso o
    card cresce em bloco normal e a sobra de espaço inteira vira vão embaixo
