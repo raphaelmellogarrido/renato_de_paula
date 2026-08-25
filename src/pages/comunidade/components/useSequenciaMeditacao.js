@@ -102,15 +102,19 @@ function calcularStreak(historico) {
   return streak;
 }
 
-// As 7 bolinhas do card "Sequência". NÃO são mais a semana-calendário
-// (Seg-Dom fixo) — isso fazia as bolinhas "apagarem sozinhas" toda virada de
-// semana mesmo com a sequência intacta. Agora é uma janela rolante dos
-// últimos 7 dias terminando hoje, e uma bolinha só fica preenchida se aquele
-// dia faz parte da sequência ATUAL (`streak`, já quebrada por buraco em
-// `calcularStreak`) — nunca por estar "marcado" isoladamente no histórico.
-// Efeito: bolinha nunca apaga enquanto a sequência continua (ela só cresce,
-// um dia de cada vez), e quando a sequência quebra (1 dia sem meditar) o
-// `streak` vira 0 e TODAS as bolinhas zeram juntas — exatamente o pedido.
+// As 7 bolinhas do card "Sequência". Semana FIXA Dom-Sáb (sempre nessa
+// ordem, Domingo primeiro — pedido do cliente), ancorada no domingo da
+// semana atual. Dias futuros da semana (depois de hoje) ficam sempre vazios.
+//
+// Preenchimento continua sendo por POSIÇÃO relativa a hoje dentro da
+// sequência ATUAL (`streak`, já quebrada por buraco em `calcularStreak`) —
+// nunca por estar "marcado" isoladamente no histórico. É isso que evita o
+// bug antigo (época da semana fixa Seg-Dom) de a semana inteira "apagar" na
+// virada: como o preenchimento é sempre recalculado a partir de hoje pra
+// trás, um dia que pertencia à sequência na semana passada continua
+// aparecendo preenchido no dia correspondente da semana nova, mesmo cruzando
+// o domingo. Só quando a sequência quebra de verdade (`streak` vira 0) é que
+// todas as bolinhas zeram juntas — exatamente o pedido.
 function calcularBolinhasSemana(historico, streak) {
   const marcados = new Set(historico);
   const hoje = hojeBrasil();
@@ -118,10 +122,16 @@ function calcularBolinhasSemana(historico, streak) {
   // sequência (e a janela de dias preenchidos) termina em ontem, não hoje.
   const offsetAncora = marcados.has(isoLocal(hoje)) ? 0 : 1;
 
+  const domingo = new Date(hoje);
+  domingo.setDate(hoje.getDate() - hoje.getDay());
+
   const bolinhas = [];
-  for (let diasAtras = 6; diasAtras >= 0; diasAtras -= 1) {
-    const data = new Date(hoje);
-    data.setDate(hoje.getDate() - diasAtras);
+  for (let i = 0; i < 7; i += 1) {
+    const data = new Date(domingo);
+    data.setDate(domingo.getDate() + i);
+    // Dias futuros da semana (depois de hoje) dão diasAtras negativo e
+    // nunca batem a condição abaixo — ficam vazios naturalmente.
+    const diasAtras = Math.round((hoje - data) / 86400000);
     const concluido = diasAtras >= offsetAncora && diasAtras < offsetAncora + streak;
     bolinhas.push({ iso: isoLocal(data), label: LABEL_POR_DIA_SEMANA[data.getDay()], concluido, hoje: diasAtras === 0 });
   }

@@ -354,15 +354,23 @@
 }
 
 /* O card do MEIO de cada coluna cresce (flex:1 1 auto) pra absorver
-   sozinho a altura que sobra da coluna — "Sua prática hoje" na coluna 1,
-   "Sua Jornada" na coluna 2, "Desafio da semana" na coluna 3. Substitui o
-   antigo mecanismo de só empurrar o ÚLTIMO widget pra baixo com
-   margin-top:auto (regra logo abaixo, mantida como reforço): antes o vão
-   sobrava concentrado embaixo de um widget só (ex.: Sequência/Sua Jornada
-   ou Próximo encontro/Desafios), agora ele é absorvido pelo card do meio
-   e o gap:24px fica sempre igual entre todos os widgets da coluna. */
+   sozinho a altura que sobra da coluna — "Sua Jornada" na coluna 2,
+   "Desafio da semana" na coluna 3. Substitui o antigo mecanismo de só
+   empurrar o ÚLTIMO widget pra baixo com margin-top:auto (regra logo
+   abaixo, mantida como reforço): antes o vão sobrava concentrado embaixo
+   de um widget só (ex.: Sequência/Sua Jornada ou Próximo encontro/
+   Desafios), agora ele é absorvido pelo card do meio e o gap:24px fica
+   sempre igual entre todos os widgets da coluna.
+   "Sua prática hoje" (coluna 1) NÃO entra mais nesse grupo (25/08): o feed
+   de comentários dela agora tem altura própria travada em 6 itens visíveis
+   (ver .cm-duvida .cm-comentarios-lista abaixo), então o card não pode mais
+   esticar pra absorver a sobra da coluna — sobraria justamente o vão
+   branco vazio DENTRO do card, embaixo da lista, que era o bug reportado.
+   flex:0 1 auto faz o card ocupar só a altura do próprio conteúdo; a
+   coluna 1 passa a poder terminar mais curta que as colunas 2/3 — troca
+   aceita pra não ter mais espaço vazio. */
 .cm-grid-feed .cm-duvida {
-  flex: 1 1 auto !important;
+  flex: 0 1 auto !important;
   display: flex !important;
   flex-direction: column !important;
 }
@@ -508,10 +516,11 @@
   box-shadow: var(--cm-shadow);
   padding: 32px;
   color: #1a1a1a;
-  /* flex:1 dentro de .cm-grid-feed (height:100%, ver acima) — estica o
-     card até o fim da coluna 1, pra sua borda de baixo alinhar com
-     Meditando junto/Ranking mesmo quando o conteúdo dele é mais curto que
-     a soma das colunas 2/3. */
+  /* flex:1 é o padrão fora do grid do Dashboard; dentro de .cm-grid-feed
+     (coluna 1 do Dashboard) a regra .cm-grid-feed .cm-duvida acima
+     sobrescreve pra flex:0 1 auto (25/08) — o card não estica mais até o
+     fim da coluna, ver comentário lá pra o porquê (feed interno agora tem
+     altura travada em 6 itens visíveis). */
   flex: 1;
 }
 
@@ -810,25 +819,33 @@
 
 /* Só em DificuldadeDoDia.jsx ("Sua prática hoje", coluna 1 do dashboard):
    scroll PRÓPRIO em vez de deixar o card esticar pra sempre com o scroll
-   infinito (.cm-duvida tem flex:1 1 auto pra igualar a altura das colunas
-   2/3 — ver .cm-grid-feed .cm-duvida acima). Antes isso era um max-height
-   fixo (420px) — só que como .cm-duvida estica pra bater com colunas 2/3
-   (que costumam ser mais altas) e nenhum filho dele crescia pra acompanhar,
-   sobrava um vão branco enorme ABAIXO da lista, dentro do próprio card.
-   Troca pra flex:1 (cresce pra preencher o que sobrar de .cm-duvida, que já
-   é flex-direction:column — ver mesma regra acima) + min-height:0
-   (necessário pra um item flex conseguir ficar menor que o próprio
-   conteúdo e o overflow-y:auto realmente entrar em ação) — a lista some o
-   vão sozinha, ocupando exatamente a altura disponível, com scroll interno
-   só aparecendo quando o conteúdo passa disso. ComentariosFeed.jsx (mural
-   "Comentários" em Aulas, fora de .cm-duvida) não é afetado por esta regra
-   — continua com a página inteira rolando. */
+   infinito. Histórico: era max-height fixo (420px) → virou flex:1 pra
+   acompanhar a altura de .cm-duvida esticado (que igualava as colunas
+   2/3) → esse flex:1 é que causava o vão branco vazio embaixo da lista
+   quando as colunas 2/3 eram mais altas (o card esticava, a lista
+   esticava junto, e sobrava espaço em branco depois do último
+   comentário). Correção 25/08 (pedido do cliente): volta a ser altura
+   TRAVADA, mas agora calculada pra mostrar exatamente 6 comentários por
+   vez — cada .cm-comentario-card tem 78px fixos (ver regra mais abaixo) +
+   gap de 12px entre eles, então 6 itens = 6×90px = 540px. .cm-duvida
+   também não estica mais pra bater com as colunas 2/3 (flex:0 1 auto na
+   regra .cm-grid-feed .cm-duvida acima), então não sobra vão nenhum: o
+   7º comentário em diante só aparece rolando o scroll DENTRO desta lista
+   (overflow-y:auto), que também é o `root` do IntersectionObserver que
+   dispara carregarMais() (+10) perto do fim desse scroll interno — ver
+   DificuldadeDoDia.jsx. ComentariosFeed.jsx (mural "Comentários" em
+   Aulas, fora de .cm-duvida) não é afetado por esta regra nem pela de
+   78px do card — continua com altura automática e a página inteira
+   rolando. */
 .cm-duvida .cm-comentarios-lista {
-  height: auto;
-  min-height: 0;
-  flex: 1;
+  max-height: calc(6 * 90px); /* = 540px: 6 comentários de 78px + gap 12px */
+  gap: 12px;
   overflow-y: auto;
   padding-right: 4px;
+  /* Firefox — versão fina do scrollbar nativo (Chrome/Safari usam as
+     pseudo-classes -webkit-scrollbar-* logo abaixo). */
+  scrollbar-width: thin;
+  scrollbar-color: var(--cm-border) transparent;
 }
 
 .cm-duvida .cm-comentarios-lista::-webkit-scrollbar {
@@ -840,6 +857,10 @@
   border-radius: 999px;
 }
 
+/* "Você chegou ao fim" (.cm-comentarios-fim) já é renderizado DENTRO
+   deste container no JSX (não é irmão dele) — herda o overflow-y:auto
+   acima e rola junto com a lista, nunca fica solto fora do scroll. */
+
 .cm-comentario-card {
   position: relative;
   display: flex;
@@ -849,10 +870,36 @@
      mais um bloco de foto de 78px puxando a linha inteira pra baixo. */
   align-items: center;
   gap: 12px;
-  padding: 14px 16px;
+  padding: 8px 16px;
   background: #fff;
   border: 1px solid var(--cm-border);
   border-radius: 14px;
+}
+
+/* Só em "Sua prática hoje" (DificuldadeDoDia.jsx): altura FIXA de 78px por
+   comentário (25/08, pedido do cliente) — é essa medida fixa que permite o
+   container calcular "6 itens visíveis = 540px" acima (.cm-duvida
+   .cm-comentarios-lista). min-height + max-height travam o bloco no mesmo
+   tamanho tenha o comentário 1 linha, 2 linhas ou foto anexada; overflow:
+   hidden corta o que não couber (nome+badges+foto 40px no topo, texto
+   clampado em 2 linhas — ver override de .cm-comentario-card-texto no fim
+   do arquivo) em vez de esticar a linha. flex-shrink:0 evita que o flex
+   column da lista espreme os cards pra caber mais que 6. ComentariosFeed.jsx
+   (mural em Aulas, fora de .cm-duvida) mantém altura automática — mesmo
+   componente ComentarioCard.jsx, visual diferente só aqui dentro. */
+.cm-duvida .cm-comentario-card {
+  min-height: 78px;
+  max-height: 78px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.cm-duvida .cm-comentario-skeleton-msg {
+  min-height: 78px;
+  max-height: 78px;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-sizing: border-box;
 }
 
 /* Placeholder mostrado por DificuldadeDoDia.jsx/ComentariosFeed.jsx enquanto
@@ -4071,4 +4118,33 @@ h3.cm-config-subtitle {
     max-width: 100% !important;
     min-width: 0 !important;
   }
+}
+
+/* Reforça o clamp de 2 linhas SÓ dentro de "Sua prática hoje" (25/08) por
+   cima da regra "vencer tudo" logo acima (`[class*="comentario"] p`), que
+   zera line-clamp/max-height em QUALQUER <p> com "comentario" na classe
+   pra corrigir o truncamento de 1 linha no celular — sem essa exceção
+   aqui, .cm-comentario-card-texto nunca ficaria em 2 linhas e o card de
+   78px fixo (regra .cm-duvida .cm-comentario-card acima) cortaria o
+   parágrafo no meio de qualquer jeito, feio, em vez de terminar em "…".
+   `.cm-duvida .cm-comentario-card-texto` tem 2 classes de especificidade
+   (0,2,0), maior que o seletor de atributo de 1 classe da regra acima
+   (0,1,1) — ganha mesmo com !important dos dois lados, sem depender de
+   ordem no arquivo. ComentariosFeed.jsx (mural em Aulas, fora de
+   .cm-duvida) continua sem clamp nenhum, como a correção de celular
+   pedia. */
+.cm-duvida .cm-comentario-card-texto {
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  line-clamp: 2 !important;
+  overflow: hidden !important;
+  white-space: normal !important;
+  max-height: none !important; /* o clamp já limita a 2 linhas, não precisa de teto em px */
+  /* line-height/margin mais enxutos que o padrão (1.5/4px) só aqui — é o
+     que faz as 2 linhas do clamp caberem dentro do card de 78px fixo
+     (padding 8px + linha do nome/badges ~25px + este bloco) sem cortar a
+     2ª linha visualmente na maioria dos comentários. */
+  line-height: 1.35;
+  margin-top: 2px;
 }
