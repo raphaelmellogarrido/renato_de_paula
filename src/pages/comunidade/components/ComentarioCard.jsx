@@ -60,17 +60,17 @@ function ComentarioCard({ comentario, podeExcluir, onExcluir }) {
           <span className="cm-comentario-card-quando">{formatarDataBr(comentario.created_at)}</span>
         </div>
         <p className="cm-comentario-card-texto">{comentario.comentario}</p>
-        {comentario.image_url && (
-          <button
-            type="button"
-            className="cm-comentario-card-foto"
-            aria-label="Ampliar foto"
-            onClick={() => setLightboxAberto(true)}
-          >
-            <img src={comentario.image_url} alt="" />
-          </button>
-        )}
       </div>
+      {comentario.image_url && (
+        <button
+          type="button"
+          className="cm-comentario-card-foto"
+          aria-label="Ampliar foto"
+          onClick={() => setLightboxAberto(true)}
+        >
+          <img src={comentario.image_url} alt="" />
+        </button>
+      )}
       {podeExcluir && (
         <button
           type="button"

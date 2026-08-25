@@ -18,10 +18,25 @@ $metodo = $_SERVER['REQUEST_METHOD'];
 
 if ($metodo === 'GET') {
     $aulaId = trim($_GET['aula_id'] ?? '') ?: 'geral';
-    $page = max(1, intval($_GET['page'] ?? 1));
-    // Clampa entre 1 e 50 pra ninguém pedir a tabela inteira numa página só.
-    $porPagina = min(50, max(1, intval($_GET['per_page'] ?? 10)));
-    $offset = ($page - 1) * $porPagina;
+
+    // Dois jeitos de pedir página no mesmo endpoint: `page`/`per_page` (usado
+    // por ComentariosFeed.jsx, mural "Comentários" em Aulas, paginação 1/3
+    // de verdade) e `limit`/`offset` (usado por DificuldadeDoDia.jsx desde
+    // que virou scroll infinito estilo Instagram — 20 comentários iniciais,
+    // +10 a cada vez que o sentinel entra na tela). Detecta pelo que veio na
+    // query; os dois só precisam chegar em $limite/$offset no fim.
+    $modoOffset = isset($_GET['limit']) || isset($_GET['offset']);
+    if ($modoOffset) {
+        // Mesmo clamp de 1-50 do per_page abaixo — ninguém pede a tabela
+        // inteira de uma vez só trocando o limit da query string.
+        $limite = min(50, max(1, intval($_GET['limit'] ?? 10)));
+        $offset = max(0, intval($_GET['offset'] ?? 0));
+    } else {
+        $page = max(1, intval($_GET['page'] ?? 1));
+        // Clampa entre 1 e 50 pra ninguém pedir a tabela inteira numa página só.
+        $limite = min(50, max(1, intval($_GET['per_page'] ?? 10)));
+        $offset = ($page - 1) * $limite;
+    }
 
     $stmtTotal = $mysqli->prepare("SELECT COUNT(*) AS total FROM comentarios WHERE aula_id = ?");
     $stmtTotal->bind_param('s', $aulaId);
@@ -29,12 +44,16 @@ if ($metodo === 'GET') {
     $total = (int) $stmtTotal->get_result()->fetch_assoc()['total'];
     $stmtTotal->close();
 
-    $pages = max(1, (int) ceil($total / $porPagina));
+    $pages = max(1, (int) ceil($total / $limite));
+    $page = (int) floor($offset / $limite) + 1;
     // page pedida além do fim (ex: comentário apagado direto no banco
     // reduziu o total) — devolve a última página válida em vez de vazio.
-    if ($page > $pages) {
+    // Só se aplica no modo page/per_page: no modo limit/offset (scroll
+    // infinito) quem decide quando parar é o `hasMore` da resposta, um
+    // offset "no vazio" só devolve itens=[] sem erro nenhum.
+    if (!$modoOffset && $page > $pages) {
         $page = $pages;
-        $offset = ($page - 1) * $porPagina;
+        $offset = ($page - 1) * $limite;
     }
 
     // LEFT JOIN alunos pelo email pra trazer o avatar_url ATUAL do autor
@@ -48,7 +67,7 @@ if ($metodo === 'GET') {
          LEFT JOIN alunos a ON a.email = c.email
          WHERE c.aula_id = ? ORDER BY c.created_at DESC LIMIT ? OFFSET ?"
     );
-    $stmt->bind_param('sii', $aulaId, $porPagina, $offset);
+    $stmt->bind_param('sii', $aulaId, $limite, $offset);
     $stmt->execute();
     $res = $stmt->get_result();
     $itens = [];
@@ -71,7 +90,13 @@ if ($metodo === 'GET') {
     }
     $stmt->close();
 
-    echo json_encode(['ok' => true, 'itens' => $itens, 'total' => $total, 'page' => $page, 'pages' => $pages]);
+    // hasMore: ainda existe algo depois deste lote — é o que o front do
+    // scroll infinito usa pra saber se continua observando o sentinel ou
+    // mostra "Você chegou ao fim" (ComentariosFeed.jsx com page/pages
+    // continua ignorando esse campo, não quebra nada pra ele).
+    $hasMore = ($offset + count($itens)) < $total;
+
+    echo json_encode(['ok' => true, 'itens' => $itens, 'total' => $total, 'page' => $page, 'pages' => $pages, 'hasMore' => $hasMore]);
     exit;
 }
 

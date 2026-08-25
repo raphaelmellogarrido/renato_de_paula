@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Bold, Italic, Smile, Image as ImageIcon, ArrowRight, X } from "lucide-react";
+import { Bold, Italic, Smile, Image as ImageIcon, ArrowRight, X } from "lucide-react";
 import { useEmailSessao, lerNomeSessao } from "./usuarioStorage";
 import { useComunidadeAuth } from "./useComunidadeAuth";
 import { iniciais } from "./comentariosUtils";
@@ -17,7 +17,12 @@ const LIMITE_FOTO_BYTES = 5 * 1024 * 1024; // 5MB
 // livre do dia, compartilhada entre todos os alunos (não reseta por
 // semana/dia, é a mesma tabela permanente de comentarios.php).
 const AULA_ID = "dificuldade_do_dia";
-const POR_PAGINA = 6; // era 7 — ajuste fino de altura (23/08) pra alinhar o final das 3 colunas de /comunidade
+// Scroll infinito estilo Instagram (25/08, substituiu a paginação 1/3 de
+// 6 em 6): 1º carregamento traz os 20 mais recentes; ao rolar até o
+// sentinel no fim da lista (IntersectionObserver, ver mais abaixo), busca
+// +10 de cada vez.
+const TAMANHO_INICIAL = 20;
+const TAMANHO_PAGINA = 10;
 // Limite visual do textarea: card tem ~700px de largura, fonte 14px (~8px/char,
 // ~87 chars/linha) — 2 linhas dariam ~174 chars, mas 140 garante que também
 // caiba em 2 linhas no mobile (card mais estreito). Mesmo limite do
@@ -58,9 +63,11 @@ function DificuldadeDoDia() {
   // atualizada na hora por Configuracoes.jsx sem precisar de reload.
   const { session } = useComunidadeAuth();
   const [itens, setItens] = useState([]);
-  const [total, setTotal] = useState(null); // null = ainda carregando a 1ª vez
-  const [page, setPage] = useState(1);
-  const [pages, setPages] = useState(1);
+  const [carregandoInicial, setCarregandoInicial] = useState(true); // true = ainda não resolveu o 1º fetch nem achou cache
+  const [offset, setOffset] = useState(0); // quantos itens já estão carregados — próximo fetch pede a partir daqui
+  const [hasMore, setHasMore] = useState(true); // vem do backend (comentarios.php); false esconde o sentinel e mostra "Você chegou ao fim"
+  const [carregandoMais, setCarregandoMais] = useState(false); // true enquanto busca o próximo lote de +10 (mostra os 3 skeletons no fim da lista)
+  const sentinelRef = useRef(null); // div vazia no fim da lista — observada pelo IntersectionObserver abaixo
   const [texto, setTexto] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [foto, setFoto] = useState(null); // File selecionado, ainda não enviado
@@ -85,43 +92,92 @@ function DificuldadeDoDia() {
   const souOrientador = emailAtualNormalizado === EMAIL_ORIENTADOR;
   const podeExcluir = souAdmin || souOrientador;
 
-  const carregar = useCallback((paginaAlvo) => {
-    // Stale-while-revalidate: se tiver cache de visita recente (<2min) pra
-    // essa página, pinta ele JÁ (sem esperar rede) e ainda assim busca fresco
-    // em background — evita a área da lista ficar em branco por segundos
-    // numa visita repetida. Cache é do mural inteiro (não por email): ver
-    // cacheComentarios.js.
-    const chave = chaveCacheComentarios(AULA_ID, paginaAlvo);
+  // 1º carregamento (20 mais recentes) — stale-while-revalidate igual antes:
+  // se tiver cache de visita recente (<2min), pinta ele JÁ (sem esperar
+  // rede) e ainda assim busca fresco em background. Cache é do mural inteiro
+  // (não por email): ver cacheComentarios.js. Só o 1º lote é cacheado —
+  // lotes seguintes (carregarMais) são scroll infinito de verdade, não faz
+  // sentido guardar em cache um "page 2" que só existiu naquela sessão.
+  const carregarInicial = useCallback(() => {
+    const chave = chaveCacheComentarios(AULA_ID, 1);
     const cache = lerCacheComentarios(chave);
     if (cache) {
-      setItens(Array.isArray(cache.itens) ? cache.itens : []);
-      setTotal(Number.isFinite(cache.total) ? cache.total : 0);
-      setPage(Number.isFinite(cache.page) ? cache.page : paginaAlvo);
-      setPages(Number.isFinite(cache.pages) ? Math.max(1, cache.pages) : 1);
+      const itensCache = Array.isArray(cache.itens) ? cache.itens : [];
+      setItens(itensCache);
+      setOffset(itensCache.length);
+      setHasMore(Boolean(cache.hasMore));
+      setCarregandoInicial(false);
     }
 
-    buscarComentarios(`${COMENTARIOS_URL}?aula_id=${AULA_ID}&page=${paginaAlvo}&per_page=${POR_PAGINA}`)
+    buscarComentarios(`${COMENTARIOS_URL}?aula_id=${AULA_ID}&limit=${TAMANHO_INICIAL}&offset=0`)
       .then((dados) => {
-        setItens(Array.isArray(dados?.itens) ? dados.itens : []);
-        setTotal(Number.isFinite(dados?.total) ? dados.total : 0);
-        setPage(Number.isFinite(dados?.page) ? dados.page : paginaAlvo);
-        setPages(Number.isFinite(dados?.pages) ? Math.max(1, dados.pages) : 1);
+        const novos = Array.isArray(dados?.itens) ? dados.itens : [];
+        setItens(novos);
+        setOffset(novos.length);
+        setHasMore(Boolean(dados?.hasMore));
+        setCarregandoInicial(false);
         salvarCacheComentarios(chave, dados);
       })
       .catch((err) => {
         console.error("[Clube Presença] falha ao carregar 'Sua prática hoje' (após retry):", err);
-        // Nunca zera itens/total aqui: já tentamos 2x (buscarComentarios já
-        // faz 1 retry). Se havia cache, ele continua pintado; se não havia,
-        // total continua null e a tela fica no skeleton — nunca mostra
-        // "Seja o primeiro a comentar" por causa de uma falha transitória
-        // (era isso que fazia o mural aparecer vazio no primeiro load e só
-        // corrigir com F5).
+        // Nunca zera itens aqui: já tentamos 2x (buscarComentarios já faz 1
+        // retry). Se havia cache, ele continua pintado (carregandoInicial já
+        // virou false no bloco acima); se não havia, carregandoInicial
+        // continua true e a tela fica no skeleton — nunca mostra "Seja o
+        // primeiro a comentar" por causa de uma falha transitória (era isso
+        // que fazia o mural aparecer vazio no primeiro load e só corrigir
+        // com F5).
       });
   }, []);
 
+  // +10 comentários quando o sentinel entra na viewport. Usa `offset`/
+  // `hasMore`/`carregandoMais` do estado (não refs) de propósito: essa
+  // função é recriada a cada mudança deles, e o efeito do IntersectionObserver
+  // logo abaixo depende dela — então o observer sempre chama a versão com os
+  // valores atuais, sem precisar de ref pra "furar" o closure.
+  const carregarMais = useCallback(() => {
+    if (carregandoMais || !hasMore) return;
+    setCarregandoMais(true);
+
+    buscarComentarios(`${COMENTARIOS_URL}?aula_id=${AULA_ID}&limit=${TAMANHO_PAGINA}&offset=${offset}`)
+      .then((dados) => {
+        const novos = Array.isArray(dados?.itens) ? dados.itens : [];
+        setItens((atual) => [...atual, ...novos]);
+        setOffset((atual) => atual + novos.length);
+        setHasMore(Boolean(dados?.hasMore));
+      })
+      .catch((err) => {
+        console.error("[Clube Presença] falha ao carregar mais comentários:", err);
+        // hasMore fica como estava — se ainda for true, o sentinel continua
+        // observado e uma próxima entrada na viewport tenta de novo.
+      })
+      .finally(() => setCarregandoMais(false));
+  }, [offset, hasMore, carregandoMais]);
+
   useEffect(() => {
-    carregar(1);
-  }, [carregar]);
+    carregarInicial();
+  }, [carregarInicial]);
+
+  // Observa o sentinel (div vazia no fim da lista) e dispara carregarMais()
+  // quando ele entra na viewport — automático, sem botão "Carregar mais".
+  // Só observa enquanto hasMore for true (sentinel nem é renderizado quando
+  // false, ver JSX). Recriar o observer a cada mudança de carregarMais é
+  // barato aqui (lista pequena, poucas dezenas de comentários) e evita bug
+  // de closure preso no offset antigo.
+  useEffect(() => {
+    if (!hasMore) return;
+    const alvo = sentinelRef.current;
+    if (!alvo) return;
+
+    const observer = new IntersectionObserver(
+      (entradas) => {
+        if (entradas[0]?.isIntersecting) carregarMais();
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(alvo);
+    return () => observer.disconnect();
+  }, [carregarMais, hasMore]);
 
   // Revoga o object URL do preview no unmount (troca/remoção de foto já se
   // revoga sozinha em handleSelecionarFoto/handleRemoverFoto).
@@ -256,7 +312,7 @@ function DificuldadeDoDia() {
 
       setTexto("");
       handleRemoverFoto();
-      carregar(1); // comentário novo entra no topo — sempre volta pra página 1
+      carregarInicial(); // comentário novo entra no topo — refaz o 1º lote do zero
       window.dispatchEvent(new CustomEvent(EVENTO_PARTILHA_CRIADA));
     } catch (err) {
       console.error("[Clube Presença] falha ao compartilhar:", err);
@@ -277,7 +333,10 @@ function DificuldadeDoDia() {
       .then((data) => {
         if (data?.erro) throw new Error(data.erro);
         setItens((atual) => atual.filter((c) => c.id !== id));
-        setTotal((atual) => (typeof atual === "number" ? Math.max(0, atual - 1) : atual));
+        // offset acompanha pra baixo junto com a lista — se não ajustasse
+        // aqui, o próximo carregarMais pediria offset 1 a mais do que devia
+        // e puliria um comentário (o vizinho do que acabou de ser apagado).
+        setOffset((atual) => Math.max(0, atual - 1));
       })
       .catch((err) => {
         console.error("[Clube Presença] falha ao excluir comentário:", err);
@@ -285,8 +344,7 @@ function DificuldadeDoDia() {
       });
   }
 
-  const carregando = total === null;
-  const vazio = total === 0;
+  const vazio = !carregandoInicial && itens.length === 0 && !hasMore;
   const nomeSessao = session?.nome || lerNomeSessao();
 
   return (
