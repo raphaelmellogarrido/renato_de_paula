@@ -126,23 +126,40 @@ export default function DesafioSemana() {
 
   // Mescla com o PHP externo — nunca sobrescreve uma marca local já feita,
   // só complementa (mesma regra da tela de aulas). EXCETO quando o admin
-  // resetou a semana (botão "Resetar desafios da semana" em /admin, bug
-  // reportado 25/08): resetadoEm vem do servidor e muda a cada reset; se for
-  // diferente do que este navegador guardou da última vez (_resetadoEm,
-  // salvo junto dos itens no mesmo objeto de localStorage), o progresso
-  // local está stale e é descartado ANTES do merge — senão um check marcado
-  // antes do reset nunca some daqui, já que a linha dele em desafio_semana
-  // simplesmente não existe mais pra "corrigir" o valor local.
-  useEffect(() => {
-    if (!email) return;
+  // resetou a semana (botão "Resetar desafios da semana" em /admin):
+  // resetadoEm vem do servidor e muda a cada reset; se for diferente do que
+  // este navegador guardou da última vez (_resetadoEm, salvo junto dos itens
+  // no mesmo objeto de localStorage), o progresso local está stale e é
+  // descartado ANTES do merge — senão um check marcado antes do reset nunca
+  // some daqui, já que a linha dele em desafio_semana simplesmente não
+  // existe mais pra "corrigir" o valor local.
+  //
+  // Bug corrigido 26/08: a condição antiga também exigia `atual._resetadoEm`
+  // (um valor JÁ salvo) pra considerar stale. Só que a primeira vez que um
+  // aluno com checks marcados sofre um reset, `atual._resetadoEm` ainda é
+  // undefined (nunca tinha sido gravado) — a comparação dava `stale=false`,
+  // os checks antigos ficavam intocados, E esse mesmo fetch já gravava o
+  // `_resetadoEm` novo no localStorage. Depois disso a comparação nunca mais
+  // detectava a mudança (o navegador "aprendeu" o timestamp errado demais
+  // tarde), então os 3 checks ficavam travados até um SEGUNDO reset
+  // acontecer — daí o "precisa de F5 duas vezes" (e às vezes nem duas
+  // resolviam). Basta comparar contra qualquer resetadoEm não-nulo,
+  // independente de já existir baseline local.
+  // Ref só serve pra deixar a versão MAIS RECENTE de sincronizarDesafios
+  // acessível pro listener de foco abaixo (que só é registrado uma vez, com
+  // deps []) sem recriar o listener a cada render — a atribuição acontece
+  // dentro do useEffect seguinte, nunca durante o render.
+  const sincronizarDesafiosRef = useRef(() => {});
 
+  function sincronizarDesafios() {
+    if (!email) return;
     fetch(`${DESAFIO_SEMANA_URL}?email=${encodeURIComponent(email)}`)
       .then((r) => r.json())
       .then((data) => {
         const lista = Array.isArray(data?.itens) ? data.itens : [];
         const resetadoEm = data?.resetadoEm || null;
         setConcluidos((atual) => {
-          const stale = resetadoEm && atual._resetadoEm && atual._resetadoEm !== resetadoEm;
+          const stale = !!resetadoEm && atual._resetadoEm !== resetadoEm;
           const mesclado = stale ? { _resetadoEm: resetadoEm } : { ...atual, _resetadoEm: resetadoEm || atual._resetadoEm };
           for (const item of lista) {
             if (!item.item_id || mesclado[item.item_id]) continue;
@@ -156,7 +173,33 @@ export default function DesafioSemana() {
         // PHP externo indisponível ou ainda não existe — segue só com o
         // que já está salvo local, sem travar a página.
       });
+  }
+
+  useEffect(() => {
+    sincronizarDesafiosRef.current = sincronizarDesafios;
+  });
+
+  useEffect(() => {
+    sincronizarDesafios();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [email]);
+
+  // Se o admin resetou em OUTRA aba do mesmo navegador (fluxo comum de
+  // teste: /admin numa aba, /comunidade noutra) e o aluno volta pra esta
+  // aba, refaz a sincronização sem precisar de F5 — cobre o caso em que a
+  // aba de /comunidade já estava aberta e ficou em segundo plano durante o
+  // reset.
+  useEffect(() => {
+    function aoVoltarFoco() {
+      if (document.visibilityState === "visible") sincronizarDesafiosRef.current();
+    }
+    window.addEventListener("focus", aoVoltarFoco);
+    document.addEventListener("visibilitychange", aoVoltarFoco);
+    return () => {
+      window.removeEventListener("focus", aoVoltarFoco);
+      document.removeEventListener("visibilitychange", aoVoltarFoco);
+    };
+  }, []);
 
   const totalConcluidos = itens.reduce((soma, item) => soma + (concluidos[item.id] ? 1 : 0), 0);
   const completo = itens.length > 0 && totalConcluidos === itens.length;

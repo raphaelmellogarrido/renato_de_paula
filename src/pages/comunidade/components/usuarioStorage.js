@@ -96,3 +96,38 @@ export function lerNomeSessao() {
     return localStorage.getItem("userName") || "Aluno";
   }
 }
+
+// Foto de perfil do usuário logado (gravada em comunidade_session.avatarUrl
+// no login e atualizada em Configuracoes.jsx após upload) — mesma leitura
+// que já existia duplicada como função privada em Configuracoes.jsx
+// (lerAvatarUrlSessaoAtual), trazida pra cá pra Mensagens.jsx (avatar do
+// próprio aluno no chat) poder usar sem duplicar a leitura da sessão de novo.
+export function lerAvatarUrlSessao() {
+  try {
+    const sess = JSON.parse(localStorage.getItem("comunidade_session") || "{}");
+    return sess.avatarUrl || "";
+  } catch {
+    return "";
+  }
+}
+
+// Versão reativa, mesmo espírito de useEmailSessao() acima — resincroniza
+// sozinha se a sessão mudar (troca de conta) ou outra aba alterar o
+// localStorage.
+export function useAvatarUrlSessao() {
+  const [avatarUrl, setAvatarUrl] = useState(lerAvatarUrlSessao);
+
+  useEffect(() => {
+    function sincronizar() {
+      setAvatarUrl(lerAvatarUrlSessao());
+    }
+    window.addEventListener(EVENTO_SESSAO_MUDOU, sincronizar);
+    window.addEventListener("storage", sincronizar);
+    return () => {
+      window.removeEventListener(EVENTO_SESSAO_MUDOU, sincronizar);
+      window.removeEventListener("storage", sincronizar);
+    };
+  }, []);
+
+  return avatarUrl;
+}

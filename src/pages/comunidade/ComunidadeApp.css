@@ -1049,10 +1049,19 @@
   min-width: 0;
 }
 
+/* flex-wrap:nowrap (25/08, bug relatado de novo em print do DevTools) — era
+   `wrap`: com nome longo + badge Admin/Orientador, o cluster
+   foto/data/lixeira (-topo-direita) quebrava pra uma 2ª linha inteiro. Como
+   "Sua prática hoje" trava o card em 92px com overflow:hidden (regra
+   .cm-duvida .cm-comentario-card lá em cima), essa 2ª linha ficava cortada
+   por cima do parágrafo — dava a impressão de foto "grudada" fora de
+   posição, embora o align-items:center/align-self de -topo-direita
+   estivessem corretos. Nowrap + .cm-comentario-card-nome truncando com "…"
+   (regra abaixo) garante foto/data/lixeira SEMPRE na mesma linha. */
 .cm-comentario-card-topo {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 4px;
 }
 
@@ -1060,6 +1069,14 @@
   font-size: 0.9rem;
   font-weight: 700;
   color: var(--cm-text);
+  /* encolhe e trunca em vez de forçar o wrap da linha inteira (ver
+     comentário em .cm-comentario-card-topo acima) — min-width:0 é
+     obrigatório pro flex item conseguir encolher abaixo do texto inteiro. */
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Cluster da direita do header: foto mini (se tiver) -> data -> lixeira (se
@@ -1074,7 +1091,13 @@
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
-  height: 100%;
+  /* flex-shrink:0 (25/08) — com -topo agora nowrap e -nome truncando (ver
+     comentários acima), o cluster nunca deve ceder espaço; sem isso a foto
+     de 40px poderia ser espremida por engano. (height:100% removida daqui:
+     não fazia nada — o pai .cm-comentario-card-topo tem altura auto, então
+     % resolve pra auto também; quem centraliza de verdade é o
+     align-items:center acima + align-self da regra "> *" logo abaixo.) */
+  flex-shrink: 0;
   margin-left: auto;
   padding-left: 8px;
 }
@@ -3051,6 +3074,7 @@
 .cm-badge-orientador {
   display: inline-flex;
   align-items: center;
+  flex-shrink: 0; /* nunca encolhe quando .cm-comentario-card-nome trunca (ver comentário lá) */
   gap: 3px;
   margin-left: 8px;
   padding: 2px 8px;
@@ -3871,8 +3895,16 @@
   gap: 10px;
 }
 
+/* Linha de UMA mensagem: avatar (36px, sempre à esquerda da bolha) + coluna
+   com nome/bolha/hora (.cm-mensagem-corpo). justify-content no próprio flex
+   (não row-reverse) é o que joga o par avatar+corpo pra ponta direita nas
+   mensagens "is-eu" SEM inverter a ordem interna — avatar continua colado
+   à esquerda da bolha dos dois lados, só o grupo inteiro que troca de
+   ponta (pedido do cliente, 26/08). */
 .cm-mensagem-bolha-linha {
   display: flex;
+  gap: 8px;
+  align-items: flex-start;
 }
 
 .cm-mensagem-bolha-linha.is-eu {
@@ -3883,8 +3915,60 @@
   justify-content: flex-start;
 }
 
-.cm-mensagem-bolha {
+/* Foto de perfil de quem mandou a mensagem — mesmo tamanho/formato de
+   .cm-comentario-card-avatar (36px, iniciais quando não há foto). O lado
+   "equipe" nunca tem avatarUrl de verdade hoje (mensagens_privadas não faz
+   JOIN em alunos/admin como comentarios.php faz), então sempre cai nas
+   iniciais — só o avatar do próprio aluno logado usa foto de verdade. */
+.cm-mensagem-avatar {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 50%;
+  background: var(--cm-sage-soft);
+  color: var(--cm-sage-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.8rem;
+  flex-shrink: 0;
+}
+
+.cm-mensagem-avatar-img {
+  object-fit: cover;
+  background: var(--cm-beige-soft);
+}
+
+/* Coluna nome+bolha+hora ao lado do avatar — max-width aqui (não mais na
+   bolha) é o que trava a largura do balão em 75%, com align-items
+   flex-end/flex-start fazendo nome e bolha encolherem pro próprio conteúdo
+   em vez de esticar pra largura toda da coluna. */
+.cm-mensagem-corpo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   max-width: 75%;
+  min-width: 0;
+}
+
+.is-eu .cm-mensagem-corpo {
+  align-items: flex-end;
+}
+
+.is-equipe .cm-mensagem-corpo {
+  align-items: flex-start;
+}
+
+.cm-mensagem-nome {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--cm-text-soft);
+  padding: 0 2px;
+}
+
+.cm-mensagem-bolha {
+  max-width: 100%;
   padding: 9px 12px;
   border-radius: 14px;
   font-size: 0.88rem;

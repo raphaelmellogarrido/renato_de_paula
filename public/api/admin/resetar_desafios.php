@@ -15,6 +15,7 @@ header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, X-Admin-Secret');
+header('Cache-Control: no-store, no-cache, must-revalidate');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit; }
 
 require __DIR__ . '/../hotmart/_conexao.php';

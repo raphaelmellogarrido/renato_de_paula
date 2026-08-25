@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Send } from "lucide-react";
-import { useEmailSessao, lerNomeSessao } from "./components/usuarioStorage";
-import { EMAIL_ADMINISTRADOR } from "./components/ComentarioCard";
+import { useEmailSessao, useAvatarUrlSessao, lerNomeSessao } from "./components/usuarioStorage";
+import { EMAIL_ADMINISTRADOR, EMAIL_ORIENTADOR } from "./components/ComentarioCard";
 import { EVENTO_MENSAGENS_ATUALIZOU } from "./components/useMensagensNaoLidas";
-import { formatarDataBr } from "./components/comentariosUtils";
+import { formatarDataBr, iniciais } from "./components/comentariosUtils";
 
 const LISTAR_URL = "/api/mensagens/listar.php";
 const ENVIAR_URL = "/api/mensagens/enviar.php";
@@ -18,6 +18,7 @@ const MARCAR_LIDA_URL = "/api/mensagens/marcar_lida.php";
 // tick do polling de 30s (useMensagensNaoLidas.js).
 function Mensagens() {
   const email = useEmailSessao();
+  const avatarUrlSessao = useAvatarUrlSessao();
   const [itens, setItens] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [texto, setTexto] = useState("");
@@ -119,11 +120,30 @@ function Mensagens() {
           <div className="cm-mensagens-lista">
             {itens.map((msg) => {
               const souEuQueEnviei = msg.de_email?.toLowerCase() === email?.toLowerCase();
+              // Não há foto de perfil da equipe salva em mensagens_privadas
+              // (thread é só de_email/para_email, sem JOIN em alunos como
+              // comentarios.php faz) — só o remetente "eu" tem avatarUrl de
+              // verdade, o lado equipe sempre cai nas iniciais, igual ao
+              // fallback de ComentarioCard quando avatar_url vem nulo.
+              const nomeRemetente = souEuQueEnviei
+                ? "Você"
+                : msg.de_email?.toLowerCase() === EMAIL_ORIENTADOR
+                ? "Orientador"
+                : "Administrador";
+              const avatarUrl = souEuQueEnviei ? avatarUrlSessao : "";
               return (
                 <div key={msg.id} className={`cm-mensagem-bolha-linha ${souEuQueEnviei ? "is-eu" : "is-equipe"}`}>
-                  <div className="cm-mensagem-bolha">
-                    <p>{msg.mensagem}</p>
-                    <span className="cm-mensagem-bolha-hora">{formatarDataBr(msg.created_at)}</span>
+                  {avatarUrl ? (
+                    <img src={avatarUrl} alt="" className="cm-mensagem-avatar cm-mensagem-avatar-img" />
+                  ) : (
+                    <div className="cm-mensagem-avatar">{iniciais(souEuQueEnviei ? nomeSessao : nomeRemetente)}</div>
+                  )}
+                  <div className="cm-mensagem-corpo">
+                    <span className="cm-mensagem-nome">{nomeRemetente}</span>
+                    <div className="cm-mensagem-bolha">
+                      <p>{msg.mensagem}</p>
+                      <span className="cm-mensagem-bolha-hora">{formatarDataBr(msg.created_at)}</span>
+                    </div>
                   </div>
                 </div>
               );

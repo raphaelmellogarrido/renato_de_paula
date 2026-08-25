@@ -3,6 +3,10 @@ header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
+// Sem cache: o GET precisa refletir o resetadoEm mais recente assim que o
+// admin resetar (ver DesafioSemana.jsx), senão o navegador pode servir uma
+// resposta antiga do disk cache num F5 comum e mascarar o reset.
+header('Cache-Control: no-store, no-cache, must-revalidate');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') exit;
 
 require __DIR__ . '/_conexao.php'; // já tem SET time_zone = '-03:00'
