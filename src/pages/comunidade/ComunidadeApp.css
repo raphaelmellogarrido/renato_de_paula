@@ -808,6 +808,33 @@
   gap: 10px;
 }
 
+/* Só em DificuldadeDoDia.jsx ("Sua prática hoje", coluna 1 do dashboard):
+   trava a altura da lista com scroll PRÓPRIO em vez de deixar o card
+   esticar pra sempre com o scroll infinito (ele tem flex:1 1 auto pra
+   igualar a altura das colunas 2/3 — ver .cm-grid-feed .cm-duvida acima —
+   e antes disso era seguro porque a paginação fixa de 6 comentários dava
+   sempre a mesma altura; agora o total cresce sem limite). Sem isso,
+   carregar mais comentários estica a coluna 1 e deixa "Sua Jornada"/
+   "Desafios da semana", nas colunas ao lado, com um vão vazio embaixo cada
+   vez maior. 420px ~ visão de uns 4-5 comentários por vez — ajuste esse
+   número se quiser mostrar mais/menos antes do scroll interno começar.
+   ComentariosFeed.jsx (mural "Comentários" em Aulas, fora de .cm-duvida)
+   não é afetado por esta regra — continua com a página inteira rolando. */
+.cm-duvida .cm-comentarios-lista {
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.cm-duvida .cm-comentarios-lista::-webkit-scrollbar {
+  width: 6px;
+}
+
+.cm-duvida .cm-comentarios-lista::-webkit-scrollbar-thumb {
+  background: var(--cm-border);
+  border-radius: 999px;
+}
+
 .cm-comentario-card {
   position: relative;
   display: flex;
@@ -1690,10 +1717,12 @@
   overflow-y: visible !important;
 }
 
-/* Ajuste fino (23/08): reduz ~70px de altura interna do card pra fechar o
-   alinhamento das 3 colunas do dashboard com "Sua prática hoje" (que
-   perdeu 1 comentário, ver POR_PAGINA em DificuldadeDoDia.jsx). Só encolhe
-   o miolo (padding do card + espaçamento entre os 3 itens) — não mexe no
+/* Ajuste fino (23/08, herdado de quando "Sua prática hoje" tinha paginação
+   fixa de 6 comentários — 25/08: virou scroll infinito com altura travada
+   em max-height, ver .cm-duvida .cm-comentarios-lista acima; a lógica de
+   igualar as 3 colunas com flex:1 1 auto continua a mesma, só não depende
+   mais de contar comentário). Reduz ~70px de altura interna do card. Só
+   encolhe o miolo (padding do card + espaçamento entre os 3 itens) — não mexe no
    conteúdo/textos.
    justify-content:center (era flex-start, herdado da regra base lá em
    cima) porque .cm-coluna-direita .cm-grid-desafio tem flex:1 1 auto —
@@ -2164,10 +2193,12 @@
   text-align: center;
 }
 
-/* Ajuste fino (23/08): reduz ~70px de altura interna do card pra fechar o
-   alinhamento das 3 colunas do dashboard com "Sua prática hoje" (que
-   perdeu 1 comentário, ver POR_PAGINA em DificuldadeDoDia.jsx). Só encolhe
-   o miolo (anel + trilha) — não mexe no conteúdo/textos.
+/* Ajuste fino (23/08, herdado de quando "Sua prática hoje" tinha paginação
+   fixa de 6 comentários — 25/08: virou scroll infinito com altura travada
+   em max-height, ver .cm-duvida .cm-comentarios-lista acima; a lógica de
+   igualar as 3 colunas com flex:1 1 auto continua a mesma, só não depende
+   mais de contar comentário). Reduz ~70px de altura interna do card. Só
+   encolhe o miolo (anel + trilha) — não mexe no conteúdo/textos.
    display:flex + justify-content:center porque .cm-coluna-meio .cm-jornada
    tem flex:1 1 auto (cresce pra igualar a altura da coluna) — sem isso o
    card cresce em bloco normal e a sobra de espaço inteira vira vão embaixo

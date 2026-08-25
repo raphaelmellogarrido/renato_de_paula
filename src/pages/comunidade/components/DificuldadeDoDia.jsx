@@ -49,13 +49,14 @@ const EMOJIS_MEDITACAO = [
 
 // Card "Sua prática hoje" — único conteúdo da coluna 1 do dashboard
 // (.cm-grid-feed/.cm-feed-empilhado, ver Dashboard.jsx/ComunidadeApp.css),
-// sempre visível (não depende mais de nenhum switch/view). Sem foto, sem
-// overlay: pergunta + textarea + os 7 comentários mais recentes de todos
-// os alunos, paginados — mesmo backend de ComentariosFeed.jsx, só com
-// aula_id fixo e per_page=7 em vez de 10. Vazio (nenhum comentário ainda)
-// mostra "Seja o primeiro..." DENTRO deste mesmo card, nunca como card
-// separado (era isso que o FeedComunidade fazia, empilhado embaixo deste —
-// removido de Dashboard.jsx a pedido do cliente). Paginado de 6 em 6.
+// sempre visível (não depende mais de nenhum switch/view). Sem overlay:
+// pergunta + textarea + os comentários de todos os alunos, mesmo backend de
+// ComentariosFeed.jsx com aula_id fixo. Scroll infinito estilo Instagram
+// (20 iniciais, +10 ao rolar — ver TAMANHO_INICIAL/TAMANHO_PAGINA acima),
+// não mais a paginação 1/3 de 6 em 6. Vazio (nenhum comentário ainda) mostra
+// "Seja o primeiro..." DENTRO deste mesmo card, nunca como card separado
+// (era isso que o FeedComunidade fazia, empilhado embaixo deste — removido
+// de Dashboard.jsx a pedido do cliente).
 function DificuldadeDoDia() {
   const email = useEmailSessao();
   // session.avatarUrl/session.nome — mesma fonte reativa (comunidade_session
@@ -68,6 +69,17 @@ function DificuldadeDoDia() {
   const [hasMore, setHasMore] = useState(true); // vem do backend (comentarios.php); false esconde o sentinel e mostra "Você chegou ao fim"
   const [carregandoMais, setCarregandoMais] = useState(false); // true enquanto busca o próximo lote de +10 (mostra os 3 skeletons no fim da lista)
   const sentinelRef = useRef(null); // div vazia no fim da lista — observada pelo IntersectionObserver abaixo
+  // Container com scroll PRÓPRIO (.cm-duvida .cm-comentarios-lista no CSS,
+  // max-height + overflow-y:auto) — não é o scroll da página. Esta coluna do
+  // dashboard tem altura esticada (flex:1) pra bater com as colunas 2 e 3
+  // (ver .cm-grid-feed .cm-duvida em ComunidadeApp.css); antes disso era
+  // seguro porque a lista sempre tinha exatamente N comentários (paginação
+  // fixa de 6). Com scroll infinito o total cresce sem limite, então o feed
+  // rola DENTRO de uma altura travada em vez de esticar a coluna pra sempre
+  // (o que deixaria "Sua Jornada"/"Desafios da semana", nas colunas ao lado,
+  // com um vão vazio gigante embaixo). root do IntersectionObserver aponta
+  // pra este elemento (não a viewport) — é o scroll dele que dispara o +10.
+  const listaRef = useRef(null);
   const [texto, setTexto] = useState("");
   const [enviando, setEnviando] = useState(false);
   const [foto, setFoto] = useState(null); // File selecionado, ainda não enviado
@@ -159,11 +171,16 @@ function DificuldadeDoDia() {
   }, [carregarInicial]);
 
   // Observa o sentinel (div vazia no fim da lista) e dispara carregarMais()
-  // quando ele entra na viewport — automático, sem botão "Carregar mais".
-  // Só observa enquanto hasMore for true (sentinel nem é renderizado quando
-  // false, ver JSX). Recriar o observer a cada mudança de carregarMais é
-  // barato aqui (lista pequena, poucas dezenas de comentários) e evita bug
-  // de closure preso no offset antigo.
+  // quando ele entra na área visível — automático, sem botão "Carregar
+  // mais". `root: listaRef.current` é o que faz a detecção ser relativa ao
+  // scroll INTERNO da lista (.cm-comentarios-lista, com overflow-y:auto),
+  // não ao scroll da página — sem isso o sentinel ficaria "sempre visível"
+  // assim que a lista aparecesse na tela (ela é curta, cabe toda na
+  // viewport) e carregaria tudo de uma vez em vez de aos poucos. Só observa
+  // enquanto hasMore for true (sentinel nem é renderizado quando false, ver
+  // JSX). Recriar o observer a cada mudança de carregarMais é barato aqui
+  // (lista pequena, poucas dezenas de comentários) e evita bug de closure
+  // preso no offset antigo.
   useEffect(() => {
     if (!hasMore) return;
     const alvo = sentinelRef.current;
@@ -173,7 +190,7 @@ function DificuldadeDoDia() {
       (entradas) => {
         if (entradas[0]?.isIntersecting) carregarMais();
       },
-      { threshold: 0.1 }
+      { root: listaRef.current, threshold: 0.1 }
     );
     observer.observe(alvo);
     return () => observer.disconnect();
@@ -450,46 +467,57 @@ function DificuldadeDoDia() {
 
       <div className="cm-duvida-divider" />
 
-      {carregando && (
-        // Skeleton só aparece se não havia cache pra pintar de cara (carregar()
-        // já preenche itens/total a partir do cache antes do fetch resolver,
-        // então nesse caso `carregando` já vira false direto) — nunca mais
-        // deixa a área da lista em branco enquanto espera a rede.
+      {carregandoInicial && (
+        // Skeleton só aparece se não havia cache pra pintar de cara
+        // (carregarInicial() já preenche itens a partir do cache antes do
+        // fetch resolver, e nesse caso carregandoInicial já vira false
+        // direto) — nunca mais deixa a área da lista em branco esperando a
+        // rede. Formato "com avatar + linhas" (SkeletonMensagem abaixo), não
+        // o skeleton simples de ComentariosFeed.jsx.
         <div className="cm-comentarios-lista" aria-hidden="true">
           {[0, 1, 2].map((i) => (
-            <div className="cm-comentario-skeleton" key={i} />
+            <SkeletonMensagem key={i} />
           ))}
         </div>
       )}
 
-      {!carregando && vazio && <p className="cm-duvida-vazio">Seja o primeiro a comentar</p>}
+      {!carregandoInicial && vazio && <p className="cm-duvida-vazio">Seja o primeiro a comentar</p>}
 
-      {!carregando && !vazio && (
-        <div className="cm-comentarios-lista">
+      {!carregandoInicial && !vazio && (
+        // ref aqui (não num wrapper à parte): é ESTE elemento que tem o
+        // scroll interno (max-height + overflow-y:auto, CSS) e serve de
+        // `root` pro IntersectionObserver — sentinel/skeletons/"fim" têm
+        // que estar dentro dele, senão o observer não os enxerga como
+        // descendentes do root.
+        <div className="cm-comentarios-lista" ref={listaRef}>
           {itens.map((comentario) => (
             <ComentarioCard key={comentario.id} comentario={comentario} podeExcluir={podeExcluir} onExcluir={handleExcluir} />
           ))}
+          {carregandoMais && [0, 1, 2].map((i) => <SkeletonMensagem key={`mais-${i}`} />)}
+          {/* Scroll infinito: sem botão "Carregar mais" — o sentinel
+              dispara carregarMais() sozinho ao entrar na área visível do
+              scroll interno (ver useEffect do IntersectionObserver acima).
+              Só existe enquanto hasMore. */}
+          {hasMore && <div ref={sentinelRef} className="cm-comentarios-sentinela" aria-hidden="true" />}
+          {!hasMore && <p className="cm-comentarios-fim">Você chegou ao fim</p>}
         </div>
       )}
+    </div>
+  );
+}
 
-      {!carregando && !vazio && (
-        <div className="cm-duvida-paginacao">
-          <button type="button" aria-label="Página anterior" disabled={page <= 1} onClick={() => carregar(page - 1)}>
-            <ChevronLeft size={16} />
-          </button>
-          <span>
-            {page} / {pages}
-          </span>
-          <button
-            type="button"
-            aria-label="Próxima página"
-            disabled={page >= pages || pages <= 1}
-            onClick={() => carregar(page + 1)}
-          >
-            <ChevronRight size={16} />
-          </button>
-        </div>
-      )}
+// Placeholder de UM comentário enquanto carrega — avatar redondo + 2 linhas
+// cinzas, shimmer (ver .cm-comentario-skeleton-msg* em ComunidadeApp.css).
+// Componente à parte só porque aparece em 2 lugares (1º load e carregarMais)
+// com o mesmo JSX.
+function SkeletonMensagem() {
+  return (
+    <div className="cm-comentario-skeleton-msg" aria-hidden="true">
+      <div className="cm-comentario-skeleton-msg-avatar" />
+      <div className="cm-comentario-skeleton-msg-linhas">
+        <div className="cm-comentario-skeleton-msg-linha" />
+        <div className="cm-comentario-skeleton-msg-linha" />
+      </div>
     </div>
   );
 }
