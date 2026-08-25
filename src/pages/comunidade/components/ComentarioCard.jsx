@@ -14,35 +14,91 @@ export const EMAIL_ORIENTADOR = "rsp.ren@gmail.com";
 /**
  * Card de UM comentário — único lugar que decide como um comentário é
  * desenhado (avatar, nome, badge de Administrador/Orientador, data, texto,
- * lixeira). Usado por ComentariosFeed.jsx (mural "geral", em Aulas e no
- * player de vídeo) E DificuldadeDoDia.jsx ("Sua prática hoje", no
- * Dashboard) — antes cada um tinha sua própria cópia do JSX + CSS pra isso,
- * e um ajuste de contraste aplicado só num dos dois ficava pra trás no
- * outro sem ninguém perceber (foi exatamente o que aconteceu). Qualquer
- * mudança de visual de comentário entra AQUI, nunca duplicada de novo.
+ * lixeira, responder, mensagem privada). Usado por ComentariosFeed.jsx
+ * (mural "geral", em Aulas e no player de vídeo) E DificuldadeDoDia.jsx
+ * ("Sua prática hoje", no Dashboard) — antes cada um tinha sua própria cópia
+ * do JSX + CSS pra isso, e um ajuste de contraste aplicado só num dos dois
+ * ficava pra trás no outro sem ninguém perceber (foi exatamente o que
+ * aconteceu). Qualquer mudança de visual de comentário entra AQUI, nunca
+ * duplicada de novo.
  *
  * Props:
- *   comentario  { id, email, nome, comentario, image_url, avatar_url, created_at }
+ *   comentario  { id, email, nome, comentario, image_url, avatar_url,
+ *                 created_at, respostas? }
  *               image_url é opcional (null na maioria) — foto anexada só
  *               existe hoje no formulário de DificuldadeDoDia.jsx, mas o
  *               card é o mesmo pra ComentariosFeed.jsx, então qualquer
  *               comentario com image_url mostra o quadradinho.
  *               avatar_url é a foto de perfil do AUTOR (LEFT JOIN alunos em
  *               comentarios.php, sempre a mais atual) — null mostra iniciais.
+ *               respostas é opcional (array, mesmo formato de comentario) —
+ *               vem embutido do GET de comentarios.php pros comentários
+ *               raiz, já renderizado aninhado/indentado abaixo do texto.
  *   podeExcluir bool — se true, mostra a lixeira (decidido pelo usuário
  *               LOGADO, não pelo autor do comentário: admin/orientador
  *               apaga o comentário de qualquer um, não só o próprio)
  *   onExcluir   (id) => void
+ *   podeResponder bool (default true) — mostra o botão "Responder". Passado
+ *               como false ao renderizar uma RESPOSTA (recursão abaixo) pra
+ *               não permitir resposta-de-resposta (só 1 nível de aninhamento).
+ *   onResponder (parentId, texto) => Promise — chamado ao clicar "Enviar" no
+ *               formulário inline de resposta. Se omitido, o botão
+ *               "Responder" nem aparece (mesmo espírito de podeExcluir/
+ *               onExcluir acima).
+ *   podeEnviarMensagem bool (default false) — se true, o NOME do autor vira
+ *               clicável (abre modal "Enviar mensagem para @Nome") — só
+ *               true quando quem está vendo é admin/orientador (Tarefa 2).
+ *   onIniciarMensagem (comentario) => void — chamado ao clicar no nome.
  */
-function ComentarioCard({ comentario, podeExcluir, onExcluir }) {
+function ComentarioCard({
+  comentario,
+  podeExcluir,
+  onExcluir,
+  podeResponder = true,
+  onResponder,
+  podeEnviarMensagem = false,
+  onIniciarMensagem,
+}) {
   const [lightboxAberto, setLightboxAberto] = useState(false);
+  const [respondendoAberto, setRespondendoAberto] = useState(false);
+  const [textoResposta, setTextoResposta] = useState("");
+  const [enviandoResposta, setEnviandoResposta] = useState(false);
   const emailAutor = (comentario.email || "").toLowerCase().trim();
   const autorOrientador = emailAutor === EMAIL_ORIENTADOR;
   const autorAdmin = !autorOrientador && emailAutor === EMAIL_ADMINISTRADOR;
   const classeDestaque = autorOrientador ? "cm-comentario-card-orientador" : autorAdmin ? "cm-comentario-card-admin" : "";
+  const temRespostas = Array.isArray(comentario.respostas) && comentario.respostas.length > 0;
+  // Em "Sua prática hoje" (DificuldadeDoDia.jsx) o card tem altura FIXA de
+  // 78px (ver .cm-duvida .cm-comentario-card no CSS, pedido do cliente) —
+  // essa classe destrava essa altura só quando há formulário de resposta
+  // aberto ou respostas pra mostrar, senão "Responder"/as respostas ficariam
+  // cortados pelo overflow:hidden. Em ComentariosFeed.jsx (fora de .cm-duvida)
+  // não tem efeito nenhum, já que lá a altura já é automática.
+  const classeExpandido = respondendoAberto || temRespostas ? "cm-comentario-card-expandido" : "";
+  // Não faz sentido mandar mensagem privada pra outro admin/orientador —
+  // só o nome de alunos "normais" vira clicável.
+  const nomeClicavel = podeEnviarMensagem && !autorAdmin && !autorOrientador && typeof onIniciarMensagem === "function";
+
+  async function handleEnviarResposta(e) {
+    e.preventDefault();
+    const valor = textoResposta.trim();
+    if (!valor || enviandoResposta || !onResponder) return;
+
+    setEnviandoResposta(true);
+    try {
+      await onResponder(comentario.id, valor);
+      setTextoResposta("");
+      setRespondendoAberto(false);
+    } catch (err) {
+      console.error("[Clube Presença] falha ao enviar resposta:", err);
+      window.alert("Não foi possível enviar a resposta.");
+    } finally {
+      setEnviandoResposta(false);
+    }
+  }
 
   return (
-    <div className={`cm-comentario-card ${classeDestaque}`}>
+    <div className={`cm-comentario-card ${classeDestaque} ${classeExpandido}`}>
       {comentario.avatar_url ? (
         <img src={comentario.avatar_url} alt="" className="cm-comentario-card-avatar cm-comentario-card-avatar-img" />
       ) : (
@@ -50,7 +106,18 @@ function ComentarioCard({ comentario, podeExcluir, onExcluir }) {
       )}
       <div className="cm-comentario-card-corpo">
         <div className="cm-comentario-card-topo">
-          <span className="cm-comentario-card-nome">{comentario.nome}</span>
+          {nomeClicavel ? (
+            <button
+              type="button"
+              className="cm-comentario-card-nome cm-comentario-card-nome-clicavel"
+              onClick={() => onIniciarMensagem(comentario)}
+              title={`Enviar mensagem para ${comentario.nome}`}
+            >
+              {comentario.nome}
+            </button>
+          ) : (
+            <span className="cm-comentario-card-nome">{comentario.nome}</span>
+          )}
           {autorOrientador && (
             <span className="cm-badge-orientador">
               <Star size={11} strokeWidth={3} fill="currentColor" /> Orientador
@@ -90,6 +157,63 @@ function ComentarioCard({ comentario, podeExcluir, onExcluir }) {
           </span>
         </div>
         <p className="cm-comentario-card-texto">{comentario.comentario}</p>
+
+        {podeResponder && onResponder && (
+          <button
+            type="button"
+            className="cm-comentario-card-responder-btn"
+            onClick={() => setRespondendoAberto((v) => !v)}
+          >
+            Responder
+          </button>
+        )}
+
+        {respondendoAberto && (
+          <form className="cm-comentario-resposta-form" onSubmit={handleEnviarResposta}>
+            <input
+              type="text"
+              className="cm-comentario-resposta-input"
+              placeholder={`Responder para @${comentario.nome}...`}
+              value={textoResposta}
+              onChange={(e) => setTextoResposta(e.target.value)}
+              maxLength={2000}
+              autoFocus
+              disabled={enviandoResposta}
+            />
+            <div className="cm-comentario-resposta-acoes">
+              <button
+                type="button"
+                className="cm-comentario-resposta-cancelar"
+                onClick={() => {
+                  setRespondendoAberto(false);
+                  setTextoResposta("");
+                }}
+                disabled={enviandoResposta}
+              >
+                Cancelar
+              </button>
+              <button type="submit" className="cm-comentario-resposta-enviar" disabled={!textoResposta.trim() || enviandoResposta}>
+                {enviandoResposta ? "Enviando..." : "Enviar"}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {Array.isArray(comentario.respostas) && comentario.respostas.length > 0 && (
+          <div className="cm-comentario-respostas">
+            {comentario.respostas.map((resposta) => (
+              <ComentarioCard
+                key={resposta.id}
+                comentario={resposta}
+                podeExcluir={podeExcluir}
+                onExcluir={onExcluir}
+                podeResponder={false}
+                podeEnviarMensagem={podeEnviarMensagem}
+                onIniciarMensagem={onIniciarMensagem}
+              />
+            ))}
+          </div>
+        )}
       </div>
       {lightboxAberto && <ImageLightbox src={comentario.image_url} onClose={() => setLightboxAberto(false)} />}
     </div>

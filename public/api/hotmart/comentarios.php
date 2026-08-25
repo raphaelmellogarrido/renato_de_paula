@@ -9,11 +9,17 @@ require __DIR__ . '/_conexao.php';
 garantirEstruturaClube($mysqli); // cria a tabela comentarios se ainda não existir
 
 // Comentários por aula, paginados (10 mais recentes por página por padrão).
-// GET  ?aula_id=&page=&per_page=  -> { itens:[{id,nome,comentario,created_at}], total, page, pages }
-// POST { email, nome, aula_id, comentario } -> INSERT
+// GET  ?aula_id=&page=&per_page=  -> { itens:[{id,nome,comentario,created_at,respostas:[...]}], total, page, pages }
+// POST { email, nome, aula_id, comentario, parent_id? } -> INSERT
 // Permanente: não é afetado por nenhum reset semanal (DesafioSemana etc.).
 // `per_page` é opcional (default 10) — o widget "Dificuldade do dia"
 // (DificuldadeDoDia.jsx) pede 7; ComentariosFeed.jsx não manda, fica em 10.
+//
+// Respostas (Tarefa 1, botão "Responder"): a paginação/total/hasMore contam
+// só comentários RAIZ (parent_id IS NULL) — cada item raiz já vem com suas
+// respostas embutidas em `respostas` (sem paginação própria, comentário não
+// costuma ter tanta resposta a ponto de precisar). Uma resposta nunca
+// aparece solta na lista principal.
 $metodo = $_SERVER['REQUEST_METHOD'];
 
 if ($metodo === 'GET') {
@@ -38,7 +44,7 @@ if ($metodo === 'GET') {
         $offset = ($page - 1) * $limite;
     }
 
-    $stmtTotal = $mysqli->prepare("SELECT COUNT(*) AS total FROM comentarios WHERE aula_id = ?");
+    $stmtTotal = $mysqli->prepare("SELECT COUNT(*) AS total FROM comentarios WHERE aula_id = ? AND parent_id IS NULL");
     $stmtTotal->bind_param('s', $aulaId);
     $stmtTotal->execute();
     $total = (int) $stmtTotal->get_result()->fetch_assoc()['total'];
@@ -65,14 +71,16 @@ if ($metodo === 'GET') {
         "SELECT c.id, c.email, c.nome, c.comentario, c.image_url, c.created_at, a.avatar_url
          FROM comentarios c
          LEFT JOIN alunos a ON a.email = c.email
-         WHERE c.aula_id = ? ORDER BY c.created_at DESC LIMIT ? OFFSET ?"
+         WHERE c.aula_id = ? AND c.parent_id IS NULL ORDER BY c.created_at DESC LIMIT ? OFFSET ?"
     );
     $stmt->bind_param('sii', $aulaId, $limite, $offset);
     $stmt->execute();
     $res = $stmt->get_result();
     $itens = [];
+    $idsRaiz = [];
     while ($row = $res->fetch_assoc()) {
-        $itens[] = [
+        $idsRaiz[] = (int) $row['id'];
+        $itens[(int) $row['id']] = [
             'id' => (int) $row['id'],
             // email vai no payload só pro front decidir o badge/borda de
             // admin ou orientador (ComentariosFeed.jsx) — não é exibido cru.
@@ -86,9 +94,48 @@ if ($metodo === 'GET') {
             // iniciais nesse caso (mesmo fallback de image_url acima).
             'avatar_url' => $row['avatar_url'] !== null && $row['avatar_url'] !== '' ? $row['avatar_url'] : null,
             'created_at' => $row['created_at'], // já em horário de Brasília (SET time_zone em _conexao.php)
+            'respostas' => [],
         ];
     }
     $stmt->close();
+
+    // Busca as respostas de todos os comentários raiz desta página numa
+    // query só (evita N+1) — ASC pra já vir em ordem cronológica de leitura,
+    // diferente da lista raiz (DESC, mais recente primeiro).
+    if ($idsRaiz) {
+        $placeholders = implode(',', array_fill(0, count($idsRaiz), '?'));
+        $tipos = str_repeat('i', count($idsRaiz));
+        $stmtResp = $mysqli->prepare(
+            "SELECT c.id, c.parent_id, c.email, c.nome, c.comentario, c.image_url, c.created_at, a.avatar_url
+             FROM comentarios c
+             LEFT JOIN alunos a ON a.email = c.email
+             WHERE c.parent_id IN ($placeholders) ORDER BY c.created_at ASC"
+        );
+        $stmtResp->bind_param($tipos, ...$idsRaiz);
+        $stmtResp->execute();
+        $resResp = $stmtResp->get_result();
+        while ($row = $resResp->fetch_assoc()) {
+            $paiId = (int) $row['parent_id'];
+            if (!isset($itens[$paiId])) continue;
+            $itens[$paiId]['respostas'][] = [
+                'id' => (int) $row['id'],
+                'parent_id' => $paiId,
+                'email' => $row['email'],
+                'nome' => $row['nome'] !== null && $row['nome'] !== '' ? $row['nome'] : 'Aluno',
+                'comentario' => $row['comentario'],
+                'image_url' => $row['image_url'] !== null && $row['image_url'] !== '' ? $row['image_url'] : null,
+                'avatar_url' => $row['avatar_url'] !== null && $row['avatar_url'] !== '' ? $row['avatar_url'] : null,
+                'created_at' => $row['created_at'],
+            ];
+        }
+        $stmtResp->close();
+    }
+
+    // Reordena de volta pra DESC (a chave por id em $itens acima não
+    // preserva a ordem de inserção depois de misturar com o array_fill) e
+    // descarta as chaves numéricas (json_encode precisa de lista, não de
+    // objeto, senão vira {"5":{...}} no JSON em vez de [...]).
+    $itens = array_values(array_map(fn($id) => $itens[$id], $idsRaiz));
 
     // hasMore: ainda existe algo depois deste lote — é o que o front do
     // scroll infinito usa pra saber se continua observando o sentinel ou
@@ -128,10 +175,19 @@ if ($metodo === 'POST') {
     }
     $imageUrlParam = $imageUrl !== '' ? $imageUrl : null;
 
+    // parent_id opcional (botão "Responder", Tarefa 1) — resposta a um
+    // comentário existente. 0/negativo/ausente = comentário raiz normal.
+    // Não valida se o pai existe de verdade (mesmo espírito "leve" do resto
+    // desta API, sem FK): um id inválido só resulta numa resposta que nunca
+    // aparece aninhada em lugar nenhum (comentarios.php GET só busca
+    // respostas dos ids raiz que ele mesmo devolveu).
+    $parentId = intval($input['parent_id'] ?? 0);
+    $parentIdParam = $parentId > 0 ? $parentId : null;
+
     $stmt = $mysqli->prepare(
-        "INSERT INTO comentarios (email, nome, aula_id, comentario, image_url) VALUES (?, ?, ?, ?, ?)"
+        "INSERT INTO comentarios (email, nome, aula_id, comentario, image_url, parent_id) VALUES (?, ?, ?, ?, ?, ?)"
     );
-    $stmt->bind_param('sssss', $email, $nome, $aulaId, $comentario, $imageUrlParam);
+    $stmt->bind_param('sssssi', $email, $nome, $aulaId, $comentario, $imageUrlParam, $parentIdParam);
     $stmt->execute();
     $novoId = $stmt->insert_id;
     $stmt->close();

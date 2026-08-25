@@ -199,6 +199,32 @@
   place-items: center;
   color: #fff;
   flex-shrink: 0;
+  position: relative;
+}
+
+/* Card "Mensagens" (Tarefa 2) — mesma base visual do cm-ajuda-card acima,
+   mas é um <NavLink> (elemento <a>), então precisa resetar sublinhado/cor
+   herdada de link que o card do WhatsApp (um <div onClick>) nunca teve. */
+.cm-mensagens-card {
+  text-decoration: none;
+  color: inherit;
+}
+
+.cm-mensagens-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background: var(--cm-red);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  line-height: 1;
 }
 
 .cm-ajuda-texto strong {
@@ -894,6 +920,15 @@
   flex-shrink: 0;
 }
 
+/* Destrava a altura fixa de 78px acima quando o card tem o formulário de
+   resposta aberto ou já tem respostas pra mostrar (Tarefa 1) — sem isso o
+   botão "Responder" e as respostas ficariam cortados pelo overflow:hidden.
+   Classe calculada em ComentarioCard.jsx (classeExpandido). */
+.cm-duvida .cm-comentario-card-expandido {
+  max-height: none;
+  align-items: flex-start;
+}
+
 .cm-duvida .cm-comentario-skeleton-msg {
   min-height: 78px;
   max-height: 78px;
@@ -1145,6 +1180,126 @@
   color: rgba(241, 245, 249, 0.65);
 }
 
+/* Nome clicável (Tarefa 2) — só quando quem está vendo é admin/orientador.
+   Reset de <button> pra parecer texto normal + sublinhado só no hover, pra
+   sinalizar "clicável" sem gritar. */
+.cm-comentario-card-nome-clicavel {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.cm-comentario-card-nome-clicavel:hover {
+  text-decoration: underline;
+}
+
+/* Botão "Responder" (Tarefa 1) — discreto, abaixo do texto do comentário. */
+.cm-comentario-card-responder-btn {
+  display: inline-block;
+  margin-top: 4px;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--cm-text-soft);
+  cursor: pointer;
+}
+
+.cm-comentario-card-responder-btn:hover {
+  color: var(--cm-sage);
+  text-decoration: underline;
+}
+
+.cm-comentario-card-admin .cm-comentario-card-responder-btn,
+.cm-comentario-card-orientador .cm-comentario-card-responder-btn {
+  color: rgba(241, 245, 249, 0.65);
+}
+
+/* Formulário inline de resposta — input + Cancelar/Enviar, logo abaixo do
+   comentário pai (placeholder "Responder para @Nome..."). */
+.cm-comentario-resposta-form {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cm-comentario-resposta-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--cm-border);
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  color: var(--cm-text);
+  background: #fff;
+}
+
+.cm-comentario-card-admin .cm-comentario-resposta-input,
+.cm-comentario-card-orientador .cm-comentario-resposta-input {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #f1f5f9;
+}
+
+.cm-comentario-resposta-input:focus {
+  outline: none;
+  border-color: var(--cm-sage);
+}
+
+.cm-comentario-resposta-acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.cm-comentario-resposta-cancelar,
+.cm-comentario-resposta-enviar {
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+}
+
+.cm-comentario-resposta-cancelar {
+  background: none;
+  color: var(--cm-text-soft);
+}
+
+.cm-comentario-resposta-enviar {
+  background: var(--cm-sage);
+  color: #fff;
+}
+
+.cm-comentario-resposta-enviar:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Respostas aninhadas — indentadas abaixo do comentário pai, com uma borda
+   à esquerda sinalizando o vínculo. Cada resposta é o mesmo ComentarioCard
+   recursivo (podeResponder=false, ver componente), então herda toda a
+   estilização de avatar/nome/badge/texto normalmente. */
+.cm-comentario-respostas {
+  margin-top: 10px;
+  padding-left: 16px;
+  border-left: 2px solid var(--cm-border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cm-comentario-card-admin .cm-comentario-respostas,
+.cm-comentario-card-orientador .cm-comentario-respostas {
+  border-left-color: rgba(255, 255, 255, 0.2);
+}
+
 /* Lightbox (ImageLightbox.jsx) — abre ao clicar no quadradinho de foto de
    um comentário. z-index acima de tudo no app (maior uso existente era 60,
    ver .cm-*-overlay). Fecha no X, clique fora (no fundo) ou ESC. */
@@ -1188,6 +1343,113 @@
 
 .cm-lightbox-fechar:hover {
   background: rgba(255, 255, 255, 0.22);
+}
+
+/* Modal "Enviar mensagem para @Nome" (Tarefa 2, MensagemModal.jsx) — mesmo
+   overlay escuro fixo do lightbox acima, cartão central com formulário. */
+.cm-mensagem-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+  z-index: 200;
+}
+
+.cm-mensagem-modal {
+  background: #fff;
+  border-radius: 20px;
+  padding: 20px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.cm-mensagem-modal-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.cm-mensagem-modal-topo h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--cm-text);
+}
+
+.cm-mensagem-modal-fechar {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--cm-text-soft);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  line-height: 0;
+}
+
+.cm-mensagem-modal-fechar:hover {
+  background: var(--cm-beige);
+}
+
+.cm-mensagem-modal-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--cm-border);
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: var(--cm-text);
+  resize: vertical;
+}
+
+.cm-mensagem-modal-textarea:focus {
+  outline: none;
+  border-color: var(--cm-sage);
+}
+
+.cm-mensagem-modal-erro {
+  margin: 8px 0 0;
+  font-size: 0.82rem;
+  color: var(--cm-red);
+}
+
+.cm-mensagem-modal-acoes {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.cm-mensagem-modal-cancelar,
+.cm-mensagem-modal-enviar {
+  padding: 9px 18px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+}
+
+.cm-mensagem-modal-cancelar {
+  background: var(--cm-beige);
+  color: var(--cm-text);
+}
+
+.cm-mensagem-modal-enviar {
+  background: var(--cm-sage);
+  color: #fff;
+}
+
+.cm-mensagem-modal-enviar:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 /* Modal de recorte da foto de perfil (AvatarCropModal.jsx) — mesmo overlay
@@ -1982,6 +2244,32 @@
 .cm-aula-header h1 {
   font-size: 1.6rem;
   margin-bottom: 6px;
+}
+
+/* Banner "Pausa obrigatória" (Tarefa 3, 3-dias-faz/4-dias-pausa) — mesmo
+   tom âmbar do badge de Orientador (#e0b978), fundo suave pra não competir
+   com o header logo acima. Só existe enquanto o próximo dia estiver em
+   pausa (ver emPausaObrigatoria em AulasMeditacaoRaiz.jsx). */
+.cm-pausa-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(224, 185, 120, 0.14);
+  border: 1px solid rgba(224, 185, 120, 0.4);
+  border-radius: 16px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+  color: var(--cm-text);
+}
+
+.cm-pausa-banner-icone {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.cm-pausa-banner strong {
+  color: #a97f2e;
 }
 
 .cm-player-wrap {
@@ -3518,6 +3806,132 @@
   margin: 0;
 }
 
+/* Página /comunidade/mensagens (Tarefa 2, Mensagens.jsx) — chat estilo
+   WhatsApp com a equipe. Mesma largura/padding de .cm-config-page, mas
+   altura travada na viewport (menos o padding) pra caber cabeçalho + lista
+   rolável + formulário fixo embaixo, sem a página inteira rolar. */
+.cm-mensagens-page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100vh;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .cm-mensagens-page {
+    padding: 16px;
+  }
+}
+
+.cm-mensagens-chat {
+  flex: 1;
+  min-height: 0;
+  background: #fff;
+  border: 1px solid var(--cm-border);
+  border-radius: var(--cm-radius);
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.cm-mensagens-vazio {
+  color: var(--cm-text-soft);
+  font-size: 0.9rem;
+  text-align: center;
+  margin-top: 24px;
+}
+
+.cm-mensagens-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cm-mensagem-bolha-linha {
+  display: flex;
+}
+
+.cm-mensagem-bolha-linha.is-eu {
+  justify-content: flex-end;
+}
+
+.cm-mensagem-bolha-linha.is-equipe {
+  justify-content: flex-start;
+}
+
+.cm-mensagem-bolha {
+  max-width: 75%;
+  padding: 9px 12px;
+  border-radius: 14px;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.cm-mensagem-bolha p {
+  margin: 0;
+}
+
+.cm-mensagem-bolha-hora {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.7rem;
+  opacity: 0.65;
+}
+
+.is-eu .cm-mensagem-bolha {
+  background: var(--cm-sage);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+.is-equipe .cm-mensagem-bolha {
+  background: var(--cm-beige);
+  color: var(--cm-text);
+  border-bottom-left-radius: 4px;
+}
+
+.cm-mensagens-form {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.cm-mensagens-form input {
+  flex: 1;
+  padding: 12px 14px;
+  border: 1px solid var(--cm-border);
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+
+.cm-mensagens-form input:focus {
+  outline: none;
+  border-color: var(--cm-sage);
+}
+
+.cm-mensagens-form button {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--cm-sage);
+  color: #fff;
+  border: none;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.cm-mensagens-form button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 /* Cards brancos arredondados 20px, sombra suave — mesmo espírito visual dos
    cards do Início (.cm-widget), mas com radius próprio pedido pra esta
    tela; não reaproveita .cm-widget direto pra não herdar padding/gap
@@ -3959,6 +4373,14 @@ h3.cm-config-subtitle {
   }
 
   .cm-ajuda-card--desktop {
+    display: none !important;
+  }
+
+  /* Sem versão mobile própria ainda (diferente do card do WhatsApp acima,
+     que tem .cm-ajuda-card--mobile injetado em Dashboard.jsx) — some do
+     topbar compacto em vez de quebrar o layout de "nav footer" apertado.
+     A rota /comunidade/mensagens continua acessível por link direto. */
+  .cm-mensagens-card {
     display: none !important;
   }
 

@@ -28,6 +28,43 @@ function hoje() {
   return isoLocal(new Date());
 }
 
+// Pausa obrigatória (25/08, pedido do cliente): a cada 3 dias de curso
+// CONCLUÍDOS, o aluno espera DIAS_PAUSA_OBRIGATORIA dias corridos antes do
+// próximo dia liberar — dias 1,2,3 -> pausa de 4 dias -> 4,5,6 -> pausa ->
+// 7,8,9 -> e assim por diante. `diaAlvo` é "dia de retomada" (exige a
+// pausa inteira, em vez do 1-dia-de-calendário do caso geral) quando
+// diaAlvo > 1 e diaAlvo % 3 === 1 (dias 4, 7, 10, ...) — dia 1 fica de fora
+// da conta porque é coberto pela exceção Dia0->Dia1 (libera no mesmo dia),
+// não por esta regra.
+export const DIAS_PAUSA_OBRIGATORIA = 4;
+
+function ehDiaDeRetomadaAposPausa(diaAlvo) {
+  return diaAlvo > 1 && diaAlvo % 3 === 1;
+}
+
+// Diferença em dias corridos entre duas datas ISO locais (YYYY-MM-DD) —
+// positiva quando isoRecente é depois de isoAntigo. Ambas as datas chegam
+// à meia-noite local (dataLocalDeIso), então a divisão por 86400000 nunca
+// cai numa fração — Math.round só por segurança (DST não existe no fuso
+// fixo de Brasília, mas não custa nada).
+function diferencaEmDias(isoRecente, isoAntigo) {
+  const ms = dataLocalDeIso(isoRecente) - dataLocalDeIso(isoAntigo);
+  return Math.round(ms / 86400000);
+}
+
+// Dias corridos que ainda faltam pra pausa obrigatória terminar e liberar
+// `diaAlvo` — só faz sentido quando ehDiaDeRetomadaAposPausa(diaAlvo) é
+// true (chamado internamente por podeAssistir, e exportado pra UI mostrar
+// o contador "Faltam X dias..." antes mesmo de tentar abrir o vídeo, ver
+// AulasMeditacaoRaiz.jsx). 0 = pausa já cumprida (só falta a checagem
+// normal); null = sem referência ainda (dia anterior nem foi concluído).
+export function diasRestantesPausa(diaAlvo, ultimoDiaCompletadoData, hojeServidor) {
+  if (!ehDiaDeRetomadaAposPausa(diaAlvo) || !ultimoDiaCompletadoData) return null;
+  const hojeRef = hojeServidor || hoje();
+  const passados = diferencaEmDias(hojeRef, ultimoDiaCompletadoData);
+  return Math.max(0, DIAS_PAUSA_OBRIGATORIA - passados);
+}
+
 // `completado_em` vem do backend como "YYYY-MM-DD HH:MM:SS" (ou null) —
 // já nasce comparável como string, sem precisar de Date() pra achar o maior.
 function dataDoVideo(progressoPorArquivo, arquivo) {
@@ -149,6 +186,22 @@ export function podeAssistir(
       if (!verificado) {
         return { liberado: false, motivo: "verificando" };
       }
+
+      // PAUSA OBRIGATÓRIA (3 dias faz, 4 dias pausa): dias de retomada (4,
+      // 7, 10, ...) substituem o "1 dia de calendário" geral abaixo por
+      // DIAS_PAUSA_OBRIGATORIA dias corridos inteiros desde a conclusão do
+      // dia anterior. `motivo: "pausa"` carrega `diasRestantes` pra UI
+      // (AulasMeditacaoRaiz.jsx) montar o contador "Faltam X dias...".
+      if (ehDiaDeRetomadaAposPausa(diaAlvo)) {
+        const restantes = diasRestantesPausa(diaAlvo, ultimoDiaCompletadoData, hojeRef);
+        if (restantes > 0) {
+          return { liberado: false, motivo: "pausa", diasRestantes: restantes };
+        }
+        if (videoIndexAlvo === 0) return { liberado: true, motivo: null };
+        const ok = videoAnteriorAssistido(dias, progressoPorArquivo, diaAlvo, videoIndexAlvo);
+        return ok ? { liberado: true, motivo: null } : { liberado: false, motivo: "ordem" };
+      }
+
       if (ultimoDiaCompletadoData && ultimoDiaCompletadoData < hojeRef) {
         if (videoIndexAlvo === 0) return { liberado: true, motivo: null };
         const ok = videoAnteriorAssistido(dias, progressoPorArquivo, diaAlvo, videoIndexAlvo);

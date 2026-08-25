@@ -56,9 +56,13 @@ function diaDoArquivo(arquivo) {
 
 // Texto do toast/placeholder por `motivo` de bloqueio — mensagens exatas
 // pedidas pelo cliente (ver progressoDias.js pra quando cada motivo ocorre).
-function mensagemBloqueio(motivo, dia) {
+function mensagemBloqueio(motivo, dia, diasRestantes) {
   if (motivo === "calendario") {
     return `Você já completou seu dia hoje! Volte amanhã para liberar o Dia ${dia}.`;
+  }
+  if (motivo === "pausa") {
+    const dias = diasRestantes ?? 0;
+    return `Pausa obrigatória: faltam ${dias} dia${dias === 1 ? "" : "s"} para liberar o Dia ${dia}.`;
   }
   if (motivo === "ordem") {
     return "Assista o vídeo anterior para liberar.";
@@ -333,6 +337,17 @@ export default function AulasMeditacaoRaiz() {
 
   const bloqueioVideoAtivo = videoAtivo ? bloqueioPorArquivo[videoAtivo.arquivo] : null;
 
+  // Banner "Faltam X dias para liberar o próximo módulo" (Tarefa 3, pausa
+  // obrigatória 3-faz/4-pausa): olha o bloqueio do 1º vídeo do PRÓXIMO dia
+  // (maxDiaCompleto+1) — index 0 carrega o motivo do gate do DIA inteiro
+  // (calendário/pausa), motivos por vídeo individual (ex: "ordem") só
+  // aparecem em index>0. Só existe enquanto esse motivo for "pausa"; some
+  // sozinho assim que a pausa é cumprida (o motivo vira "calendario" ou o
+  // dia libera de vez).
+  const diaObjProximo = dias.find((d) => d.dia === maxDiaCompleto + 1);
+  const bloqueioProximoDia = diaObjProximo?.videos?.[0] ? bloqueioPorArquivo[diaObjProximo.videos[0].arquivo] : null;
+  const emPausaObrigatoria = bloqueioProximoDia?.motivo === "pausa";
+
   function marcarConcluida(arquivoParam, posicaoParam = 0) {
     const arquivo = arquivoParam || videoAtivo?.arquivo;
     if (!arquivo || !email) return;
@@ -411,7 +426,7 @@ export default function AulasMeditacaoRaiz() {
   function selecionarVideo(arquivo) {
     const bloqueio = bloqueioPorArquivo[arquivo];
     if (bloqueio && !bloqueio.liberado) {
-      mostrarToast(mensagemBloqueio(bloqueio.motivo, diaEfetivo));
+      mostrarToast(mensagemBloqueio(bloqueio.motivo, diaEfetivo, bloqueio.diasRestantes));
       return; // mantém na tela atual, não abre o player
     }
     setVideoAtivoArquivo(arquivo);
@@ -469,6 +484,19 @@ export default function AulasMeditacaoRaiz() {
         </p>
       </div>
 
+      {emPausaObrigatoria && (
+        <div className="cm-pausa-banner" role="status">
+          <span className="cm-pausa-banner-icone" aria-hidden="true">⏳</span>
+          <span>
+            Pausa obrigatória em andamento — faltam{" "}
+            <strong>
+              {bloqueioProximoDia.diasRestantes} dia{bloqueioProximoDia.diasRestantes === 1 ? "" : "s"}
+            </strong>{" "}
+            para liberar o próximo módulo (Dia {maxDiaCompleto + 1}).
+          </span>
+        </div>
+      )}
+
       <div className="cm-aula-layout">
         <div>
           <div className="cm-player-wrap">
@@ -484,7 +512,7 @@ export default function AulasMeditacaoRaiz() {
             ) : videoAtivo ? (
               <div className="cm-video-bloqueado-placeholder">
                 <Lock size={28} />
-                <p>{mensagemBloqueio(bloqueioVideoAtivo?.motivo, diaEfetivo)}</p>
+                <p>{mensagemBloqueio(bloqueioVideoAtivo?.motivo, diaEfetivo, bloqueioVideoAtivo?.diasRestantes)}</p>
               </div>
             ) : (
               <div style={{ color: "white", display: "flex", alignItems: "center", justifyContent: "center", aspectRatio: "16/9" }}>

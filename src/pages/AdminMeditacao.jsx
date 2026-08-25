@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { RefreshCw } from "lucide-react";
 
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:3001" : "");
 
@@ -110,6 +111,14 @@ function AdminMeditacao() {
   const [salvandoDesafios, setSalvandoDesafios] = useState(false);
   const [desafiosSucesso, setDesafiosSucesso] = useState(false);
   const [desafiosErro, setDesafiosErro] = useState("");
+  // Botão "Resetar desafios da semana" (Tarefa 4) — apaga o progresso de
+  // CHECK de todos os alunos pra semana atual (tabela desafio_semana, ver
+  // public/api/admin/resetar_desafios.php). Não mexe em desafiosForm acima
+  // (título/descrição dos itens continuam intactos, só o check de cada
+  // aluno é zerado).
+  const [resetandoDesafios, setResetandoDesafios] = useState(false);
+  const [resetDesafiosToast, setResetDesafiosToast] = useState("");
+  const [resetDesafiosErro, setResetDesafiosErro] = useState("");
 
   // Seção "Frase Motivacional da Semana" — edita o card que o aluno vê em
   // /comunidade (FraseMotivacionalSemana.jsx, fim da coluna 3, no lugar do
@@ -247,6 +256,12 @@ function AdminMeditacao() {
     return () => clearTimeout(t);
   }, [desafiosSucesso]);
 
+  useEffect(() => {
+    if (!resetDesafiosToast) return;
+    const t = setTimeout(() => setResetDesafiosToast(""), 3000);
+    return () => clearTimeout(t);
+  }, [resetDesafiosToast]);
+
   function handleDesafioChange(index, campo) {
     return (e) => {
       const valor = e.target.value;
@@ -339,6 +354,34 @@ function AdminMeditacao() {
       setDesafiosErro(err.message || "Não foi possível salvar.");
     } finally {
       setSalvandoDesafios(false);
+    }
+  }
+
+  // Tarefa 4: zera o CHECK de "Desafio da Semana" de todos os alunos pra
+  // semana atual (tabela desafio_semana). Não mexe no texto dos itens
+  // (desafiosForm/desafio_config) — só o progresso de quem já marcou.
+  async function handleResetarDesafios() {
+    const confirmado = window.confirm(
+      "Tem certeza? Isso vai desmarcar todos os checks de desafios de todos os alunos."
+    );
+    if (!confirmado) return;
+
+    setResetDesafiosErro("");
+    setResetandoDesafios(true);
+    try {
+      const res = await fetch("/api/admin/resetar_desafios.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Admin-Secret": secret },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) {
+        throw new Error(res.status === 401 ? "Senha incorreta." : data.erro || "Falha ao resetar.");
+      }
+      setResetDesafiosToast("Desafios resetados com sucesso");
+    } catch (err) {
+      setResetDesafiosErro(err.message || "Não foi possível resetar.");
+    } finally {
+      setResetandoDesafios(false);
     }
   }
 
@@ -1042,6 +1085,33 @@ function AdminMeditacao() {
               </button>
             </form>
           )}
+
+          <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid #eee" }}>
+            {resetDesafiosToast && <div className="success-box">{resetDesafiosToast}</div>}
+            {resetDesafiosErro && <div className="error-box">{resetDesafiosErro}</div>}
+            <button
+              type="button"
+              onClick={handleResetarDesafios}
+              disabled={resetandoDesafios}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                background: "#dc2626",
+                color: "#fff",
+                border: "none",
+                borderRadius: 8,
+                padding: "10px 16px",
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: resetandoDesafios ? "default" : "pointer",
+                opacity: resetandoDesafios ? 0.7 : 1,
+              }}
+            >
+              <RefreshCw size={16} />
+              {resetandoDesafios ? "Resetando..." : "Resetar desafios da semana"}
+            </button>
+          </div>
         </div>
 
         <div className="form-card" style={{ marginTop: 40 }}>

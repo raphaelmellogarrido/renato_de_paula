@@ -4,10 +4,12 @@ import { useEmailSessao, lerNomeSessao } from "./usuarioStorage";
 import { useComunidadeAuth } from "./useComunidadeAuth";
 import { iniciais } from "./comentariosUtils";
 import ComentarioCard, { EMAIL_ADMINISTRADOR, EMAIL_ORIENTADOR } from "./ComentarioCard";
+import MensagemModal from "./MensagemModal";
 import { chaveCacheComentarios, lerCacheComentarios, salvarCacheComentarios, buscarComentarios } from "./cacheComentarios";
 
 const COMENTARIOS_URL = "/api/hotmart/comentarios.php";
 const UPLOAD_IMAGEM_URL = "/api/hotmart/upload-imagem-comentario.php";
+const MENSAGENS_ENVIAR_URL = "/api/mensagens/enviar.php";
 // Mesmas regras validadas de novo no servidor (upload-imagem-comentario.php)
 // — checar aqui só evita a viagem de rede quando dá pra saber de cara que
 // vai falhar.
@@ -86,6 +88,10 @@ function DificuldadeDoDia() {
   const [fotoPreview, setFotoPreview] = useState(""); // object URL local, só pro preview
   const [fotoErro, setFotoErro] = useState("");
   const [emojiAberto, setEmojiAberto] = useState(false);
+  // Modal "Enviar mensagem para @Nome" (Tarefa 2) — guarda o COMENTÁRIO
+  // clicado (não só o email) porque MensagemModal.jsx usa comentario.nome
+  // no título. null = modal fechado.
+  const [destinatarioMensagem, setDestinatarioMensagem] = useState(null);
   const fileInputRef = useRef(null);
   const textareaRef = useRef(null);
   const emojiPopoverRef = useRef(null);
@@ -338,6 +344,36 @@ function DificuldadeDoDia() {
     }
   }
 
+  // Botão "Responder" (Tarefa 1) — reusa o mesmo endpoint de comentário
+  // normal, só que com parent_id. Refaz o 1º lote do zero (carregarInicial)
+  // em vez de tentar inserir a resposta manualmente no array local: o
+  // comentário pai pode não estar mais nos `itens` atuais se a lista já
+  // rolou (scroll infinito), e um refetch garante que a resposta apareça
+  // aninhada certinha vinda do backend, mesma fonte de verdade do resto.
+  async function handleResponder(parentId, texto) {
+    const resposta = await fetch(COMENTARIOS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, nome: lerNomeSessao(), aula_id: AULA_ID, comentario: texto, parent_id: parentId }),
+    });
+    const data = await resposta.json();
+    if (data?.erro) throw new Error(data.erro);
+    carregarInicial();
+  }
+
+  // Modal "Enviar mensagem para @Nome" (Tarefa 2) — só chamado quando
+  // podeExcluir (admin/orientador) já autorizou o clique no nome (ver
+  // podeEnviarMensagem passado pro ComentarioCard abaixo).
+  async function handleEnviarMensagem(texto) {
+    const resposta = await fetch(MENSAGENS_ENVIAR_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ de_email: email, para_email: destinatarioMensagem.email, mensagem: texto }),
+    });
+    const data = await resposta.json();
+    if (data?.erro) throw new Error(data.erro);
+  }
+
   function handleExcluir(id) {
     if (!window.confirm("Excluir este comentário?")) return;
 
@@ -491,7 +527,15 @@ function DificuldadeDoDia() {
         // descendentes do root.
         <div className="cm-comentarios-lista" ref={listaRef}>
           {itens.map((comentario) => (
-            <ComentarioCard key={comentario.id} comentario={comentario} podeExcluir={podeExcluir} onExcluir={handleExcluir} />
+            <ComentarioCard
+              key={comentario.id}
+              comentario={comentario}
+              podeExcluir={podeExcluir}
+              onExcluir={handleExcluir}
+              onResponder={handleResponder}
+              podeEnviarMensagem={podeExcluir}
+              onIniciarMensagem={setDestinatarioMensagem}
+            />
           ))}
           {carregandoMais && [0, 1, 2].map((i) => <SkeletonMensagem key={`mais-${i}`} />)}
           {/* Scroll infinito: sem botão "Carregar mais" — o sentinel
@@ -501,6 +545,14 @@ function DificuldadeDoDia() {
           {hasMore && <div ref={sentinelRef} className="cm-comentarios-sentinela" aria-hidden="true" />}
           {!hasMore && <p className="cm-comentarios-fim">Você chegou ao fim</p>}
         </div>
+      )}
+
+      {destinatarioMensagem && (
+        <MensagemModal
+          destinatario={destinatarioMensagem}
+          onEnviar={handleEnviarMensagem}
+          onClose={() => setDestinatarioMensagem(null)}
+        />
       )}
     </div>
   );

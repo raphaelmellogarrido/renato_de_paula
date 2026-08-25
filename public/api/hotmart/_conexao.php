@@ -81,7 +81,7 @@ function garantirEstruturaClube(mysqli $mysqli): void
 {
     // (não pode ser `const` aqui dentro — PHP só aceita const no nível do
     // arquivo/classe, não dentro do corpo de uma função)
-    $estruturaClubeVersao = 3;
+    $estruturaClubeVersao = 4;
     $marcador = sys_get_temp_dir() . '/comunidade_estrutura_v' . $estruturaClubeVersao . '.ok';
     if (file_exists($marcador)) {
         return;
@@ -215,6 +215,42 @@ function garantirEstruturaClube(mysqli $mysqli): void
         if ($temAvatar && $temAvatar->num_rows === 0) {
             $mysqli->query("ALTER TABLE alunos ADD COLUMN avatar_url VARCHAR(255) NULL AFTER apelido");
         }
+
+        // Resposta a comentário (botão "Responder" em "Sua prática hoje",
+        // DificuldadeDoDia.jsx + ComentarioCard.jsx) — NULL = comentário raiz,
+        // preenchido = resposta aninhada sob o comentário pai. Sem FK de
+        // propósito (mesma decisão de aula_id acima): se o pai for apagado,
+        // as respostas ficam órfãs mas comentarios.php simplesmente não as
+        // busca mais (não aparecem soltas no feed). Mesmo padrão de ALTER
+        // condicional usado pra image_url acima.
+        $temParentId = $mysqli->query(
+            "SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'comentarios' AND COLUMN_NAME = 'parent_id'"
+        );
+        if ($temParentId && $temParentId->num_rows === 0) {
+            $mysqli->query("ALTER TABLE comentarios ADD COLUMN parent_id INT NULL AFTER aula_id, ADD INDEX(parent_id)");
+        }
+
+        // Mensagem privada admin -> aluno (nome clicável em ComentarioCard.jsx
+        // quando quem está vendo é admin/orientador, ver EMAIL_ADMINISTRADOR/
+        // EMAIL_ORIENTADOR). Sem para_user_id de propósito: este schema não
+        // tem id numérico de usuário em lugar nenhum (alunos.email é a PK),
+        // então o e-mail do destinatário já é o identificador. Ver
+        // public/api/mensagens/{enviar,listar,marcar_lida}.php e
+        // docs/mensagens_privadas.sql.
+        $mysqli->query(
+            "CREATE TABLE IF NOT EXISTS mensagens_privadas (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                de_email VARCHAR(255) NOT NULL,
+                para_email VARCHAR(255) NOT NULL,
+                mensagem TEXT NOT NULL,
+                lida TINYINT(1) NOT NULL DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                INDEX(para_email),
+                INDEX(de_email),
+                INDEX(created_at)
+            )"
+        );
 
         // Acesso de Teste (painel /admin, seção "Acesso de Teste") — lista de
         // convite/auditoria dos e-mails liberados manualmente sem compra na

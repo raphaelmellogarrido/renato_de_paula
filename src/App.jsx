@@ -18,6 +18,7 @@ const ComunidadeDashboard = lazy(() => import("./pages/comunidade/Dashboard"));
 const ComunidadeAula = lazy(() => import("./pages/comunidade/Aula"));
 const ComunidadeAulasRaiz = lazy(() => import("./pages/comunidade/AulasMeditacaoRaiz"));
 const ComunidadeConfiguracoes = lazy(() => import("./pages/comunidade/Configuracoes"));
+const ComunidadeMensagens = lazy(() => import("./pages/comunidade/Mensagens"));
 const EsqueceuSenha = lazy(() => import("./pages/comunidade/EsqueceuSenha"));
 const RedefinirSenha = lazy(() => import("./pages/comunidade/RedefinirSenha"));
 
@@ -74,6 +75,7 @@ function App() {
               <Route path="aulas-raiz" element={<ComunidadeAulasRaiz />} />
               <Route path="aula/:id" element={<ComunidadeAula />} />
               <Route path="configuracoes" element={<ComunidadeConfiguracoes />} />
+              <Route path="mensagens" element={<ComunidadeMensagens />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

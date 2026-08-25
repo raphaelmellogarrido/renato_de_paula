@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
-import { Home, Library, Users, Settings, Leaf, LogOut } from "lucide-react";
+import { Home, Library, Users, Settings, Leaf, LogOut, Mail } from "lucide-react";
+import useMensagensNaoLidas from "./useMensagensNaoLidas";
 
 function iniciais(nome) {
   return nome
@@ -21,6 +22,10 @@ const NAV_ITEMS = [
 ];
 
 function ComunidadeSidebar({ session, onSair }) {
+  // Card "Mensagens" (Tarefa 2) — sempre visível (é o único jeito de reabrir
+  // o histórico de conversa depois de já ter lido tudo), só o BADGE
+  // vermelho é condicional a contagem >0. Ver useMensagensNaoLidas.js.
+  const mensagensNaoLidas = useMensagensNaoLidas();
   const nome = session?.nome || "Aluno";
   // Saudação usa "Primeiro nome" (Configuracoes.jsx) quando salvo — sem
   // isso a sidebar ficava presa na 1ª palavra de "Nome e sobrenome" mesmo
@@ -51,6 +56,21 @@ function ComunidadeSidebar({ session, onSair }) {
       </nav>
 
       <div className="cm-sidebar-footer">
+        <NavLink to="/comunidade/mensagens" className="cm-ajuda-card cm-mensagens-card">
+          <div className="cm-ajuda-icone">
+            <Mail size={18} />
+            {mensagensNaoLidas > 0 && (
+              <span className="cm-mensagens-badge" aria-label={`${mensagensNaoLidas} mensagens não lidas`}>
+                {mensagensNaoLidas > 9 ? "9+" : mensagensNaoLidas}
+              </span>
+            )}
+          </div>
+          <div className="cm-ajuda-texto">
+            <strong>Mensagens</strong>
+            <span>{mensagensNaoLidas > 0 ? "Você tem novas mensagens" : "Converse com a equipe"}</span>
+          </div>
+        </NavLink>
+
         <div className="cm-ajuda-card cm-ajuda-card--desktop" onClick={() => window.open("https://wa.me/5521976624767?text=Olá, preciso de ajuda na Comunidade Meditação Raiz", "_blank")}>
           <div className="cm-ajuda-icone">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
