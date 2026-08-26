@@ -403,23 +403,24 @@
   color: var(--cm-text);
 }
 
-/* 26/08: no desktop (sidebar fixa em 240px, ver .cm-sidebar-left), o card
-   "Olá, Nome" em linha (avatar - nome/badge - Sair) ficava apertado demais
-   -- o nome quebrava em 2 linhas e o botão Sair (ícone+texto) ficava colado
-   no TOPO do card, no mesmo nível de "Olá,", sobrepondo a pill "Membro da
-   comunidade" logo abaixo. Vira coluna (avatar, nome, badge empilhados e
-   centralizados) com o Sair virando uma pill própria, fixada no canto
-   inferior direito via position:absolute -- min-height/padding-bottom
-   garantem espaço reservado pra ela não sobrepor o texto acima. Só
-   1025px+ (26/08: faixa tablet 768-1024 estendida pra usar o hamburger, ver
-   @media max-width:1024px mais abaixo — abaixo de 1025px o card nem aparece,
-   some pro topbar/drawer). */
+/* 26/08: no desktop (sidebar fixa em 240px, ver .cm-sidebar-left), volta pro
+   layout em linha só (avatar - nome/badge - Sair) — antes isso quebrava
+   (nome em 2 linhas, Sair sobrepondo a pill) e a solução tinha sido virar
+   coluna com Sair em position:absolute. Em vez disso, aqui o botão Sair só
+   encolhe (pill pequena, ícone reduzido) pra caber ao lado do nome/badge,
+   igual ao pedido em area_membro.png. Só 1025px+ (26/08: faixa tablet
+   768-1024 estendida pra usar o hamburger, ver @media max-width:1024px mais
+   abaixo — abaixo de 1025px o card nem aparece, some pro topbar/drawer). */
 @media (min-width: 1025px) {
   .cm-sidebar-user-card {
-    position: relative;
-    flex-direction: column;
-    padding-bottom: 50px;
-    min-height: 100px;
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .cm-sidebar-user-info strong {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .cm-sidebar-user-card .cm-badge-membro {
@@ -427,27 +428,28 @@
     padding: 4px 10px;
     min-height: 0;
     width: fit-content;
-    max-width: 180px;
+    max-width: 100%;
     white-space: nowrap;
-    margin-top: 6px;
+    margin-top: 3px;
   }
 
   .cm-sidebar-logout {
-    position: absolute;
-    top: auto;
-    bottom: 12px;
-    right: 12px;
     flex-direction: row;
-    gap: 4px;
-    font-size: 12px;
-    padding: 6px 14px;
-    border-radius: 20px;
+    gap: 3px;
+    font-size: 10px;
+    padding: 4px 8px;
+    border-radius: 14px;
     background: #f5e8d2;
     border: 1px solid #e8d5b8;
   }
 
+  .cm-sidebar-logout svg {
+    width: 12px;
+    height: 12px;
+  }
+
   .cm-sidebar-logout span {
-    font-size: 12px;
+    font-size: 10px;
   }
 }
 
