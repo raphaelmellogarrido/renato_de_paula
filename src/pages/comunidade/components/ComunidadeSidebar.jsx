@@ -1,5 +1,6 @@
+import { useEffect, useRef, useState } from "react";
 import { NavLink } from "react-router-dom";
-import { Home, Library, Users, Settings, Leaf, LogOut, Mail, Shield } from "lucide-react";
+import { Home, Library, Users, Settings, LogOut, Mail, Shield, ChevronDown, Lock } from "lucide-react";
 import useMensagensNaoLidas from "./useMensagensNaoLidas";
 import { isAdminEmail } from "./isAdmin";
 import HamburgerMenu from "./HamburgerMenu";
@@ -12,6 +13,16 @@ function iniciais(nome) {
     .join("")
     .toUpperCase();
 }
+
+// Comunidades do dropdown do topo (26/08) — hoje só "meditacao" existe de
+// verdade; alimentacao/exercicio ficam bloqueadas (cadeado) até o dia em
+// que existirem conteúdo/rota próprios. `bloqueada` é o único campo que a
+// troca de layout futura precisa olhar pra decidir se navega ou não.
+const COMUNIDADES = [
+  { id: "meditacao", label: "Meditação", img: "/meditacao.jpeg", bloqueada: false },
+  { id: "alimentacao", label: "Alimentação", bloqueada: true },
+  { id: "exercicio", label: "Exercício", bloqueada: true },
+];
 
 const NAV_ITEMS = [
   { label: "Início", icon: Home, to: "/comunidade", end: true },
@@ -39,16 +50,60 @@ function ComunidadeSidebar({ session, onSair }) {
   // vindo do nome completo, que é outro campo.
   const primeiroNome = session?.primeiroNome || nome.split(" ")[0];
 
+  // Dropdown de comunidade (26/08) — comunidadeAtiva fica pronta pro dia em
+  // que "trocar de comunidade" virar de verdade trocar o layout inteiro (ex.:
+  // renderizar <ComunidadeAlimentacao> em vez de <ComunidadeSidebar>+rotas
+  // atuais); hoje só "meditacao" é selecionável, então o valor nunca muda.
+  const [comunidadeAtiva] = useState("meditacao");
+  const [seletorAberto, setSeletorAberto] = useState(false);
+  const seletorRef = useRef(null);
+  const comunidadeInfo = COMUNIDADES.find((c) => c.id === comunidadeAtiva) ?? COMUNIDADES[0];
+
+  // Fecha o dropdown ao clicar fora ou apertar Esc — mesmo padrão do popover
+  // de emoji em DificuldadeDoDia.jsx.
+  useEffect(() => {
+    if (!seletorAberto) return;
+    function aoClicarFora(e) {
+      if (seletorRef.current?.contains(e.target)) return;
+      setSeletorAberto(false);
+    }
+    function aoTeclar(e) {
+      if (e.key === "Escape") setSeletorAberto(false);
+    }
+    document.addEventListener("mousedown", aoClicarFora);
+    document.addEventListener("keydown", aoTeclar);
+    return () => {
+      document.removeEventListener("mousedown", aoClicarFora);
+      document.removeEventListener("keydown", aoTeclar);
+    };
+  }, [seletorAberto]);
+
   return (
     <aside className="cm-sidebar-left">
-      <div className="cm-sidebar-brand">
-        <span className="cm-sidebar-brand-icon">
-          <Leaf size={18} />
-        </span>
-        <div>
-          <strong>Meditação raiz</strong>
-          <span>POR DR. RENATO DE PAULA</span>
-        </div>
+      <div className="cm-comunidade-seletor" ref={seletorRef}>
+        <button
+          type="button"
+          className="cm-comunidade-seletor-btn"
+          onClick={() => setSeletorAberto((v) => !v)}
+          aria-expanded={seletorAberto}
+          aria-haspopup="true"
+        >
+          <img src={comunidadeInfo.img} alt="" className="cm-comunidade-seletor-img" />
+          <span className="cm-comunidade-seletor-label">{comunidadeInfo.label}</span>
+          <ChevronDown size={16} strokeWidth={2} className={`cm-comunidade-seletor-seta ${seletorAberto ? "is-aberta" : ""}`} />
+        </button>
+
+        {seletorAberto && (
+          <div className="cm-comunidade-dropdown" role="menu">
+            {COMUNIDADES.filter((c) => c.id !== comunidadeAtiva).map((c) => (
+              <div key={c.id} className="cm-comunidade-dropdown-item" aria-disabled={c.bloqueada}>
+                <Lock size={14} strokeWidth={2} />
+                <span>{c.label}</span>
+                <Lock size={14} strokeWidth={2} />
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Só visível <=768px (ComunidadeApp.css) — brand/nav/footer viram

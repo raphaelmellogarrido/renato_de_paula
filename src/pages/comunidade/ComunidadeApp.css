@@ -85,39 +85,86 @@
   height: 100vh;
 }
 
-.cm-sidebar-brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 0 6px 24px;
+/* Dropdown de comunidade (26/08, ComunidadeSidebar.jsx) — substitui o antigo
+   brand fixo "Meditação raiz / POR DR. RENATO DE PAULA". Header clicável
+   (foto 36px + nome + seta) que abre um painel com as outras comunidades
+   (Alimentação/Exercício), hoje bloqueadas — cadeado nas 2 pontas, opacity
+   0.5 e pointer-events:none deixam claro que ainda não dá pra clicar. */
+.cm-comunidade-seletor {
+  position: relative;
+  padding: 0 6px 20px;
 }
 
-.cm-sidebar-brand-icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  background: var(--cm-sage);
-  color: #fff;
+.cm-comunidade-seletor-btn {
+  width: 100%;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 10px;
+  background: none;
+  border: none;
+  padding: 4px 2px;
+  border-radius: 10px;
+  text-align: left;
+  transition: background 0.15s ease;
+}
+
+.cm-comunidade-seletor-btn:hover {
+  background: var(--cm-beige);
+}
+
+.cm-comunidade-seletor-img {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  object-fit: cover;
   flex-shrink: 0;
 }
 
-.cm-sidebar-brand strong {
-  display: block;
+.cm-comunidade-seletor-label {
+  flex: 1;
+  min-width: 0;
   font-family: "Playfair Display", Georgia, serif;
   font-size: 1.05rem;
   font-weight: 600;
-  line-height: 1.2;
+  color: var(--cm-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.cm-sidebar-brand span {
-  display: block;
-  font-size: 0.62rem;
-  letter-spacing: 0.08em;
+.cm-comunidade-seletor-seta {
+  flex-shrink: 0;
   color: var(--cm-text-soft);
-  margin-top: 2px;
+  transition: transform 0.2s ease;
+}
+
+.cm-comunidade-seletor-seta.is-aberta {
+  transform: rotate(180deg);
+}
+
+.cm-comunidade-dropdown {
+  margin-top: 10px;
+  background: var(--cm-beige);
+  border-radius: 14px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cm-comunidade-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: var(--cm-text-soft);
+  font-size: 0.88rem;
+  font-weight: 500;
+  opacity: 0.5;
+  pointer-events: none;
+  cursor: not-allowed;
 }
 
 .cm-sidebar-nav {
@@ -4863,7 +4910,7 @@ h3.cm-config-subtitle {
     padding: 0;
   }
 
-  .cm-sidebar-brand,
+  .cm-comunidade-seletor,
   .cm-sidebar-nav,
   .cm-sidebar-copy {
     display: none;
