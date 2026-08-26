@@ -403,16 +403,20 @@
   color: var(--cm-text);
 }
 
-/* 26/08: no desktop (sidebar fixa em 240px, ver .cm-sidebar-left), volta pro
-   layout em linha só (avatar - nome/badge - Sair) — antes isso quebrava
-   (nome em 2 linhas, Sair sobrepondo a pill) e a solução tinha sido virar
-   coluna com Sair em position:absolute. Em vez disso, aqui o botão Sair só
-   encolhe (pill pequena, ícone reduzido) pra caber ao lado do nome/badge,
-   igual ao pedido em area_membro.png. Só 1025px+ (26/08: faixa tablet
-   768-1024 estendida pra usar o hamburger, ver @media max-width:1024px mais
-   abaixo — abaixo de 1025px o card nem aparece, some pro topbar/drawer). */
+/* 26/08: no desktop (sidebar fixa em 240px, ver .cm-sidebar-left), layout em
+   2 linhas: linha 1 = avatar + "Olá, Nome", linha 2 = badge "Membro da
+   comunidade" (esquerda) + Sair (direita) — .cm-sidebar-user-info já empilha
+   nome/badge (strong + span em bloco), então basta o card usar
+   align-items:flex-end (em vez de center) pra avatar e Sair alinharem pela
+   linha de BAIXO (a do badge) em vez do meio do card, que é o que fazia o
+   Sair "flutuar" entre as 2 linhas. Botão Sair encolhido (pill pequena,
+   ícone reduzido) pra caber ao lado do badge sem estourar os 240px da
+   sidebar. Só 1025px+ (26/08: faixa tablet 768-1024 estendida pra usar o
+   hamburger, ver @media max-width:1024px mais abaixo — abaixo de 1025px o
+   card nem aparece, some pro topbar/drawer). */
 @media (min-width: 1025px) {
   .cm-sidebar-user-card {
+    align-items: flex-end;
     padding: 8px 10px;
     gap: 8px;
   }
