@@ -19,7 +19,7 @@ function iniciais(nome) {
 // que existirem conteúdo/rota próprios. `bloqueada` é o único campo que a
 // troca de layout futura precisa olhar pra decidir se navega ou não.
 const COMUNIDADES = [
-  { id: "meditacao", label: "Meditação", img: "/meditacao.jpeg", bloqueada: false },
+  { id: "meditacao", label: "Meditação", img: "/meditacao.png", bloqueada: false },
   { id: "alimentacao", label: "Alimentação", bloqueada: true },
   { id: "exercicio", label: "Exercício", bloqueada: true },
 ];
