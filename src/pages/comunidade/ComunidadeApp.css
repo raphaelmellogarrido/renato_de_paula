@@ -172,16 +172,28 @@
   transform: translateY(-1px);
 }
 
-/* Card some no desktop dentro da sidebar (cm-ajuda-card--desktop) e some no
-   mobile por padrão (cm-ajuda-card--mobile, ligado no fim da lista de
-   cards em Dashboard.jsx) — os dois trocam de lugar no @media(max-width:
-   768px) mais abaixo no arquivo, junto da sidebar virando topbar. */
+/* Card completo "Posso ajudar?" (texto + seta) — só existe no desktop
+   (cm-ajuda-card--desktop, rodapé da sidebar). No celular/tablet ele some
+   (@media max-width:960px mais abaixo) e vira só um ícone dentro da nav,
+   ao lado de "Configurações" — ver .cm-sidebar-nav-whatsapp logo abaixo e
+   ComunidadeSidebar.jsx (26/08, pedido do cliente: o card antigo em texto
+   duplicado embaixo do feed no mobile foi removido). */
 .cm-ajuda-card--desktop {
   display: flex;
 }
 
-.cm-ajuda-card--mobile {
+/* Ícone do WhatsApp dentro da nav (ComunidadeSidebar.jsx) — some por padrão
+   porque no desktop o card completo acima já cobre o mesmo atalho; só
+   aparece no celular/tablet (ver @media max-width:960px mais abaixo, onde a
+   nav também vira uma linha só de ícones). */
+.cm-sidebar-nav-whatsapp {
   display: none;
+  border: none;
+  border-radius: 12px;
+  background: #25d366;
+  color: #fff;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
 .cm-ajuda-seta {
@@ -452,6 +464,22 @@
     display: none;
   }
 
+  /* Ícone do WhatsApp na nav (26/08, pedido do cliente) troca de lugar com
+     o card completo "Posso ajudar?" da sidebar — mesma condição de largura
+     que vira a nav em linha de ícones acima, então os dois sempre mudam
+     juntos. */
+  .cm-sidebar-nav-whatsapp {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+  }
+
+  .cm-ajuda-card--desktop {
+    display: none !important;
+  }
+
   .cm-sidebar-copy {
     display: none;
   }
@@ -462,6 +490,17 @@
      estrutura de flexbox por coluna já resolve sozinha aqui. */
   .cm-main {
     grid-template-columns: 1fr;
+  }
+
+  /* "Sua prática hoje" (coluna 1, só tem esse card) vai pro fim da pilha
+     (26/08, pedido do cliente): o feed de comentários dela, logo no topo,
+     dava a falsa impressão de página gigante quando na verdade era só o
+     usuário rolando o feed sem querer. .cm-coluna-meio/-direita mantêm
+     order:0 (padrão), então ficam antes. Abaixo de 768px essas 3 colunas
+     viram display:contents (ver @media mais abaixo) e este order para de
+     valer — lá quem garante o último lugar é o order do próprio .cm-duvida. */
+  .cm-grid-feed {
+    order: 1;
   }
 }
 
@@ -4591,10 +4630,13 @@ h3.cm-config-subtitle {
 /* ==========================================================================
    Mobile (<=768px) — reordena o Dashboard pra virar 1 feed único, na ordem
    pedida pelo cliente: topbar compacto -> "Já meditei hoje" + "Próximo
-   encontro" -> "Sua prática hoje" (comentários já vêm dentro do mesmo card,
-   ver DificuldadeDoDia.jsx) -> Sequência + Sua Jornada -> Meditando junto ->
-   Desafio da semana -> Ranking de Presença. Desktop não muda em nada (tudo
-   aqui dentro do media query).
+   encontro" -> Sequência + Sua Jornada -> Meditando junto -> Desafio da
+   semana -> Ranking de Presença -> "Sua prática hoje" por ÚLTIMO
+   (comentários já vêm dentro do mesmo card, ver DificuldadeDoDia.jsx — o
+   feed dela empilhado antes dos outros widgets, 26/08, dava a falsa
+   impressão de página gigante quando na verdade era só o usuário rolando o
+   feed sem querer). Desktop não muda em nada (tudo aqui dentro do media
+   query).
 
    Truque central: .cm-grid-feed / .cm-coluna-meio / .cm-coluna-direita (as
    3 colunas do grid desktop) viram `display: contents` — elas somem do
@@ -4640,38 +4682,16 @@ h3.cm-config-subtitle {
     display: none;
   }
 
-  .cm-ajuda-card--desktop {
-    display: none !important;
-  }
+  /* .cm-ajuda-card--desktop já some a partir de 960px (ver @media lá em
+     cima) — essa faixa (<=768px) está sempre dentro dela, nada a repetir
+     aqui. Ícone do WhatsApp na nav (.cm-sidebar-nav-whatsapp) também já
+     está ligado desde os 960px pelo mesmo motivo. */
 
-  /* Sem versão mobile própria ainda (diferente do card do WhatsApp acima,
-     que tem .cm-ajuda-card--mobile injetado em Dashboard.jsx) — some do
-     topbar compacto em vez de quebrar o layout de "nav footer" apertado.
-     A rota /comunidade/mensagens continua acessível por link direto. */
+  /* Sem versão mobile própria ainda — some do topbar compacto em vez de
+     quebrar o layout de "nav footer" apertado. A rota /comunidade/mensagens
+     continua acessível por link direto. */
   .cm-mensagens-card {
     display: none !important;
-  }
-
-  /* Card mobile (Dashboard.jsx) vira o último item real de .cm-main —
-     order:99 vence o maior order explícito hoje (9, no .cm-grid-ranking
-     mais abaixo) e grid-column:1/-1 casa com os outros widgets full-width
-     do grid mobile (.cm-duvida, .cm-grid-desafio etc., ver mais abaixo). */
-  .cm-ajuda-card--mobile {
-    display: flex !important;
-    order: 99;
-    grid-column: 1 / -1;
-    margin: 24px 16px;
-    background: #111;
-    color: #fff;
-  }
-
-  .cm-ajuda-card--mobile .cm-ajuda-icone {
-    background: #25d366;
-  }
-
-  .cm-ajuda-card--mobile .cm-ajuda-texto span {
-    opacity: 0.7;
-    color: #fff;
   }
 
   .cm-sidebar-brand {
@@ -4726,11 +4746,6 @@ h3.cm-config-subtitle {
     order: 2;
   }
 
-  .cm-duvida {
-    order: 3;
-    padding: 20px;
-  }
-
   .cm-widget-sequencia {
     order: 4;
   }
@@ -4776,6 +4791,13 @@ h3.cm-config-subtitle {
   .cm-grid-frase {
     order: 9;
     padding: 22px;
+  }
+
+  /* "Sua prática hoje" por último (26/08, pedido do cliente — ver comentário
+     no topo deste bloco). order:10 vence todo mundo acima (o maior era 9). */
+  .cm-duvida {
+    order: 10;
+    padding: 20px;
   }
 }
 

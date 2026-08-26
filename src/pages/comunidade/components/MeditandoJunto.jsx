@@ -2,12 +2,13 @@ import { useCallback, useEffect, useState } from "react";
 
 const PULSO_URL = "/api/comunidade/pulso.php";
 // 3s (era 60s até 26/08) — pedido do cliente pra bater com o mesmo "quase
-// instantâneo" da badge de mensagens/feed "Sua prática hoje". Seguro apesar
-// do Cache-Control de 60s no PHP: presenca.php e comentarios.php já
-// invalidam o cache em disco do pulso.php na hora que alguém age (@unlink),
-// então poll frequente aqui não bate em número velho — na pior das
-// hipóteses é 1 leitura de arquivo a mais a cada 3s, nunca refaz a query
-// pesada de streak de todo mundo sem necessidade.
+// instantâneo" da badge de mensagens/feed "Sua prática hoje". Seguro: o
+// pulso.php manda Cache-Control: no-store (ver comentário lá — a Hostinger
+// tem CDN na frente e cacheava por conta própria, ignorando o @unlink do
+// cache em disco), então poll frequente aqui não bate em número velho na
+// borda; na pior das hipóteses é 1 leitura de arquivo a mais no servidor a
+// cada 3s, nunca refaz a query pesada de streak de todo mundo sem
+// necessidade.
 const INTERVALO_MS = 3000;
 // Mesmo evento (mesmo literal, não import — mesmo padrão de acoplamento já
 // usado em useSequenciaMeditacao.js e RankingPresenca.jsx) que

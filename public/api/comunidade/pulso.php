@@ -39,10 +39,23 @@ require __DIR__ . '/../hotmart/_conexao.php';
 garantirEstruturaClube($mysqli); // garante posts_comunidade (presencas já existe desde sempre)
 
 // Cache de arquivo compartilhado por 60s (mesmo padrão de
-// hotmart/presenca/ranking.php, TTL menor aqui porque o front repete o
-// fetch a cada 60s) — evita rodar o loop de streak de todo mundo (uma
-// query + O(n) em PHP) a cada carregamento de página.
-header('Cache-Control: public, max-age=60');
+// hotmart/presenca/ranking.php) — evita rodar o loop de streak de todo
+// mundo (uma query + O(n) em PHP) a cada carregamento de página. Esse é
+// cache de ORIGEM (arquivo no disco do PHP), não de borda: `no-store` aqui
+// é de propósito, não sobrou de outro endpoint — a Hostinger tem uma CDN
+// na frente (header `Server: hcdn` nas respostas) que obedece
+// Cache-Control público e cacheia a resposta por conta própria, sem saber
+// nada do @unlink que presenca.php/comentarios.php fazem nesse arquivo ao
+// registrar uma presença/partilha nova. Com `public, max-age=60` (valor
+// antigo), confirmado em produção que a CDN retorna x-hcdn-cache-status:
+// HIT com o número velho por até 60s DEPOIS do cache de arquivo já ter
+// sido invalidado — é a causa real do "Meditando junto" demorando ~30-60s+
+// pra subir após "Meditei hoje"/"Compartilhar", não o polling de 3s do
+// front (MeditandoJunto.jsx), que já dispara certinho. `no-store` tira a
+// CDN da jogada (mesmo padrão já usado em ranking.php, sempre DYNAMIC) —
+// o cache de arquivo abaixo continua fazendo o trabalho de reduzir carga
+// na query pesada, só que agora é o único cache que existe.
+header('Cache-Control: no-store');
 $cacheFile = sys_get_temp_dir() . '/comunidade_pulso_cache.json';
 if (file_exists($cacheFile) && time() - filemtime($cacheFile) < 60) {
     echo file_get_contents($cacheFile);
