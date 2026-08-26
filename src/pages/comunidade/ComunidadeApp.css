@@ -188,8 +188,9 @@
 
 /* Card completo "Posso ajudar?" (texto + seta) — só existe no desktop
    (cm-ajuda-card--desktop, rodapé da sidebar). No celular/tablet ele some
-   (@media max-width:960px mais abaixo) e vira só um ícone dentro da nav,
-   ao lado de "Configurações" — ver .cm-sidebar-nav-whatsapp logo abaixo e
+   (@media max-width:1024px mais abaixo, junto do resto da sidebar fixa —
+   ver bloco do hamburger) e vira só um ícone dentro da nav, ao lado de
+   "Configurações" — ver .cm-sidebar-nav-whatsapp logo abaixo e
    ComunidadeSidebar.jsx (26/08, pedido do cliente: o card antigo em texto
    duplicado embaixo do feed no mobile foi removido). */
 .cm-ajuda-card--desktop {
@@ -197,9 +198,9 @@
 }
 
 /* Ícone do WhatsApp dentro da nav (ComunidadeSidebar.jsx) — some por padrão
-   porque no desktop o card completo acima já cobre o mesmo atalho; só
-   aparece no celular/tablet (ver @media max-width:960px mais abaixo, onde a
-   nav também vira uma linha só de ícones). */
+   porque no desktop o card completo acima já cobre o mesmo atalho; a nav
+   inteira (e este ícone dentro dela) fica escondida no celular/tablet, onde
+   o hamburger assume a navegação (ver @media max-width:1024px mais abaixo). */
 .cm-sidebar-nav-whatsapp {
   display: none;
   border: none;
@@ -355,6 +356,54 @@
   color: var(--cm-text);
 }
 
+/* 26/08: no desktop (sidebar fixa em 240px, ver .cm-sidebar-left), o card
+   "Olá, Nome" em linha (avatar - nome/badge - Sair) ficava apertado demais
+   -- o nome quebrava em 2 linhas e o botão Sair (ícone+texto) ficava colado
+   no TOPO do card, no mesmo nível de "Olá,", sobrepondo a pill "Membro da
+   comunidade" logo abaixo. Vira coluna (avatar, nome, badge empilhados e
+   centralizados) com o Sair virando uma pill própria, fixada no canto
+   inferior direito via position:absolute -- min-height/padding-bottom
+   garantem espaço reservado pra ela não sobrepor o texto acima. Só
+   1025px+ (26/08: faixa tablet 768-1024 estendida pra usar o hamburger, ver
+   @media max-width:1024px mais abaixo — abaixo de 1025px o card nem aparece,
+   some pro topbar/drawer). */
+@media (min-width: 1025px) {
+  .cm-sidebar-user-card {
+    position: relative;
+    flex-direction: column;
+    padding-bottom: 50px;
+    min-height: 100px;
+  }
+
+  .cm-sidebar-user-card .cm-badge-membro {
+    font-size: 10px;
+    padding: 4px 10px;
+    min-height: 0;
+    width: fit-content;
+    max-width: 180px;
+    white-space: nowrap;
+    margin-top: 6px;
+  }
+
+  .cm-sidebar-logout {
+    position: absolute;
+    top: auto;
+    bottom: 12px;
+    right: 12px;
+    flex-direction: row;
+    gap: 4px;
+    font-size: 12px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    background: #f5e8d2;
+    border: 1px solid #e8d5b8;
+  }
+
+  .cm-sidebar-logout span {
+    font-size: 12px;
+  }
+}
+
 .cm-sidebar-copy {
   text-align: center;
   font-size: 0.68rem;
@@ -362,13 +411,14 @@
   margin: 12px 0 0;
 }
 
-/* Hamburger (HamburgerMenu.jsx) — só existe visualmente <=768px (regras em
-   @media mais abaixo); no desktop fica sempre invisível (a sidebar comum já
-   cobre a navegação). Base aqui fora do @media garante isso mesmo antes do
-   CSS mobile carregar (evita flash do botão/drawer). */
+/* Hamburger (HamburgerMenu.jsx) — só existe visualmente <=1024px (celular +
+   tablet, regras em @media mais abaixo); no desktop fica sempre invisível
+   (a sidebar comum já cobre a navegação). Base aqui fora do @media garante
+   isso mesmo antes do CSS mobile carregar (evita flash do botão/drawer). */
 .cm-hamburger-btn,
 .cm-hamburger-overlay,
-.cm-hamburger-drawer {
+.cm-hamburger-drawer,
+.cm-header-mobile-final {
   display: none;
 }
 
@@ -415,9 +465,9 @@
    .cm-main) e o MESMO gap:24px entre widgets. !important porque antes
    cada coluna tinha gap/height própria (24px/20px, 100%/auto) — unifica
    as 3 de uma vez pra garantir que terminam exatamente na mesma linha Y
-   embaixo. Não quebra o mobile (768px): lá elas viram display:contents
-   (ver media query mais abaixo), que também ganhou !important pra vencer
-   este aqui. */
+   embaixo. Não quebra o celular (<=767px): lá elas viram display:contents
+   (ver media query mais abaixo); no tablet (768-1024) viram grid própria —
+   as duas variantes também ganharam !important pra vencer esta aqui. */
 .cm-grid-feed,
 .cm-feed-empilhado,
 .cm-coluna-meio,
@@ -469,76 +519,86 @@
   margin-top: auto;
 }
 
-@media (max-width: 1200px) {
+/* Tablet (26/08, prompt master responsividade): iPad Mini (768), Surface
+   Pro 7 (912) e iPad Pro (1024) tinham cada um seu próprio jeito de ficar
+   feio nessa faixa — ou pegavam o grid de 3 colunas do desktop espremido
+   em 2 (ver antigo @media max-width:1200px, removido daqui), ou caíam no
+   tratamento "sidebar vira ícones em linha" (antigo @media max-width:960px,
+   removido daqui — o hamburger, estendido até 1024px logo mais abaixo,
+   já cobre navegação nessa largura de forma estritamente melhor). Aqui as
+   3 colunas do desktop (.cm-grid-feed/.cm-coluna-meio/.cm-coluna-direita)
+   deixam de ser tracks de grid lado a lado e viram blocos empilhados: feed
+   no topo, largura cheia; o resto de cada coluna original vira sua própria
+   mini-grid (1 coluna até 800px, 2 colunas de 801px pra cima), num
+   container central de 720px — mesmo tratamento pro Surface Pro (912),
+   sem precisar de regra dedicada a ele. */
+@media (min-width: 768px) and (max-width: 1024px) {
   .cm-main {
-    grid-template-columns: 1fr 360px;
+    display: flex;
+    flex-direction: column;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 16px;
+    gap: 20px;
   }
-}
 
-@media (max-width: 960px) {
-  .cm-shell {
+  .cm-grid-feed,
+  .cm-coluna-meio,
+  .cm-coluna-direita {
+    height: auto !important;
+    min-width: 0;
+  }
+
+  .cm-grid-feed {
+    order: 1;
+    display: flex;
     flex-direction: column;
   }
 
-  .cm-sidebar-left {
-    width: 100%;
-    height: auto;
-    position: static;
-  }
-
-  /* Em telas estreitas a sidebar empilha ACIMA do conteúdo (ver .cm-shell
-     acima) — pra não virar uma lista vertical enorme de texto antes do
-     usuário ver a página em si, a nav vira uma linha horizontal só de
-     ícones (nome acessível preservado via aria-label, ver
-     ComunidadeSidebar.jsx) e o copyright some, deixando um header
-     compacto: logo + ícones + card do usuário. */
-  .cm-sidebar-nav {
-    flex-direction: row;
-    overflow-x: auto;
-    gap: 4px;
-  }
-
-  .cm-sidebar-nav-item span {
-    display: none;
-  }
-
-  /* Ícone do WhatsApp na nav (26/08, pedido do cliente) troca de lugar com
-     o card completo "Posso ajudar?" da sidebar — mesma condição de largura
-     que vira a nav em linha de ícones acima, então os dois sempre mudam
-     juntos. */
-  .cm-sidebar-nav-whatsapp {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-  }
-
-  .cm-ajuda-card--desktop {
-    display: none !important;
-  }
-
-  .cm-sidebar-copy {
-    display: none;
-  }
-
-  /* Mobile: 1 coluna só, empilha tudo em ordem de DOM (hero, depois coluna
-     do meio inteira, depois coluna da direita inteira) — não precisa mais
-     preservar a ordem intercalada antiga (botão antes do hero), a
-     estrutura de flexbox por coluna já resolve sozinha aqui. */
-  .cm-main {
+  /* Restante dos widgets (botão "Já meditei", Sequência, Jornada, Meditando
+     junto, Próximo encontro, Desafio, Frase) viram mini-grids próprias por
+     coluna — !important pra vencer o display:flex!important da regra
+     unificada de desktop (mais acima no arquivo). align-items:start (em vez
+     do stretch do desktop) porque aqui cada card mantém a própria altura,
+     não precisa bater com o vizinho de linha numa grid de 3 colunas cheia. */
+  .cm-coluna-meio,
+  .cm-coluna-direita {
+    display: grid !important;
     grid-template-columns: 1fr;
+    align-items: start;
+    gap: 16px !important;
   }
 
-  /* "Sua prática hoje" (coluna 1, só tem esse card) vai pro fim da pilha
-     (26/08, pedido do cliente): o feed de comentários dela, logo no topo,
-     dava a falsa impressão de página gigante quando na verdade era só o
-     usuário rolando o feed sem querer. .cm-coluna-meio/-direita mantêm
-     order:0 (padrão), então ficam antes. Abaixo de 768px essas 3 colunas
-     viram display:contents (ver @media mais abaixo) e este order para de
-     valer — lá quem garante o último lugar é o order do próprio .cm-duvida. */
-  .cm-grid-feed {
-    order: 1;
+  /* Neutraliza o margin-top:auto do último widget de cada coluna (regra
+     base, pensada pro flex-column do desktop) — aqui não tem sobra de
+     altura pra empurrar. */
+  .cm-coluna-meio > *:last-child,
+  .cm-coluna-direita > *:last-child {
+    margin-top: 0 !important;
+  }
+
+  .cm-coluna-meio {
+    order: 2;
+  }
+
+  .cm-coluna-direita {
+    order: 3;
+  }
+}
+
+@media (min-width: 801px) and (max-width: 1024px) {
+  .cm-coluna-meio,
+  .cm-coluna-direita {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Desktop grande: trava a largura pra não esticar 100% da viewport em
+   telas muito largas (ex.: monitor ultrawide). */
+@media (min-width: 1025px) {
+  .cm-main {
+    max-width: 1440px;
+    margin: 0 auto;
   }
 }
 
@@ -2464,7 +2524,7 @@
   align-items: start;
 }
 
-@media (max-width: 960px) {
+@media (max-width: 1024px) {
   .cm-aula-layout {
     grid-template-columns: 1fr;
   }
@@ -4770,26 +4830,14 @@ h3.cm-config-subtitle {
   }
 }
 
-/* ==========================================================================
-   Mobile (<=768px) — reordena o Dashboard pra virar 1 feed único, na ordem
-   pedida pelo cliente: topbar compacto -> "Já meditei hoje" + "Próximo
-   encontro" -> Sequência + Sua Jornada -> Meditando junto -> Desafio da
-   semana -> Ranking de Presença -> "Sua prática hoje" por ÚLTIMO
-   (comentários já vêm dentro do mesmo card, ver DificuldadeDoDia.jsx — o
-   feed dela empilhado antes dos outros widgets, 26/08, dava a falsa
-   impressão de página gigante quando na verdade era só o usuário rolando o
-   feed sem querer). Desktop não muda em nada (tudo aqui dentro do media
-   query).
-
-   Truque central: .cm-grid-feed / .cm-coluna-meio / .cm-coluna-direita (as
-   3 colunas do grid desktop) viram `display: contents` — elas somem do
-   layout mas os widgets de dentro continuam no DOM, agora como filhos
-   DIRETOS de .cm-main. Só assim dá pra intercalar widgets que hoje moram em
-   colunas diferentes (ex: botão "Já meditei hoje", coluna 2, e "Próximo
-   encontro ao vivo", coluna 3, virando os 2 primeiros cards do mobile) sem
-   duplicar nenhum componente nem mexer em nenhum .jsx — a ordem visual vira
-   só CSS (`order`), a ordem real do DOM não muda. ========================== */
-@media (max-width: 768px) {
+/* 26/08 (prompt master responsividade): faixa estendida de 768 pra 1024px
+   — o hamburger agora cobre celular E tablet inteiro (769-1024 antes caía
+   num meio-termo sem tratamento próprio, ver comentário no @media
+   min-width:768/max-width:1024 mais acima). O bloco de grid do dashboard
+   (flatten + order dos widgets) continua só pro celular puro — ver
+   @media max-width:767px mais abaixo, com o comentário original desse
+   truque. */
+@media (max-width: 1024px) {
   .cm-shell {
     flex-direction: column;
   }
@@ -4812,7 +4860,7 @@ h3.cm-config-subtitle {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    padding: 14px 16px;
+    padding: 0;
   }
 
   .cm-sidebar-brand,
@@ -4827,23 +4875,82 @@ h3.cm-config-subtitle {
   }
 
   /* Cards de mensagens/ajuda somem do topbar — "Mensagens" vira link
-     dentro do drawer (com o mesmo badge de não lidas), ajuda desktop já
-     some desde os 960px (ver @media lá em cima). */
+     dentro do drawer (com o mesmo badge de não lidas), ajuda desktop
+     (cm-ajuda-card--desktop) já não faz sentido fora da sidebar fixa,
+     escondida por completo nesta mesma faixa. */
   .cm-mensagens-card,
   .cm-ajuda-card--desktop {
     display: none !important;
   }
 
-  /* Do card do usuário, só o avatar continua visível no topbar — nome,
-     badge e botão Sair também foram pro header do drawer. */
+  /* Card do usuário do rodapé (nome/badge/avatar/Sair) some inteiro no
+     mobile — avatar, "Olá, Nome" e badge agora vivem dentro de
+     .cm-header-mobile-final (topbar), Sair fica só no drawer. */
   .cm-sidebar-user-card {
-    background: none;
-    padding: 0;
+    display: none;
   }
 
-  .cm-sidebar-user-info,
-  .cm-sidebar-logout {
-    display: none;
+  /* HEADER MOBILE FINAL (26/08) — topbar fixo com hamburger + badge
+     "Membro da comunidade" + "Olá, Nome" centralizado + avatar numa linha
+     só via grid 32/135/1fr/32. Antes só hamburger+avatar apareciam aqui e
+     nome/badge ficavam escondidos dentro do drawer; agora ficam visíveis
+     nos 2 lugares. Drawer/overlay/toggle continuam intocados. */
+  .cm-header-mobile-final {
+    display: grid;
+    grid-template-columns: 32px 135px 1fr 32px;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    height: 56px;
+    padding: 10px 12px;
+    background: #f5e8d2;
+    max-width: 100vw;
+    overflow: hidden;
+  }
+
+  .cm-badge-membro-topo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 135px;
+    padding: 6px 8px;
+    font-size: 10.5px;
+    line-height: 1.1;
+    font-weight: 600;
+    color: var(--cm-sage-dark);
+    background: var(--cm-sage-soft);
+    border-radius: 999px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* justify-content:center + width:100% no wrapper garante espaço IGUAL
+     dos 2 lados do nome (entre badge e avatar) mesmo eles tendo larguras
+     diferentes (135px vs 32px) — centraliza em relação ao espaço do meio,
+     não em relação à tela inteira. */
+  .ola-wrapper {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .ola-nome {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: center;
+    margin: 0 auto;
+    max-width: 100%;
+    font-size: 0.84rem;
+    font-weight: 600;
+  }
+
+  .cm-header-mobile-avatar {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
   }
 
   /* Botão hamburger: 3 traços (ver HamburgerMenu.jsx) — quadrado simples
@@ -4998,7 +5105,29 @@ h3.cm-config-subtitle {
     background: var(--cm-beige);
     color: var(--cm-text);
   }
+}
 
+/* ==========================================================================
+   Celular puro (<=767px) — reordena o Dashboard pra virar 1 feed único, na
+   ordem pedida pelo cliente: topbar compacto -> "Já meditei hoje" +
+   "Próximo encontro" -> Sequência + Sua Jornada -> Meditando junto ->
+   Desafio da semana -> Ranking de Presença -> "Sua prática hoje" por
+   ÚLTIMO (comentários já vêm dentro do mesmo card, ver
+   DificuldadeDoDia.jsx — o feed dela empilhado antes dos outros widgets,
+   26/08, dava a falsa impressão de página gigante quando na verdade era só
+   o usuário rolando o feed sem querer). No tablet (768-1024) as colunas
+   continuam como blocos próprios em vez desse truque — ver @media
+   min-width:768/max-width:1024 mais acima.
+
+   Truque central: .cm-grid-feed / .cm-coluna-meio / .cm-coluna-direita (as
+   3 colunas do grid desktop) viram `display: contents` — elas somem do
+   layout mas os widgets de dentro continuam no DOM, agora como filhos
+   DIRETOS de .cm-main. Só assim dá pra intercalar widgets que hoje moram em
+   colunas diferentes (ex: botão "Já meditei hoje", coluna 2, e "Próximo
+   encontro ao vivo", coluna 3, virando os 2 primeiros cards do mobile) sem
+   duplicar nenhum componente nem mexer em nenhum .jsx — a ordem visual vira
+   só CSS (`order`), a ordem real do DOM não muda. ========================== */
+@media (max-width: 767px) {
   /* Grid único do conteúdo: 1 ou 2 colunas dependendo do espaço (auto-fit),
      nunca mais que 2 num container de até 768px — é essa flexibilidade que
      deixa Sequência/Jornada lado a lado quando cabe e empilhadas quando
@@ -5100,8 +5229,9 @@ h3.cm-config-subtitle {
 
 /* Reforço explícito: hamburger/drawer/overlay nunca aparecem no desktop
    (a regra base, sem @media, lá em cima já faz isso — aqui é só uma trava
-   a mais, caso a ordem das regras mude no futuro). */
-@media (min-width: 769px) {
+   a mais, caso a ordem das regras mude no futuro). 1025px pra bater com a
+   faixa tablet (768-1024) que agora também usa o hamburger. */
+@media (min-width: 1025px) {
   .cm-hamburger-btn,
   .cm-hamburger-overlay,
   .cm-hamburger-drawer {
@@ -5293,5 +5423,46 @@ h3.cm-config-subtitle {
   .cm-comentario-card-topo-direita {
     margin-left: 0;
     flex-wrap: nowrap;
+  }
+}
+
+/* Celular estreito (320-480px, prompt master responsividade 26/08) —
+   ajustes finos que a faixa geral de celular (<=767px, mais acima) não
+   cobria: padding lateral menor no container, cards com margem entre si em
+   vez de grudados, botão de enviar dúvida ocupando a largura toda, e os
+   cards escuros de resposta (Admin/Orientador) com padding e fonte um
+   pouco menores pra sobrar mais espaço de leitura numa tela de 320-390px. */
+@media (max-width: 480px) {
+  .cm-main {
+    padding: 0 12px;
+  }
+
+  .cm-main > * {
+    margin: 0 0 12px;
+  }
+
+  /* Reforço extra de contenção horizontal (mesmo raciocínio do comentário
+     de .comunidade-app lá em cima, "26/08, bug relatado: dava pra arrastar
+     a tela pro lado") — cobre o shell e o content também, não só o
+     container mais externo. */
+  .cm-shell,
+  .cm-content {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  .cm-duvida-enviar {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .cm-comentario-card-admin,
+  .cm-comentario-card-orientador {
+    padding: 12px;
+  }
+
+  .cm-comentario-card-admin .cm-comentario-card-texto,
+  .cm-comentario-card-orientador .cm-comentario-card-texto {
+    font-size: 13.5px;
   }
 }

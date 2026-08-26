@@ -48,11 +48,29 @@ function HamburgerMenu({ session, onSair, mensagensNaoLidas }) {
 
   return (
     <>
-      <button type="button" className="cm-hamburger-btn" aria-label="Abrir menu" onClick={() => setOpen(true)}>
-        <span />
-        <span />
-        <span />
-      </button>
+      {/* HEADER MOBILE FINAL (26/08): hamburger + badge + "Olá, Nome"
+          centralizado + avatar, sempre visíveis no topbar (ver grid em
+          .cm-header-mobile-final no ComunidadeApp.css). Só o toggle do
+          drawer abaixo é reaproveitado — layout de fora é novo. */}
+      <div className="cm-header-mobile-final">
+        <button type="button" className="cm-hamburger-btn" aria-label="Abrir menu" onClick={() => setOpen(true)}>
+          <span />
+          <span />
+          <span />
+        </button>
+
+        <span className="cm-badge-membro-topo">Membro da comunidade</span>
+
+        <div className="ola-wrapper">
+          <span className="ola-nome">Olá, {primeiroNome}</span>
+        </div>
+
+        {session?.avatarUrl ? (
+          <img src={session.avatarUrl} alt="" className="cm-sidebar-avatar cm-sidebar-avatar-img cm-header-mobile-avatar" />
+        ) : (
+          <div className="cm-sidebar-avatar cm-header-mobile-avatar">{iniciais(nome)}</div>
+        )}
+      </div>
 
       {open && <div className="cm-hamburger-overlay" onClick={fechar} aria-hidden="true" />}
 

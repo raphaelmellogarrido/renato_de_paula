@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Check, Eye, EyeOff, ShieldCheck, CheckCircle2, XCircle } from "lucide-react";
 import {
   useEmailSessao,
+  useAvatarUrlSessao,
   chaveUsuario,
   avisarSessaoMudou,
   logSalvandoParaUsuario,
@@ -79,19 +80,6 @@ function lerNomeSessaoAtual() {
   }
 }
 
-// Foto de perfil não tem rascunho por usuário como nome/apelido (o upload
-// já salva na hora, sem esperar o botão "Salvar perfil") — só reflete o que
-// já está em comunidade_session.avatarUrl (gravado no login e atualizado
-// aqui mesmo depois de um upload bem-sucedido).
-function lerAvatarUrlSessaoAtual() {
-  try {
-    const sess = JSON.parse(localStorage.getItem("comunidade_session") || "{}");
-    return sess.avatarUrl || "";
-  } catch {
-    return "";
-  }
-}
-
 // Mesmo regex de Login.jsx — só letras (com acentos pt-BR) e espaço, usado
 // nos dois campos porque os dois aparecem no Ranking/Comunidade.
 const REGEX_NOME = /^[A-Za-zÀ-ÖØ-öø-ÿ' ]{2,}$/;
@@ -140,9 +128,11 @@ function Configuracoes() {
   const [emailAnterior, setEmailAnterior] = useState(email);
   const [nomeSobrenome, setNomeSobrenome] = useState(() => lerNomeSobrenomeInicial(email));
   const [primeiroNome, setPrimeiroNome] = useState(() => lerPrimeiroNomeInicial(email, nomeSobrenome));
-  // avatarUrl: foto de perfil já salva (sessão) — precisa estar declarado
-  // antes do bloco de troca de conta abaixo, que já grava nele.
-  const [avatarUrl, setAvatarUrl] = useState(lerAvatarUrlSessaoAtual);
+  // avatarUrl: hook reativo (usuarioStorage.js) — já resincroniza sozinho
+  // em troca de conta, upload nesta aba, ou revalidação em background feita
+  // por useComunidadeAuth.js no carregamento do app (ver bug 26/08: foto
+  // divergindo entre aparelhos), sem precisar de estado próprio aqui.
+  const avatarUrl = useAvatarUrlSessao();
 
   // Borda só fica verde enquanto o campo está focado e válido; ao sair do
   // campo (blur) ela volta pra cor neutra (var(--cm-border)), em vez de
@@ -159,7 +149,6 @@ function Configuracoes() {
     const novoNomeSobrenome = lerNomeSobrenomeInicial(email);
     setNomeSobrenome(novoNomeSobrenome);
     setPrimeiroNome(lerPrimeiroNomeInicial(email, novoNomeSobrenome));
-    setAvatarUrl(lerAvatarUrlSessaoAtual());
   }
 
   // arquivoCrop: File selecionado no <input>, abre o AvatarCropModal
@@ -283,7 +272,9 @@ function Configuracoes() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) throw new Error(data.erro || "Não foi possível salvar a foto");
 
-      setAvatarUrl(data.url);
+      // avatarUrl (estado do hook useAvatarUrlSessao) se atualiza sozinho
+      // quando avisarSessaoMudou() dispara logo abaixo — não precisa de
+      // setState manual aqui.
       const sessaoAntiga = JSON.parse(localStorage.getItem("comunidade_session") || "{}");
       localStorage.setItem("comunidade_session", JSON.stringify({ ...sessaoAntiga, email, avatarUrl: data.url }));
       // Mesmos 3 disparos de handleSalvarPerfil — sidebar e afins reagem sem

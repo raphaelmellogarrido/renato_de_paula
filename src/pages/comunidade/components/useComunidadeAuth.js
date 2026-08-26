@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import { avisarSessaoMudou, EVENTO_SESSAO_MUDOU } from "./usuarioStorage";
 
+// Endpoint de revalidação de perfil (só avatar_url por enquanto) — ver
+// public/api/hotmart/user.php (GET).
+const PERFIL_URL = "/api/hotmart/user.php";
+
 export function limparSessao() {
   localStorage.removeItem("comunidade_session");
   localStorage.removeItem("user_email");
@@ -44,6 +48,36 @@ export function useComunidadeAuth() {
       window.removeEventListener(EVENTO_SESSAO_MUDOU, sincronizar);
       window.removeEventListener("storage", sincronizar);
     };
+  }, []);
+
+  // Revalida a foto de perfil com o servidor uma vez por carregamento do
+  // app (este hook só monta uma vez, em ComunidadeLayout, sem desmontar ao
+  // navegar — ver comentário lá) — bug reportado 26/08: comunidade_session
+  // só ganha avatarUrl no login ou logo após um upload feito NESTE mesmo
+  // aparelho, então trocar a foto em outro aparelho deixava este aqui preso
+  // numa cópia antiga (localStorage + cache imutável da imagem) até o
+  // próximo login manual. GET user.php é a fonte única da verdade
+  // (avatar_versao no banco); só grava/avisa se realmente vier diferente,
+  // pra não gerar re-render/evento à toa em cada carregamento.
+  useEffect(() => {
+    const email = lerSessao()?.email;
+    if (!email) return;
+    fetch(`${PERFIL_URL}?email=${encodeURIComponent(email)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!data) return;
+        const sessaoAtual = lerSessao();
+        if (!sessaoAtual || sessaoAtual.avatarUrl === data.avatar_url) return;
+        const sessaoNova = { ...sessaoAtual, avatarUrl: data.avatar_url || null };
+        localStorage.setItem("comunidade_session", JSON.stringify(sessaoNova));
+        setSession(sessaoNova);
+        // Avisa outros consumidores de avatar fora deste hook (ex:
+        // useAvatarUrlSessao em usuarioStorage.js, usado por Mensagens.jsx)
+        // — sem isso eles ficariam presos no valor antigo até o próximo
+        // evento de sessão (login/upload).
+        avisarSessaoMudou();
+      })
+      .catch(() => {}); // offline/erro: mantém o que já está em cache, sem travar o app
   }, []);
 
   return { session, loading: false };
