@@ -93,39 +93,51 @@ function ComentarioCard({ comentario, podeExcluir, onExcluir, podeResponder = tr
     <div className={`cm-comentario-card ${classeDestaque} ${classeExpandido}`}>
       {comentario.avatar_url ? <img src={comentario.avatar_url} alt="" className="cm-comentario-card-avatar cm-comentario-card-avatar-img" /> : <div className="cm-comentario-card-avatar">{iniciais(comentario.nome)}</div>}
       <div className="cm-comentario-card-corpo">
-        {nomeClicavel ? (
-          <button type="button" className="cm-comentario-card-nome cm-comentario-card-nome-clicavel" onClick={() => onIniciarMensagem(comentario)} title={`Enviar mensagem para ${comentario.nome}`}>
-            {comentario.nome}
-          </button>
-        ) : (
-          <span className="cm-comentario-card-nome">{comentario.nome}</span>
-        )}
-        {autorOrientador && (
-          <span className="cm-badge-orientador">
-            <Star size={11} strokeWidth={3} fill="currentColor" /> Orientador
+        {/* Wrapper -topo é OBRIGATÓRIO (25/08, bug reaparecido): é ele quem
+            vira flex/nowrap no CSS (.cm-comentario-card-topo) e permite o
+            nome truncar com "…" em vez de cortar cru. Sem essa div, nome/
+            badge/cluster-direita ficam soltos como filhos diretos de -corpo
+            (que não é flex) e o -nome perde a largura que precisa pra
+            truncar — foi exatamente o que ficou cortado ("Raphael
+            ADMINISTRADOR", "Fernanda Costa") depois de duas limpezas
+            seguidas (commits "bug"/"bug 2") removerem essa div junto com uma
+            duplicação de -corpo que não tinha nada a ver. NUNCA remover de
+            novo sem também mover a regra de flex do CSS pra -corpo. */}
+        <div className="cm-comentario-card-topo">
+          {nomeClicavel ? (
+            <button type="button" className="cm-comentario-card-nome cm-comentario-card-nome-clicavel" onClick={() => onIniciarMensagem(comentario)} title={`Enviar mensagem para ${comentario.nome}`}>
+              {comentario.nome}
+            </button>
+          ) : (
+            <span className="cm-comentario-card-nome">{comentario.nome}</span>
+          )}
+          {autorOrientador && (
+            <span className="cm-badge-orientador">
+              <Star size={11} strokeWidth={3} fill="currentColor" /> Orientador
+            </span>
+          )}
+          {autorAdmin && <span className="cm-badge-admin">Administrador</span>}
+          {/* Cluster da direita, empurrado pro fim da linha em bloco (o
+                margin-left:auto está no wrapper, não mais em -quando sozinho):
+                foto (se tiver) -> data -> lixeira (se podeExcluir), sempre
+                nessa ordem, gap:8px entre eles, centralizados verticalmente.
+                Miniatura 40x40 — nunca mais o bloco de 78px que ficava fora do
+                header como irmão de -corpo; a linha inteira do comentário só
+                cresce com o conteúdo de texto, não com a foto. */}
+          <span className="cm-comentario-card-topo-direita">
+            {comentario.image_url && (
+              <button type="button" className="cm-comentario-card-foto-mini" aria-label="Ampliar foto" onClick={() => setLightboxAberto(true)}>
+                <img src={comentario.image_url} alt="" />
+              </button>
+            )}
+            <span className="cm-comentario-card-quando">{formatarDataBr(comentario.created_at)}</span>
+            {podeExcluir && (
+              <button type="button" className="cm-comentario-card-excluir" aria-label="Excluir comentário" title="Excluir comentário" onClick={() => onExcluir(comentario.id)}>
+                <Trash2 size={15} />
+              </button>
+            )}
           </span>
-        )}
-        {autorAdmin && <span className="cm-badge-admin">Administrador</span>}
-        {/* Cluster da direita, empurrado pro fim da linha em bloco (o
-              margin-left:auto está no wrapper, não mais em -quando sozinho):
-              foto (se tiver) -> data -> lixeira (se podeExcluir), sempre
-              nessa ordem, gap:8px entre eles, centralizados verticalmente.
-              Miniatura 40x40 — nunca mais o bloco de 78px que ficava fora do
-              header como irmão de -corpo; a linha inteira do comentário só
-              cresce com o conteúdo de texto, não com a foto. */}
-        <span className="cm-comentario-card-topo-direita">
-          {comentario.image_url && (
-            <button type="button" className="cm-comentario-card-foto-mini" aria-label="Ampliar foto" onClick={() => setLightboxAberto(true)}>
-              <img src={comentario.image_url} alt="" />
-            </button>
-          )}
-          <span className="cm-comentario-card-quando">{formatarDataBr(comentario.created_at)}</span>
-          {podeExcluir && (
-            <button type="button" className="cm-comentario-card-excluir" aria-label="Excluir comentário" title="Excluir comentário" onClick={() => onExcluir(comentario.id)}>
-              <Trash2 size={15} />
-            </button>
-          )}
-        </span>
+        </div>
         <p className="cm-comentario-card-texto">{comentario.comentario}</p>
 
         {podeResponder && onResponder && (
