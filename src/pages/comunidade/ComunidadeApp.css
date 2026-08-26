@@ -2769,9 +2769,11 @@
 }
 
 /* Badge de status do dia (ver getStatusJornada em JornadaProgress.jsx) —
-   3 estados: bora-aula (laranja, pulsando de leve), dia-concluido (verde,
-   esperando virar o dia) e curso-concluido (dourado, 48/48). Sem emoji de
-   fogo aqui, só os ícones PNG fornecidos pelo cliente. */
+   4 estados: bora-aula (laranja, pulsando de leve), dia-concluido (verde,
+   esperando virar o dia), pausa (roxo/índigo, pausa obrigatória de vários
+   dias — bug real 26/08, ver comentário em getStatusJornada) e
+   curso-concluido (dourado, 48/48). Sem emoji de fogo aqui, só os ícones
+   PNG fornecidos pelo cliente. */
 .cm-jornada-badge {
   flex-shrink: 0;
   display: flex;
@@ -2803,6 +2805,12 @@
   background: #dcfce7;
   color: #15803d;
   border-color: #bbf7d0;
+}
+
+.cm-jornada-badge--pausa {
+  background: #e0e7ff;
+  color: #4338ca;
+  border-color: #c7d2fe;
 }
 
 .cm-jornada-badge--curso-concluido {

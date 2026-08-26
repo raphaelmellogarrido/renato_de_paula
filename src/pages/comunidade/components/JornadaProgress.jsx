@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { ARQUIVOS_OCULTOS_AULAS_RAIZ, TITULOS_AULAS_RAIZ } from "../../../lib/titulosAulasRaiz";
-import { calcularMaxDiaCompleto, calcularUltimoDiaCompletadoData, isoLocal } from "./progressoDias";
+import { calcularMaxDiaCompleto, calcularUltimoDiaCompletadoData, diasRestantesPausa, isoLocal } from "./progressoDias";
 
 const TOTAL_DIAS = 16; // Dia 0 a Dia 15
 
@@ -37,15 +37,25 @@ const ICONE_BORA_AULA = "/icons/running_icon_cutout.png";
 const ICONE_DIA_CONCLUIDO = "/icons/check_clock_cutout.png";
 const ICONE_CURSO_CONCLUIDO = "/icons/trophy_lotus_cutout.png";
 
-// Badge do canto superior direito do card: 3 estados, nesta ordem de
+// Badge do canto superior direito do card: 4 estados, nesta ordem de
 // prioridade.
 //  1. curso-concluido — todas as 48 aulas assistidas.
-//  2. dia-concluido — terminou o dia mais recente HOJE e está esperando a
+//  2. pausa — dia recém-concluído é um dia de retomada (4, 7, 10, ...) e
+//     ainda faltam dias corridos da pausa obrigatória (bug real 26/08: sem
+//     este ramo, o card não sabia nada sobre pausa obrigatória — só
+//     conhecia a espera de "vira meia-noite" do item 3 abaixo — e mostrava
+//     "Bora pra aula?" mesmo com o player travado por dias em
+//     AulasMeditacaoRaiz.jsx/progressoDias.js). Checado ANTES de
+//     dia-concluido de propósito: no dia em que a pausa começa,
+//     `ultimoDiaCompletadoData` também é hoje (bateria a condição do item 3
+//     também), mas a pausa obrigatória é a informação certa a mostrar, não
+//     "libera à meia-noite" — o dia seguinte NÃO libera nesse caso.
+//  3. dia-concluido — terminou o dia mais recente HOJE e está esperando a
 //     virada de calendário pro próximo dia liberar (mesma regra de
 //     "calendario" do podeAssistir em progressoDias.js). maxDiaCompleto===0
 //     fica de fora de propósito: é a exceção Dia0->Dia1, que já libera no
 //     mesmo dia, então não faz sentido mostrar "bloqueado" aqui.
-//  3. bora-aula — default: ainda tem vídeo do dia atual pra assistir.
+//  4. bora-aula — default: ainda tem vídeo do dia atual pra assistir.
 function getStatusJornada({ jornadaCompleta, maxDiaCompleto, ultimoDiaCompletadoData, hojeServidor, badgeDiaConcluidoTexto }) {
   if (jornadaCompleta) {
     return { estado: "curso-concluido", texto: "Jornada completa", icone: ICONE_CURSO_CONCLUIDO };
@@ -54,7 +64,19 @@ function getStatusJornada({ jornadaCompleta, maxDiaCompleto, ultimoDiaCompletado
   // sobre isoLocal(new Date()) (relógio do navegador) pelo mesmo motivo de
   // podeAssistir em progressoDias.js — evita o badge divergir do bloqueio
   // real quando o dispositivo não está em BRT.
-  const bloqueadoAteAmanha = maxDiaCompleto >= 1 && ultimoDiaCompletadoData === (hojeServidor || isoLocal(new Date()));
+  const hojeRef = hojeServidor || isoLocal(new Date());
+
+  // Mesma função que trava o player em progressoDias.js/AulasMeditacaoRaiz.jsx
+  // — diaAlvo é sempre o PRÓXIMO dia (maxDiaCompleto+1), null quando esse dia
+  // não é de retomada (não está nos múltiplos 4, 7, 10...) ou quando ainda
+  // não há dia anterior completado.
+  const diasRestantes = diasRestantesPausa(maxDiaCompleto + 1, ultimoDiaCompletadoData, hojeRef);
+  if (diasRestantes > 0) {
+    const dias = diasRestantes;
+    return { estado: "pausa", texto: "Em pausa obrigatória", icone: ICONE_DIA_CONCLUIDO, diasRestantes: dias };
+  }
+
+  const bloqueadoAteAmanha = maxDiaCompleto >= 1 && ultimoDiaCompletadoData === hojeRef;
   if (bloqueadoAteAmanha) {
     return { estado: "dia-concluido", texto: badgeDiaConcluidoTexto, icone: ICONE_DIA_CONCLUIDO };
   }
@@ -101,8 +123,22 @@ function calcularStatusPorDia(progressoPorArquivo) {
  * /comunidade/aulas-raiz (AulasMeditacaoRaiz.jsx) é mais estreita e
  * passa uma versão curta pra não estourar o card — ver `.cm-jornada-badge`
  * (white-space: nowrap, flex-shrink: 0) em ComunidadeApp.css.
+ *
+ * `ocultarLinkBoraAula` (bug real 26/08): quando true, o estado "bora-aula"
+ * também vira um badge sem link (igual dia-concluido/pausa/curso-concluido)
+ * em vez do `<Link to="/comunidade/aulas-raiz">`. Só faz sentido true na
+ * própria AulasMeditacaoRaiz.jsx — sem isso o card mostrava "Bora pra
+ * aula?" levando pra `/comunidade/aulas-raiz` mesmo já estando nela.
+ * ColunaProgresso.jsx (home) não passa esse prop — lá o link faz sentido,
+ * é a única forma de chegar até a página de aulas.
  */
-export default function JornadaProgress({ progressoPorArquivo = {}, compacto = false, hojeServidor = null, badgeDiaConcluidoTexto = "Dia de curso concluído" }) {
+export default function JornadaProgress({
+  progressoPorArquivo = {},
+  compacto = false,
+  hojeServidor = null,
+  badgeDiaConcluidoTexto = "Dia de curso concluído",
+  ocultarLinkBoraAula = false,
+}) {
   const { totalAssistidos, statusPorDia, diaAtualIndex } = useMemo(() => calcularStatusPorDia(progressoPorArquivo), [progressoPorArquivo]);
 
   const percentual = TOTAL_AULAS ? Math.round((totalAssistidos / TOTAL_AULAS) * 100) : 0;
@@ -122,6 +158,9 @@ export default function JornadaProgress({ progressoPorArquivo = {}, compacto = f
   let mensagem;
   if (statusJornada.estado === "curso-concluido") {
     mensagem = "Parabéns por completar sua jornada! Agora é manter a prática diária. ✨";
+  } else if (statusJornada.estado === "pausa") {
+    const dias = statusJornada.diasRestantes;
+    mensagem = `🪷 Pausa obrigatória: faltam ${dias} dia${dias === 1 ? "" : "s"} para a próxima aula`;
   } else if (statusJornada.estado === "dia-concluido") {
     mensagem = "Próxima aula libera à meia-noite ✨";
   } else if (totalAssistidos === 0) {
@@ -184,7 +223,7 @@ export default function JornadaProgress({ progressoPorArquivo = {}, compacto = f
           <img src={ICONE_TITULO} alt="" className="cm-jornada-titulo-icone" />
           <span>Sua Jornada</span>
         </h2>
-        {statusJornada.estado === "bora-aula" ? (
+        {statusJornada.estado === "bora-aula" && !ocultarLinkBoraAula ? (
           <Link to="/comunidade/aulas-raiz" className={`cm-jornada-badge cm-jornada-badge--${statusJornada.estado} cursor-pointer hover:opacity-80`}>
             <img src={statusJornada.icone} alt="" className="cm-jornada-badge-icone" />
             {statusJornada.texto} ↗

@@ -611,8 +611,16 @@ export default function AulasMeditacaoRaiz() {
           </div>
 
           {/* Sidebar é mais estreita que a coluna da home — badge curto pra
-              não estourar o card (ver badgeDiaConcluidoTexto em JornadaProgress.jsx). */}
-          <JornadaProgress progressoPorArquivo={progressoPorArquivo} hojeServidor={hojeServidor} badgeDiaConcluidoTexto="Dia concluído" />
+              não estourar o card (ver badgeDiaConcluidoTexto em JornadaProgress.jsx).
+              ocultarLinkBoraAula: já estamos em /comunidade/aulas-raiz, o
+              link "Bora pra aula?" pra essa mesma página não faz sentido
+              aqui (bug real 26/08, ver doc em JornadaProgress.jsx). */}
+          <JornadaProgress
+            progressoPorArquivo={progressoPorArquivo}
+            hojeServidor={hojeServidor}
+            badgeDiaConcluidoTexto="Dia concluído"
+            ocultarLinkBoraAula
+          />
         </div>
       </div>
 

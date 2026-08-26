@@ -6,6 +6,7 @@ import ScrollToTop from "./components/ScrollToTop";
 import MetaPixelTracker from "./components/MetaPixelTracker";
 import Home from "./pages/Home";
 import useComunidadeAuth from "./pages/comunidade/components/useComunidadeAuth";
+import AdminGuard from "./pages/comunidade/components/AdminGuard";
 import "./App.css";
 // import "./pages/comunidade/Login.css";
 
@@ -19,6 +20,7 @@ const ComunidadeAula = lazy(() => import("./pages/comunidade/Aula"));
 const ComunidadeAulasRaiz = lazy(() => import("./pages/comunidade/AulasMeditacaoRaiz"));
 const ComunidadeConfiguracoes = lazy(() => import("./pages/comunidade/Configuracoes"));
 const ComunidadeMensagens = lazy(() => import("./pages/comunidade/Mensagens"));
+const AdminComunidadePage = lazy(() => import("./pages/comunidade/AdminComunidadePage"));
 const EsqueceuSenha = lazy(() => import("./pages/comunidade/EsqueceuSenha"));
 const RedefinirSenha = lazy(() => import("./pages/comunidade/RedefinirSenha"));
 
@@ -59,7 +61,14 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/meditacao" element={<Meditacao />} />
             <Route path="/mitos" element={<Meditacao />} />
-            <Route path="/admin" element={<AdminMeditacao />} />
+            <Route
+              path="/admin"
+              element={
+                <AdminGuard>
+                  <AdminMeditacao />
+                </AdminGuard>
+              }
+            />
             {/* Link antigo: o redirect "de verdade" (301, HTTP) é feito no
                 .htaccess pra navegação direta (digitar/abrir a URL). Esta
                 rota é só um fallback client-side — cobre quem já está com o
@@ -76,6 +85,14 @@ function App() {
               <Route path="aula/:id" element={<ComunidadeAula />} />
               <Route path="configuracoes" element={<ComunidadeConfiguracoes />} />
               <Route path="mensagens" element={<ComunidadeMensagens />} />
+              <Route
+                path="admin"
+                element={
+                  <AdminGuard>
+                    <AdminComunidadePage />
+                  </AdminGuard>
+                }
+              />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

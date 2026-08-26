@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
-import { Home, Library, Users, Settings, Leaf, LogOut, Mail } from "lucide-react";
+import { Home, Library, Users, Settings, Leaf, LogOut, Mail, Shield } from "lucide-react";
 import useMensagensNaoLidas from "./useMensagensNaoLidas";
+import { isAdminEmail } from "./isAdmin";
 
 function iniciais(nome) {
   return nome
@@ -26,6 +27,10 @@ function ComunidadeSidebar({ session, onSair }) {
   // o histórico de conversa depois de já ter lido tudo), só o BADGE
   // vermelho é condicional a contagem >0. Ver useMensagensNaoLidas.js.
   const mensagensNaoLidas = useMensagensNaoLidas();
+  // Item "Admin" só aparece pros 2 e-mails admin (ver isAdmin.js) — não
+  // é proteção real (sessão da comunidade é client-side), só esconde o
+  // atalho de quem não é admin. Ver AdminGuard.jsx pra proteção da rota.
+  const admin = isAdminEmail(session?.email);
   const nome = session?.nome || "Aluno";
   // Saudação usa "Primeiro nome" (Configuracoes.jsx) quando salvo — sem
   // isso a sidebar ficava presa na 1ª palavra de "Nome e sobrenome" mesmo
@@ -53,6 +58,13 @@ function ComunidadeSidebar({ session, onSair }) {
             {item.comBolinha && <span className="cm-sidebar-dot" aria-hidden="true" />}
           </NavLink>
         ))}
+
+        {admin && (
+          <NavLink to="/comunidade/admin" aria-label="Admin" className={({ isActive }) => `cm-sidebar-nav-item ${isActive ? "is-ativo" : ""}`}>
+            <Shield size={18} strokeWidth={1.8} />
+            <span>Admin</span>
+          </NavLink>
+        )}
 
         {/* Só aparece no celular/tablet (ver .cm-sidebar-nav-whatsapp no
             @media de ComunidadeApp.css) — some no desktop, onde o card
