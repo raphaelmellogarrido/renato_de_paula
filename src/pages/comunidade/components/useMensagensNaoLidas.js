@@ -2,7 +2,13 @@ import { useCallback, useEffect, useState } from "react";
 import { useEmailSessao } from "./usuarioStorage";
 
 const LISTAR_URL = "/api/mensagens/listar.php";
-const INTERVALO_MS = 30000; // mais frequente que o pulso (60s) — é notificação pessoal, não agregado
+// 5s (era 30s até 26/08) — pedido do cliente pra badge vermelha aparecer
+// "na hora" quando o admin manda mensagem privada, sem o aluno precisar dar
+// F5. Não dá pra WebSocket de verdade nesse backend (PHP puro na Hostinger,
+// hospedagem compartilhada — ver comentário em Mensagens.jsx), então isso é
+// o "realtime pobre" ficando mais frequente: pior caso o aluno vê a badge
+// com até 5s de atraso, não mais até 30s.
+const INTERVALO_MS = 5000;
 // Mesmo padrão de acoplamento por evento global literal (não import) já
 // usado em MeditandoJunto.jsx/RankingPresenca.jsx — Mensagens.jsx dispara
 // isso depois de marcar como lida, pra o badge da sidebar sumir na hora em

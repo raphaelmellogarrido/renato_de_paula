@@ -25,6 +25,13 @@ const AULA_ID = "dificuldade_do_dia";
 // +10 de cada vez.
 const TAMANHO_INICIAL = 20;
 const TAMANHO_PAGINA = 10;
+// Polling de novidades (pedido do cliente, 26/08): antes disso o feed só
+// atualizava quando o PRÓPRIO usuário compartilhava algo (carregarInicial()
+// dentro de handleEnviar) — a partilha de outro aluno só aparecia depois de
+// um F5. Mesmo "realtime pobre" de useMensagensNaoLidas.js/Mensagens.jsx
+// (backend é PHP puro na Hostinger, sem WebSocket) — 8s dá a sensação de
+// instantâneo sem pesar demais no servidor.
+const POLL_INTERVALO_MS = 8000;
 // Limite visual do textarea: card tem ~700px de largura, fonte 14px (~8px/char,
 // ~87 chars/linha) — 2 linhas dariam ~174 chars, mas 140 garante que também
 // caiba em 2 linhas no mobile (card mais estreito). Mesmo limite do
@@ -175,6 +182,47 @@ function DificuldadeDoDia() {
   useEffect(() => {
     carregarInicial();
   }, [carregarInicial]);
+
+  // Ref com os itens atuais só pra verificarNovidades() saber quais ids já
+  // estão na tela sem precisar depender de `itens` (senão o setInterval
+  // abaixo teria que ser recriado a cada novo comentário). Mesmo padrão de
+  // fotoPreviewRef logo abaixo.
+  const itensRef = useRef([]);
+  useEffect(() => {
+    itensRef.current = itens;
+  }, [itens]);
+
+  // Busca os mais recentes (mesma página do 1º carregamento) e enfia no
+  // TOPO só o que ainda não está na lista — é assim que a partilha de OUTRO
+  // aluno aparece sozinha, sem F5. Nunca reseta `itens` inteiro (isso
+  // jogaria fora o que o scroll infinito já carregou pra baixo); só
+  // acrescenta o que faltava. offset acompanha o crescimento pra as próximas
+  // páginas de carregarMais continuarem batendo com o backend.
+  const verificarNovidades = useCallback(() => {
+    buscarComentarios(`${COMENTARIOS_URL}?aula_id=${AULA_ID}&limit=${TAMANHO_INICIAL}&offset=0`)
+      .then((dados) => {
+        const recentes = Array.isArray(dados?.itens) ? dados.itens : [];
+        const idsAtuais = new Set(itensRef.current.map((c) => c.id));
+        const novos = recentes.filter((c) => !idsAtuais.has(c.id));
+        if (novos.length === 0) return;
+        setItens((atual) => [...novos, ...atual]);
+        setOffset((atual) => atual + novos.length);
+      })
+      .catch(() => {
+        // falha silenciosa — só não pega a novidade dessa vez, o próximo
+        // tick de 8s tenta de novo. Nunca derruba o feed já pintado por
+        // causa disso.
+      });
+  }, []);
+
+  useEffect(() => {
+    if (carregandoInicial) return; // só depois do 1º carregamento resolver
+    const id = setInterval(() => {
+      if (document.hidden) return; // aba em background não gasta rede
+      verificarNovidades();
+    }, POLL_INTERVALO_MS);
+    return () => clearInterval(id);
+  }, [carregandoInicial, verificarNovidades]);
 
   // Observa o sentinel (div vazia no fim da lista) e dispara carregarMais()
   // quando ele entra na área visível — automático, sem botão "Carregar
