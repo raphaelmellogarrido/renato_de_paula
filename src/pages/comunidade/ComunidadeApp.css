@@ -2859,6 +2859,17 @@
   background: #e0e7ff;
   color: #4338ca;
   border-color: #c7d2fe;
+  /* bug real 26/08: "Em pausa obrigatória" em nowrap (herdado de
+     .cm-jornada-badge) forçava a largura do texto inteiro e estourava pra
+     fora do card "Sua Jornada" quando a coluna era estreita — só o
+     .cm-jornada-titulo ao lado tinha espaço pra quebrar linha. Testando
+     quebrar em duas linhas ("Em pausa" / "obrigatória") em vez de nowrap;
+     flex-shrink:1 sobrescreve o :0 do .cm-jornada-badge pra esse item
+     poder encolher dentro do space-between de .cm-jornada-topo. */
+  white-space: normal;
+  flex-shrink: 1;
+  text-align: center;
+  line-height: 1.25;
 }
 
 .cm-jornada-badge--curso-concluido {
