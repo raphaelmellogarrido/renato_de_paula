@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Send } from "lucide-react";
+import { Send, X } from "lucide-react";
 import { useEmailSessao, useAvatarUrlSessao, lerNomeSessao } from "./components/usuarioStorage";
-import { EMAIL_ADMINISTRADOR } from "./components/ComentarioCard";
+import { EMAIL_ADMINISTRADOR, EMAIL_ORIENTADOR } from "./components/ComentarioCard";
 import { EVENTO_MENSAGENS_ATUALIZOU } from "./components/useMensagensNaoLidas";
 import { formatarDataBr, iniciais } from "./components/comentariosUtils";
+import BuscaUsuarios from "./components/BuscaUsuarios";
 
 const LISTAR_URL = "/api/mensagens/listar.php";
 const ENVIAR_URL = "/api/mensagens/enviar.php";
@@ -25,9 +26,24 @@ function Mensagens() {
   const [enviando, setEnviando] = useState(false);
   const fimRef = useRef(null);
 
+  // Barra de busca (Tarefa 2, 26/08) — só admin/orientador vêem/usam.
+  // Mesmo padrão de detecção já usado em ComentariosFeed.jsx/DificuldadeDoDia.jsx
+  // (não existe coluna "role", os 2 e-mails de equipe são fixos).
+  const emailAtualNormalizado = (email || "").toLowerCase().trim();
+  const souAdmin = emailAtualNormalizado === EMAIL_ADMINISTRADOR;
+  const souOrientador = emailAtualNormalizado === EMAIL_ORIENTADOR;
+  const podeBuscarUsuarios = souAdmin || souOrientador;
+
+  // Quando a equipe seleciona um aluno na busca, o thread carregado passa a
+  // ser o DESSE aluno (não mais o do próprio e-mail logado) — listar.php já
+  // devolve toda mensagem em que o e-mail passado é remetente OU
+  // destinatário, então isso cobre a conversa inteira aluno<->equipe.
+  const [usuarioSelecionado, setUsuarioSelecionado] = useState(null);
+  const emailThread = usuarioSelecionado?.email || email;
+
   const carregar = useCallback(() => {
-    if (!email) return;
-    fetch(`${LISTAR_URL}?email=${encodeURIComponent(email)}`, { cache: "no-store" })
+    if (!emailThread) return;
+    fetch(`${LISTAR_URL}?email=${encodeURIComponent(emailThread)}`, { cache: "no-store" })
       .then((r) => r.json())
       .then((dados) => {
         if (Array.isArray(dados?.itens)) setItens(dados.itens);
@@ -37,7 +53,7 @@ function Mensagens() {
         console.error("[Clube Presença] falha ao carregar mensagens:", err);
         setCarregando(false);
       });
-  }, [email]);
+  }, [emailThread]);
 
   useEffect(() => {
     carregar();
@@ -50,10 +66,19 @@ function Mensagens() {
   // atravessando um tick do polling) não tem problema, o próximo tick de 3s
   // corrige sozinho.
   useEffect(() => {
-    if (!email) return;
+    if (!emailThread) return;
     const id = setInterval(carregar, 3000);
     return () => clearInterval(id);
-  }, [email, carregar]);
+  }, [emailThread, carregar]);
+
+  // Selecionar outro aluno na busca troca o thread inteiro — zera a lista
+  // atual pra não mostrar por 1 frame a conversa antiga por cima da nova
+  // enquanto o fetch do thread do aluno recém-selecionado ainda não voltou.
+  function selecionarUsuario(aluno) {
+    setUsuarioSelecionado(aluno);
+    setItens([]);
+    setCarregando(true);
+  }
 
   // Marca como lida assim que a página abre (uma vez, não a cada refetch de
   // carregar() — senão uma mensagem que chegasse enquanto o aluno já está
@@ -82,7 +107,13 @@ function Mensagens() {
   // admin/orientador que iniciou a conversa) — se ainda não recebeu
   // nenhuma (caso raro, aluno abrindo a página sem nunca ter sido
   // contatado), cai no e-mail do Administrador como destino padrão.
+  //
+  // Exceção: admin/orientador com um aluno selecionado na busca (Tarefa 2)
+  // sempre manda PRA ESSE aluno, mesmo que o thread dele tenha mensagens de
+  // ambos os membros da equipe — nunca deduz o destino pela última
+  // mensagem nesse caso.
   function destinatarioPadrao() {
+    if (usuarioSelecionado) return usuarioSelecionado.email;
     const recebidas = itens.filter((m) => m.para_email?.toLowerCase() === email?.toLowerCase());
     const ultima = recebidas[recebidas.length - 1];
     return ultima?.de_email || EMAIL_ADMINISTRADOR;
@@ -143,6 +174,30 @@ function Mensagens() {
         <h1>Mensagens</h1>
         <p>Converse diretamente com a equipe da Meditação Raiz</p>
       </div>
+
+      {podeBuscarUsuarios && (
+        <BuscaUsuarios onSelecionar={selecionarUsuario} />
+      )}
+
+      {podeBuscarUsuarios && usuarioSelecionado && (
+        <div className="cm-mensagens-thread-topo">
+          {usuarioSelecionado.avatar_url ? (
+            <img src={usuarioSelecionado.avatar_url} alt="" className="cm-mensagem-avatar cm-mensagem-avatar-img" />
+          ) : (
+            <div className="cm-mensagem-avatar">{iniciais(usuarioSelecionado.nome)}</div>
+          )}
+          <span>Conversando com {usuarioSelecionado.nome}</span>
+          <button
+            type="button"
+            className="cm-mensagens-thread-fechar"
+            aria-label="Voltar pra sua própria conversa"
+            title="Voltar pra sua própria conversa"
+            onClick={() => setUsuarioSelecionado(null)}
+          >
+            <X size={15} />
+          </button>
+        </div>
+      )}
 
       <div className="cm-mensagens-chat">
         {carregando && <p className="cm-mensagens-vazio">Carregando conversa...</p>}

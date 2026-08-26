@@ -3872,6 +3872,140 @@
   }
 }
 
+/* Barra de busca de usuários (Tarefa 2, 26/08) — só admin/orientador vêem
+   (BuscaUsuarios.jsx, renderizado por Mensagens.jsx entre o header e o
+   chat). position:relative é a âncora pra -lista (dropdown) flutuar por
+   cima do chat sem empurrar layout. flex-shrink:0 pelo mesmo motivo do
+   form: .cm-mensagens-page é flex column de altura travada (100vh), só o
+   chat (flex:1) deve ceder espaço. */
+.cm-busca-usuarios {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.cm-busca-usuarios-barra {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 12px;
+  border: 1px solid var(--cm-border);
+  border-radius: 8px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cm-busca-usuarios-barra:focus-within {
+  border-color: var(--cm-sage);
+}
+
+.cm-busca-usuarios-icone {
+  color: var(--cm-text-soft);
+  flex-shrink: 0;
+}
+
+.cm-busca-usuarios-barra input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  font-size: 0.9rem;
+  font-family: inherit;
+  background: transparent;
+  color: var(--cm-text);
+}
+
+.cm-busca-usuarios-lista {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  max-width: 600px;
+  margin: 0 auto;
+  background: #fff;
+  border: 1px solid var(--cm-border);
+  border-radius: 8px;
+  box-shadow: var(--cm-shadow);
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 5;
+}
+
+.cm-busca-usuarios-vazio {
+  color: var(--cm-text-soft);
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 14px;
+  margin: 0;
+}
+
+.cm-busca-usuarios-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--cm-text);
+}
+
+.cm-busca-usuarios-item:hover {
+  background: #f5f5f5;
+}
+
+.cm-busca-usuarios-avatar {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  border-radius: 50%;
+  background: var(--cm-sage-soft);
+  color: var(--cm-sage-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.72rem;
+  flex-shrink: 0;
+}
+
+.cm-busca-usuarios-avatar-img {
+  object-fit: cover;
+  background: var(--cm-beige-soft);
+}
+
+/* Indicador "Conversando com X" (Tarefa 2) — só aparece pra admin/orientador
+   depois de selecionar alguém na busca; X fecha e volta pro próprio thread
+   (equivalente a usuarioSelecionado=null em Mensagens.jsx). */
+.cm-mensagens-thread-topo {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--cm-sage-soft);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--cm-sage-dark);
+}
+
+.cm-mensagens-thread-fechar {
+  margin-left: auto;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--cm-sage-dark);
+  display: grid;
+  place-items: center;
+  padding: 2px;
+}
+
 .cm-mensagens-chat {
   flex: 1;
   min-height: 0;
