@@ -47,6 +47,35 @@ const ALTURA_MAX_TEXTAREA = 120;
 // pra "💬 partilhas hoje" subir sem esperar o próximo tick do polling nem F5.
 const EVENTO_PARTILHA_CRIADA = "comunidadePartilhaCriada";
 
+// Achata um lote de comentários (topo + respostas, 1 nível só — replies não
+// têm "onResponder"/podeResponder=false em ComentarioCard, então nunca há
+// resposta de resposta) num Set de ids. Usado por verificarNovidades pra
+// comparar "quem estava" vs "quem está" entre dois ticks do polling e achar
+// o que sumiu (exclusão de outro usuário/admin), ver comentário lá.
+function idsDoLote(lista) {
+  const ids = new Set();
+  for (const c of lista) {
+    ids.add(c.id);
+    if (Array.isArray(c.respostas)) {
+      for (const r of c.respostas) ids.add(r.id);
+    }
+  }
+  return ids;
+}
+
+// Remove os ids em `idsParaRemover` de `lista`, tanto no topo quanto dentro
+// de `respostas` — companheiro de idsDoLote, usado quando verificarNovidades
+// detecta que algo sumiu do servidor.
+function removerIds(lista, idsParaRemover) {
+  return lista
+    .filter((c) => !idsParaRemover.has(c.id))
+    .map((c) => {
+      if (!Array.isArray(c.respostas) || c.respostas.length === 0) return c;
+      const respostas = c.respostas.filter((r) => !idsParaRemover.has(r.id));
+      return respostas.length === c.respostas.length ? c : { ...c, respostas };
+    });
+}
+
 // 20 emojis temáticos (meditação/natureza/quietude) pro popover do item 4 —
 // mesmo espírito visual do resto do app (sálvia, folhas, luz).
 const EMOJIS_MEDITACAO = [
@@ -117,6 +146,23 @@ function DificuldadeDoDia() {
   const souOrientador = emailAtualNormalizado === EMAIL_ORIENTADOR;
   const podeExcluir = souAdmin || souOrientador;
 
+  // Busca a 1ª página direto do servidor (sem pintar cache antes) e substitui
+  // `itens` inteiro pelo que voltou — é a fonte de verdade "de verdade", sem
+  // filter local. Extraído de carregarInicial pra handleExcluir poder chamar
+  // só essa parte (refetch completo pós-delete, ver comentário lá) sem
+  // reexibir o cache velho por cima do que acabou de ser excluído.
+  const buscarPrimeiraPagina = useCallback(() => {
+    const chave = chaveCacheComentarios(AULA_ID, 1);
+    return buscarComentarios(`${COMENTARIOS_URL}?aula_id=${AULA_ID}&limit=${TAMANHO_INICIAL}&offset=0`).then((dados) => {
+      const novos = Array.isArray(dados?.itens) ? dados.itens : [];
+      setItens(novos);
+      setOffset(novos.length);
+      setHasMore(Boolean(dados?.hasMore));
+      salvarCacheComentarios(chave, dados);
+      return dados;
+    });
+  }, []);
+
   // 1º carregamento (20 mais recentes) — stale-while-revalidate igual antes:
   // se tiver cache de visita recente (<2min), pinta ele JÁ (sem esperar
   // rede) e ainda assim busca fresco em background. Cache é do mural inteiro
@@ -134,15 +180,8 @@ function DificuldadeDoDia() {
       setCarregandoInicial(false);
     }
 
-    buscarComentarios(`${COMENTARIOS_URL}?aula_id=${AULA_ID}&limit=${TAMANHO_INICIAL}&offset=0`)
-      .then((dados) => {
-        const novos = Array.isArray(dados?.itens) ? dados.itens : [];
-        setItens(novos);
-        setOffset(novos.length);
-        setHasMore(Boolean(dados?.hasMore));
-        setCarregandoInicial(false);
-        salvarCacheComentarios(chave, dados);
-      })
+    buscarPrimeiraPagina()
+      .then(() => setCarregandoInicial(false))
       .catch((err) => {
         console.error("[Clube Presença] falha ao carregar 'Sua prática hoje' (após retry):", err);
         // Nunca zera itens aqui: já tentamos 2x (buscarComentarios já faz 1
@@ -153,7 +192,7 @@ function DificuldadeDoDia() {
         // que fazia o mural aparecer vazio no primeiro load e só corrigir
         // com F5).
       });
-  }, []);
+  }, [buscarPrimeiraPagina]);
 
   // +10 comentários quando o sentinel entra na viewport. Usa `offset`/
   // `hasMore`/`carregandoMais` do estado (não refs) de propósito: essa
@@ -191,27 +230,66 @@ function DificuldadeDoDia() {
   useEffect(() => {
     itensRef.current = itens;
   }, [itens]);
+  // true durante uma exclusão em andamento (do handleExcluir até o refetch
+  // completo terminar) — pausa o polling de verificarNovidades pra ele não
+  // buscar exatamente nesse intervalo, ver comentário no setInterval abaixo.
+  // Ref (não state): só controla um branch dentro do callback do
+  // setInterval, não precisa re-renderizar nada.
+  const isDeletingRef = useRef(false);
+  // Ids (topo + respostas) vistos no último tick que ENXERGOU essa mesma
+  // janela do servidor (offset=0, os TAMANHO_INICIAL mais recentes) —
+  // baseline pra detectar exclusão de outro usuário/admin, ver
+  // verificarNovidades abaixo. Some vazio até o 1º tick resolver: nesse tick
+  // inicial nada é considerado "removido" (não tem baseline ainda pra
+  // comparar), só popula o ref pro próximo.
+  const idsConhecidosRef = useRef(new Set());
 
-  // Busca os mais recentes (mesma página do 1º carregamento) e enfia no
-  // TOPO só o que ainda não está na lista — é assim que a partilha de OUTRO
-  // aluno aparece sozinha, sem F5. Nunca reseta `itens` inteiro (isso
-  // jogaria fora o que o scroll infinito já carregou pra baixo); só
-  // acrescenta o que faltava. offset acompanha o crescimento pra as próximas
-  // páginas de carregarMais continuarem batendo com o backend.
+  // Busca os mais recentes (mesma página do 1º carregamento) e reconcilia
+  // com o que já está na tela: (a) enfia no TOPO só o que ainda não está na
+  // lista — é assim que a partilha de OUTRO aluno aparece sozinha, sem F5;
+  // (b) remove da lista quem sumiu dessa mesma janela desde o tick anterior
+  // — é assim que uma exclusão feita pelo admin some do feed de quem está
+  // vendo, sem precisar de F5 (pedido do cliente, 26/08: antes só o próprio
+  // admin via a lista atualizar, via o refetch de handleExcluir). Só mexe
+  // nessa janela (os TAMANHO_INICIAL mais recentes) — itens carregados via
+  // scroll infinito (carregarMais) ficam de fora da checagem, mesma
+  // limitação que já existia pra detecção de novidades. Nunca reseta `itens`
+  // inteiro (jogaria fora o que o scroll infinito já carregou pra baixo); só
+  // soma/subtrai o que mudou. offset acompanha só o topo (respostas não
+  // contam pra paginação) pra carregarMais continuar batendo com o backend.
   const verificarNovidades = useCallback(() => {
     buscarComentarios(`${COMENTARIOS_URL}?aula_id=${AULA_ID}&limit=${TAMANHO_INICIAL}&offset=0`)
       .then((dados) => {
         const recentes = Array.isArray(dados?.itens) ? dados.itens : [];
         const idsAtuais = new Set(itensRef.current.map((c) => c.id));
         const novos = recentes.filter((c) => !idsAtuais.has(c.id));
-        if (novos.length === 0) return;
-        setItens((atual) => [...novos, ...atual]);
-        setOffset((atual) => atual + novos.length);
+
+        const idsRecentes = idsDoLote(recentes);
+        const idsRemovidos = new Set(
+          [...idsConhecidosRef.current].filter((id) => !idsRecentes.has(id))
+        );
+        idsConhecidosRef.current = idsRecentes;
+
+        if (novos.length === 0 && idsRemovidos.size === 0) return;
+
+        if (idsRemovidos.size > 0) {
+          // só ids de TOPO contam pro offset — respostas removidas não mexem
+          // na paginação.
+          const toposRemovidos = itensRef.current.filter((c) => idsRemovidos.has(c.id)).length;
+          if (toposRemovidos > 0) setOffset((atual) => Math.max(0, atual - toposRemovidos));
+        }
+        if (novos.length > 0) setOffset((atual) => atual + novos.length);
+
+        setItens((atual) => {
+          const semExcluidos = idsRemovidos.size > 0 ? removerIds(atual, idsRemovidos) : atual;
+          return novos.length > 0 ? [...novos, ...semExcluidos] : semExcluidos;
+        });
       })
       .catch(() => {
-        // falha silenciosa — só não pega a novidade dessa vez, o próximo
-        // tick de 8s tenta de novo. Nunca derruba o feed já pintado por
-        // causa disso.
+        // falha silenciosa — só não pega a novidade/exclusão dessa vez, o
+        // próximo tick de 8s tenta de novo. Nunca derruba o feed já pintado
+        // por causa disso, nem atualiza idsConhecidosRef (baseline só avança
+        // quando o fetch realmente resolve).
       });
   }, []);
 
@@ -219,6 +297,13 @@ function DificuldadeDoDia() {
     if (carregandoInicial) return; // só depois do 1º carregamento resolver
     const id = setInterval(() => {
       if (document.hidden) return; // aba em background não gasta rede
+      // Bug de corrida (26/08): sem essa trava, um tick do poll que já
+      // estava em voo (ou pegou o banco num instante entre o DELETE e o
+      // commit) podia devolver o comentário recém-excluído, achar que era
+      // "novo" (não está mais em itensRef, já foi filtrado) e enfiar ele de
+      // volta no topo do feed. Pausa aqui, refetch completo em
+      // handleExcluir garante a lista real assim que a exclusão confirma.
+      if (isDeletingRef.current) return;
       verificarNovidades();
     }, POLL_INTERVALO_MS);
     return () => clearInterval(id);
@@ -422,27 +507,36 @@ function DificuldadeDoDia() {
     if (data?.erro) throw new Error(data.erro);
   }
 
-  function handleExcluir(id) {
+  // Exclui por ID (não por índice — nunca depende de posição no array, que
+  // muda a cada refetch/scroll). Trava o polling de novidades (isDeletingRef)
+  // ANTES do DELETE ir pro servidor e só libera DEPOIS que o refetch completo
+  // da 1ª página já pintou a lista real — evita o bug de corrida onde o
+  // comentário excluído reaparecia "fixo" no topo (ver comentário no
+  // setInterval de verificarNovidades). Refetch do servidor em vez de filter
+  // local por dois motivos: (1) é a mesma garantia contra a corrida acima —
+  // o próprio handleExcluir já resolve com o estado real, não precisa
+  // esperar o próximo tick do poll pra confirmar; (2) fonte de verdade única,
+  // sem risco de filter local e servidor divergirem silenciosamente.
+  async function handleExcluir(id) {
     if (!window.confirm("Excluir este comentário?")) return;
 
-    fetch(`${COMENTARIOS_URL}?id=${id}`, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data?.erro) throw new Error(data.erro);
-        setItens((atual) => atual.filter((c) => c.id !== id));
-        // offset acompanha pra baixo junto com a lista — se não ajustasse
-        // aqui, o próximo carregarMais pediria offset 1 a mais do que devia
-        // e puliria um comentário (o vizinho do que acabou de ser apagado).
-        setOffset((atual) => Math.max(0, atual - 1));
-      })
-      .catch((err) => {
-        console.error("[Clube Presença] falha ao excluir comentário:", err);
-        window.alert("Não foi possível excluir o comentário.");
+    isDeletingRef.current = true;
+    try {
+      const resposta = await fetch(`${COMENTARIOS_URL}?id=${id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
       });
+      const data = await resposta.json();
+      if (data?.erro) throw new Error(data.erro);
+
+      await buscarPrimeiraPagina();
+    } catch (err) {
+      console.error("[Clube Presença] falha ao excluir comentário:", err);
+      window.alert("Não foi possível excluir o comentário.");
+    } finally {
+      isDeletingRef.current = false;
+    }
   }
 
   const vazio = !carregandoInicial && itens.length === 0 && !hasMore;

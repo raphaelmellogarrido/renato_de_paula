@@ -4687,6 +4687,35 @@ h3.cm-config-subtitle {
      aqui. Ícone do WhatsApp na nav (.cm-sidebar-nav-whatsapp) também já
      está ligado desde os 960px pelo mesmo motivo. */
 
+  /* Nesta faixa a nav (ícones) divide a linha com o card do usuário
+     (grid-template-areas "nav footer" acima) — em telas de celular
+     estreitas isso deixava pouco espaço e o botão do WhatsApp (fixo,
+     flex-shrink:0) ficava cortado pelo card ao lado. Encolhe um pouco os
+     ícones/padding/gap da nav pra linha inteira caber (pedido do
+     cliente, 26/08). */
+  .cm-sidebar-nav {
+    gap: 2px;
+  }
+
+  .cm-sidebar-nav-item {
+    padding: 8px;
+  }
+
+  .cm-sidebar-nav-item svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .cm-sidebar-nav-whatsapp {
+    width: 32px;
+    height: 32px;
+  }
+
+  .cm-sidebar-nav-whatsapp svg {
+    width: 14px;
+    height: 14px;
+  }
+
   /* Sem versão mobile própria ainda — some do topbar compacto em vez de
      quebrar o layout de "nav footer" apertado. A rota /comunidade/mensagens
      continua acessível por link direto. */
