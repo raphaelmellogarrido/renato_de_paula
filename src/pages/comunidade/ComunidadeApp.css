@@ -735,42 +735,16 @@
   cursor: not-allowed;
 }
 
-/* Popover de emoji (item 4): flutua acima da toolbar, grid de 4 colunas com
-   os 20 emojis de meditação. */
+/* Popover de emoji (item 4): flutua acima da toolbar. Só cuida do
+   posicionamento — o conteúdo agora é a lib emoji-picker-react (busca +
+   categorias, ~1000 emojis), que já vem com seu próprio card/sombra/borda,
+   então esta regra não duplica background/padding/shadow como fazia com o
+   grid de 20 emojis fixos de antes. */
 .cm-duvida-emoji-popover {
   position: absolute;
   bottom: calc(100% + 8px);
   left: 0;
-  background: #fff;
-  border: 1px solid #e5e0d8;
-  border-radius: 14px;
-  box-shadow: var(--cm-shadow);
-  padding: 10px;
   z-index: 5;
-}
-
-.cm-duvida-emoji-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 2px;
-}
-
-.cm-duvida-emoji-btn {
-  width: 32px;
-  height: 32px;
-  background: none;
-  border: none;
-  border-radius: 8px;
-  font-size: 1.1rem;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-}
-
-.cm-duvida-emoji-btn:hover {
-  background: var(--cm-sage-soft);
 }
 
 .cm-duvida-form-acoes {

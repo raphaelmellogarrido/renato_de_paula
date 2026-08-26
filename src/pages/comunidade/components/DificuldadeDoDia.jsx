@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Bold, Italic, Smile, Image as ImageIcon, ArrowRight, X } from "lucide-react";
+import EmojiPicker from "emoji-picker-react";
 import { useEmailSessao, lerNomeSessao } from "./usuarioStorage";
 import { useComunidadeAuth } from "./useComunidadeAuth";
 import { iniciais } from "./comentariosUtils";
@@ -77,15 +78,6 @@ function removerIds(lista, idsParaRemover) {
       return respostas.length === c.respostas.length ? c : { ...c, respostas };
     });
 }
-
-// 20 emojis temáticos (meditação/natureza/quietude) pro popover do item 4 —
-// mesmo espírito visual do resto do app (sálvia, folhas, luz).
-const EMOJIS_MEDITACAO = [
-  "🧘", "🧘‍♀️", "🧘‍♂️", "🙏", "🕉️",
-  "🪷", "🌿", "🍃", "🌸", "☀️",
-  "🌙", "⭐", "✨", "💫", "🌊",
-  "🔥", "💚", "🌱", "🦋", "🕊️",
-];
 
 // Card "Sua prática hoje" — único conteúdo da coluna 1 do dashboard
 // (.cm-grid-feed/.cm-feed-empilhado, ver Dashboard.jsx/ComunidadeApp.css),
@@ -436,9 +428,12 @@ function DificuldadeDoDia() {
     inserirNoCursor(marcador, marcador);
   }
 
-  function inserirEmoji(emoji) {
-    inserirNoCursor(emoji, "");
-    setEmojiAberto(false);
+  // onEmojiClick da lib (emoji-picker-react): recebe o objeto emojiData, não
+  // o caractere direto — `.emoji` é o unicode. Não fecha o popover depois de
+  // inserir (mesmo comportamento do WhatsApp): deixa escolher vários emojis
+  // seguidos sem reabrir. Fecha só via clique fora/Esc (efeito acima).
+  function inserirEmoji(emojiData) {
+    inserirNoCursor(emojiData.emoji, "");
   }
 
   function handleSelecionarFoto(e) {
@@ -647,14 +642,13 @@ function DificuldadeDoDia() {
           </button>
 
           {emojiAberto && (
+            // lib completa (emoji-picker-react) em vez dos 20 emojis fixos de
+            // antes — busca + categorias, mesmo espírito do picker do
+            // WhatsApp. CSS próprio da lib (classes cm-* internas, não
+            // Tailwind); .cm-duvida-emoji-popover só cuida do posicionamento
+            // (ver ComunidadeApp.css).
             <div className="cm-duvida-emoji-popover" ref={emojiPopoverRef}>
-              <div className="cm-duvida-emoji-grid">
-                {EMOJIS_MEDITACAO.map((emoji) => (
-                  <button key={emoji} type="button" className="cm-duvida-emoji-btn" onClick={() => inserirEmoji(emoji)}>
-                    {emoji}
-                  </button>
-                ))}
-              </div>
+              <EmojiPicker onEmojiClick={inserirEmoji} height={350} width={300} previewConfig={{ showPreview: false }} />
             </div>
           )}
         </div>

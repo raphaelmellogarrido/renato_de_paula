@@ -3,6 +3,26 @@ import { Star, Trash2 } from "lucide-react";
 import { iniciais, formatarDataBr } from "./comentariosUtils";
 import ImageLightbox from "./ImageLightbox";
 
+// Escapa os 3 caracteres que importam antes de injetar via
+// dangerouslySetInnerHTML abaixo — comentario.comentario é texto de
+// aluno, nunca confiar nele cru. Feito ANTES de aplicar os marcadores de
+// markdown (senão um "<" digitado pelo aluno vazaria como HTML de verdade).
+function escaparHtml(texto) {
+  return texto.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+// Converte os marcadores **negrito**/*itálico* (inseridos pela toolbar B/I
+// de DificuldadeDoDia.jsx, ver aplicarMarcador lá) em <strong>/<em> — sem
+// isso os marcadores apareciam crus no feed ("**olá**") em vez de
+// formatados. Negrito primeiro: consome os pares de ** antes do regex de
+// itálico rodar, então um * sozinho nunca é confundido com metade de um **.
+function renderizarMarkdown(texto) {
+  const html = escaparHtml(texto || "")
+    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.+?)\*/g, "<em>$1</em>");
+  return <span dangerouslySetInnerHTML={{ __html: html }} />;
+}
+
 // 2 contas fixas com destaque visual + poder de apagar qualquer comentário
 // (pedido do cliente). Orientador tem destaque MAIOR que Administrador
 // (borda dourada + brilho + estrela) — não é hierarquia de permissão, os
@@ -161,7 +181,7 @@ function ComentarioCard({ comentario, podeExcluir, emailAtual, onExcluir, podeRe
             )}
           </span>
         </div>
-        <p className="cm-comentario-card-texto">{comentario.comentario}</p>
+        <p className="cm-comentario-card-texto">{renderizarMarkdown(comentario.comentario)}</p>
 
         {/* Foto anexada (se houver): própria linha, alinhada à esquerda,
             logo abaixo do texto. Pedido do cliente 26/08 (2ª mudança): antes
