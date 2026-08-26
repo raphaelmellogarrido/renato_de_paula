@@ -230,6 +230,22 @@ function DificuldadeDoDia() {
   // Ref (não state): só controla um branch dentro do callback do
   // setInterval, não precisa re-renderizar nada.
   const isDeletingRef = useRef(false);
+  // true enquanto um fetch de verificarNovidades já está em voo — trava
+  // NOVOS ticks do polling até este resolver (bug real 26/08: "comentário
+  // aleatório aparece no topo pro usuário comum quando o admin exclui algo,
+  // pro admin fica perfeito"). isDeletingRef acima só protege quem está
+  // excluindo (o próprio admin/dono); um usuário passivo só OLHANDO o feed
+  // (like o Breno no relato) continua com seu polling rodando normalmente
+  // durante a exclusão de outra pessoa — sem essa trava, um tick que demorou
+  // mais que POLL_INTERVALO_MS (rede lenta) podia resolver DEPOIS de um tick
+  // mais novo já ter aplicado a remoção: a resposta atrasada ainda trazia o
+  // comentário (snapshot de ANTES do DELETE), mas `itensRef.current` nesse
+  // meio-tempo já não tinha mais ele — o filtro `!idsAtuais.has(c.id)`
+  // achava "isso é novo" e reinseria o comentário já excluído de volta no
+  // topo. Travando ticks sobrepostos, cada resposta sempre reflete o estado
+  // imediatamente anterior a ela mesma, nunca um estado já ultrapassado por
+  // um tick mais recente.
+  const pollEmVooRef = useRef(false);
   // Ids (topo + respostas) vistos no último tick que ENXERGOU essa mesma
   // janela do servidor (offset=0, os TAMANHO_INICIAL mais recentes) —
   // baseline pra detectar exclusão de outro usuário/admin, ver
@@ -263,6 +279,7 @@ function DificuldadeDoDia() {
   // soma/subtrai o que mudou. offset acompanha só o topo (respostas não
   // contam pra paginação) pra carregarMais continuar batendo com o backend.
   const verificarNovidades = useCallback(() => {
+    pollEmVooRef.current = true;
     buscarComentarios(`${COMENTARIOS_URL}?aula_id=${AULA_ID}&limit=${TAMANHO_INICIAL}&offset=0`)
       .then((dados) => {
         const recentes = Array.isArray(dados?.itens) ? dados.itens : [];
@@ -322,6 +339,9 @@ function DificuldadeDoDia() {
         // vez, o próximo tick de 3s tenta de novo. Nunca derruba o feed já
         // pintado por causa disso, nem atualiza idsConhecidosRef (baseline
         // só avança quando o fetch realmente resolve).
+      })
+      .finally(() => {
+        pollEmVooRef.current = false;
       });
   }, []);
 
@@ -336,6 +356,11 @@ function DificuldadeDoDia() {
       // volta no topo do feed. Pausa aqui, refetch completo em
       // handleExcluir garante a lista real assim que a exclusão confirma.
       if (isDeletingRef.current) return;
+      // Trava contra tick sobreposto — ver comentário na declaração de
+      // pollEmVooRef acima. Se o tick anterior ainda não resolveu, pula esta
+      // vez; o próximo intervalo de 3s tenta de novo com o estado já mais
+      // atual.
+      if (pollEmVooRef.current) return;
       verificarNovidades();
     }, POLL_INTERVALO_MS);
     return () => clearInterval(id);
