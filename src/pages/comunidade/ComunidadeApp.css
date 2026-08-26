@@ -1071,9 +1071,17 @@
   color: var(--cm-text);
   /* encolhe e trunca em vez de forçar o wrap da linha inteira (ver
      comentário em .cm-comentario-card-topo acima) — min-width:0 é
-     obrigatório pro flex item conseguir encolher abaixo do texto inteiro. */
+     obrigatório pro flex item conseguir encolher abaixo do texto inteiro.
+     flex-grow:0 (26/08, bug relatado: "ADMINISTRADOR" longe do nome) — com
+     grow:1 essa caixa esticava pra ocupar todo o espaço livre da linha (até
+     encostar no cluster -topo-direita, empurrado pro fim via
+     margin-left:auto nele), e como o texto fica alinhado à esquerda dentro
+     da caixa esticada, sobrava um vão enorme antes do badge (que vem logo
+     depois do nome no JSX). Só o shrink:1 é necessário pra truncar nome
+     longo — sem grow, nome e badge ficam grudados e é só o cluster da
+     direita que vai pro fim da linha. */
   min-width: 0;
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1135,31 +1143,35 @@
   word-break: break-word;
 }
 
-/* Miniatura da foto anexada a um comentário (image_url) — no rodapé
-   (.cm-comentario-card-rodape, ver regra acima), ao lado/à direita do
-   "Responder" (mudou de lugar em 26/08 — antes ficava no cabeçalho, no
-   cluster -topo-direita, ANTES da data). 40x40, rounded 6px, flex-shrink:0.
+/* Miniatura da foto anexada a um comentário (image_url) — própria linha,
+   alinhada à esquerda, logo abaixo do texto e ACIMA do "Responder" (2ª
+   mudança do cliente em 26/08: antes ficava lado a lado com "Responder"
+   nesse mesmo rodapé, empurrada pro fim da linha via -rodape, que foi
+   removido — agora é só um <button> block normal na ordem do JSX). Cresceu
+   de 40x40 pra 84x84 nessa mudança (pedido do cliente: "maior"). rounded
+   10px (proporcional ao tamanho novo), flex-shrink:0 continua útil quando
+   este botão é filho de algum flex (nenhum caso hoje, mas barato manter).
    Clique abre o lightbox (ImageLightbox.jsx). */
 .cm-comentario-card-foto-mini {
   display: block;
-  width: 40px;
-  height: 40px;
-  margin: 0;
+  width: 84px;
+  height: 84px;
+  margin: 6px 0 0;
   padding: 0;
   background: none;
   border: none;
-  border-radius: 6px;
+  border-radius: 10px;
   flex-shrink: 0;
   line-height: 0;
   cursor: zoom-in;
 }
 
 .cm-comentario-card-foto-mini img {
-  width: 40px;
-  height: 40px;
+  width: 84px;
+  height: 84px;
   object-fit: cover;
   border: 1px solid var(--cm-border);
-  border-radius: 6px;
+  border-radius: 10px;
   display: block;
 }
 
@@ -1233,36 +1245,32 @@
   font: inherit;
   cursor: pointer;
   text-decoration: none;
+  /* text-align:left (26/08, bug relatado: nome centralizado só na visão do
+     admin) — <button> nativo já vem com text-align:center no CSS padrão do
+     navegador, e nada aqui sobrescrevia isso. Só afeta quem vê ESTE nome
+     como botão clicável (podeEnviarMensagem=true na visão de admin/
+     orientador, ver nomeClicavel em ComentarioCard.jsx) — pra aluno comum o
+     nome sempre foi <span> (sem esse default do <button>), por isso nunca
+     apareceu centralizado nessa visão. */
+  text-align: left;
 }
 
 .cm-comentario-card-nome-clicavel:hover {
   text-decoration: underline;
 }
 
-/* Rodapé do card: "Responder" (Tarefa 1) + miniatura da foto anexada
-   (image_url), lado a lado logo abaixo do texto do comentário — a foto saiu
-   do cabeçalho (ao lado da data) e desceu pra cá em 26/08 (pedido do
-   cliente: "abaixo e à direita do Responder"). margin-left:auto mora na
-   PRÓPRIA foto (regra logo abaixo), não aqui no wrapper — assim ela vai pro
-   fim da linha tanto quando "Responder" existe (caso normal) quanto sozinha
-   (ComentariosFeed.jsx não passa onResponder, então às vezes só a foto
-   aparece aqui). */
-.cm-comentario-card-rodape {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 4px;
-}
-
-.cm-comentario-card-rodape .cm-comentario-card-foto-mini {
-  margin-left: auto;
-}
-
+/* "Responder" (Tarefa 1) — bloco próprio, abaixo da foto anexada quando ela
+   existe (ver .cm-comentario-card-foto-mini acima) ou direto abaixo do texto
+   quando não há foto. Já foi lado a lado com a foto num wrapper
+   -rodape (removido na 2ª mudança de 26/08: cliente pediu foto e Responder
+   cada um na sua própria linha, foto em cima). margin-top substitui o
+   margin-top:4px que antes vinha do wrapper. */
 .cm-comentario-card-responder-btn {
   display: inline-block;
   background: none;
   border: none;
   padding: 0;
+  margin-top: 6px;
   font-size: 0.76rem;
   font-weight: 600;
   color: var(--cm-text-soft);
@@ -4905,9 +4913,11 @@ h3.cm-config-subtitle {
      align-self:center (.cm-comentario-card-topo-direita > *, ambos lá em
      cima) — aqui só reforça o mesmo eixo pro cluster inteiro, garantindo
      que sobrevive mesmo com o card agora de altura variável (Problema 1). A
-     foto mini (image_url) saiu daqui em 26/08 — a regra de encolher ela pra
-     32px no celular, logo abaixo, agora vale pra onde ela mora hoje (rodapé,
-     ao lado do "Responder"), não precisou mudar por ser um seletor geral. */
+     foto mini (image_url) saiu daqui em 26/08 — a regra de encolher ela no
+     celular, logo abaixo, agora vale pra onde ela mora hoje (própria linha,
+     abaixo do texto), não precisou mudar por ser um seletor geral. Valor
+     ajustado de 32px pra 64px na 2ª mudança do mesmo dia, pra acompanhar o
+     tamanho maior de 84px do desktop (.cm-comentario-card-foto-mini). */
   .cm-comentario-card-topo {
     display: flex;
     align-items: center;
@@ -4922,7 +4932,7 @@ h3.cm-config-subtitle {
 
   .cm-comentario-card-foto-mini,
   .cm-comentario-card-foto-mini img {
-    width: 32px;
-    height: 32px;
+    width: 64px;
+    height: 64px;
   }
 }

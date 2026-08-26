@@ -67,10 +67,11 @@ function ComentarioCard({ comentario, podeExcluir, onExcluir, podeResponder = tr
   // cortados pelo overflow:hidden. Em ComentariosFeed.jsx (fora de .cm-duvida)
   // não tem efeito nenhum, já que lá a altura já é automática.
   // comentario.image_url entrou aqui em 26/08 (pedido do cliente: foto mini
-  // saiu do cabeçalho e foi pro rodapé, do lado do "Responder" — ver -rodape
-  // abaixo) — sem isso, em "Sua prática hoje" (.cm-duvida, card travado em
-  // 92px) a foto no rodapé ficaria cortada pelo overflow:hidden sempre que
-  // não houvesse resposta aberta nem respostas já existentes.
+  // saiu do cabeçalho e foi pra baixo do texto, acima do "Responder" — ver
+  // JSX abaixo) — sem isso, em "Sua prática hoje" (.cm-duvida, card travado
+  // em 92px) a foto ficaria cortada pelo overflow:hidden sempre que não
+  // houvesse resposta aberta nem respostas já existentes. Vale ainda mais
+  // agora que a foto ficou maior e empilhada (2ª mudança, mesmo dia).
   const classeExpandido = respondendoAberto || temRespostas || comentario.image_url ? "cm-comentario-card-expandido" : "";
   // Não faz sentido mandar mensagem privada pra outro admin/orientador —
   // só o nome de alunos "normais" vira clicável.
@@ -126,8 +127,8 @@ function ComentarioCard({ comentario, podeExcluir, onExcluir, podeResponder = tr
                 margin-left:auto está no wrapper, não mais em -quando sozinho):
                 data -> lixeira (se podeExcluir), gap:8px entre eles,
                 centralizados verticalmente. A foto (image_url) NÃO mora mais
-                aqui (saiu em 26/08, pedido do cliente) — foi pro rodapé, do
-                lado do "Responder", ver -rodape logo abaixo do parágrafo. */}
+                aqui (saiu em 26/08, pedido do cliente) — foi pra baixo do
+                texto, própria linha, ver logo abaixo do parágrafo. */}
           <span className="cm-comentario-card-topo-direita">
             <span className="cm-comentario-card-quando">{formatarDataBr(comentario.created_at)}</span>
             {podeExcluir && (
@@ -139,26 +140,22 @@ function ComentarioCard({ comentario, podeExcluir, onExcluir, podeResponder = tr
         </div>
         <p className="cm-comentario-card-texto">{comentario.comentario}</p>
 
-        {/* Rodapé: "Responder" (se houver) + miniatura da foto anexada (se
-            houver), sempre nessa ordem, foto empurrada pro fim da linha
-            (margin-left:auto nela mesma no CSS, não no wrapper — assim
-            funciona tanto com os dois quanto só com a foto sozinha, caso de
-            ComentariosFeed.jsx que não passa onResponder). Pedido do cliente
-            26/08: a foto morava no cabeçalho ao lado da data; desceu pra cá,
-            um pouco abaixo e à direita do "Responder". */}
-        {((podeResponder && onResponder) || comentario.image_url) && (
-          <div className="cm-comentario-card-rodape">
-            {podeResponder && onResponder && (
-              <button type="button" className="cm-comentario-card-responder-btn" onClick={() => setRespondendoAberto((v) => !v)}>
-                Responder
-              </button>
-            )}
-            {comentario.image_url && (
-              <button type="button" className="cm-comentario-card-foto-mini" aria-label="Ampliar foto" onClick={() => setLightboxAberto(true)}>
-                <img src={comentario.image_url} alt="" />
-              </button>
-            )}
-          </div>
+        {/* Foto anexada (se houver): própria linha, alinhada à esquerda,
+            logo abaixo do texto. Pedido do cliente 26/08 (2ª mudança): antes
+            ficava lado a lado com "Responder" nesse mesmo rodapé (empurrada
+            pro fim da linha) — agora cada um fica em sua própria linha,
+            foto primeiro (maior que antes) e "Responder" depois, abaixo
+            dela. */}
+        {comentario.image_url && (
+          <button type="button" className="cm-comentario-card-foto-mini" aria-label="Ampliar foto" onClick={() => setLightboxAberto(true)}>
+            <img src={comentario.image_url} alt="" />
+          </button>
+        )}
+
+        {podeResponder && onResponder && (
+          <button type="button" className="cm-comentario-card-responder-btn" onClick={() => setRespondendoAberto((v) => !v)}>
+            Responder
+          </button>
         )}
 
         {respondendoAberto && (
