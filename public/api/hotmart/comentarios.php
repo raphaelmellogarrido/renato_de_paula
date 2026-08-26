@@ -23,6 +23,7 @@ garantirEstruturaClube($mysqli); // cria a tabela comentarios se ainda não exis
 $metodo = $_SERVER['REQUEST_METHOD'];
 
 if ($metodo === 'GET') {
+    $inicio = microtime(true);
     $aulaId = trim($_GET['aula_id'] ?? '') ?: 'geral';
 
     // Dois jeitos de pedir página no mesmo endpoint: `page`/`per_page` (usado
@@ -144,6 +145,11 @@ if ($metodo === 'GET') {
     // mostra "Você chegou ao fim" (ComentariosFeed.jsx com page/pages
     // continua ignorando esse campo, não quebra nada pra ele).
     $hasMore = ($offset + count($itens)) < $total;
+
+    $duracaoMs = round((microtime(true) - $inicio) * 1000);
+    if ($duracaoMs > 300) {
+        error_log("[timing] comentarios.php GET (aula_id={$aulaId}): {$duracaoMs}ms");
+    }
 
     echo json_encode(['ok' => true, 'itens' => $itens, 'total' => $total, 'page' => $page, 'pages' => $pages, 'hasMore' => $hasMore]);
     exit;

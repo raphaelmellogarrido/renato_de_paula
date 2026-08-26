@@ -113,6 +113,10 @@ export default function AulasMeditacaoRaiz() {
   );
   const [loading, setLoading] = useState(() => lerCatalogoCache() === null);
   const [erroCatalogo, setErroCatalogo] = useState(false);
+  // Incrementado pelo botão "Tentar novamente" na tela de erro — dependência
+  // do efeito de catálogo abaixo só pra forçar ele a rodar de novo, sem
+  // precisar duplicar a lógica de fetch num handler separado.
+  const [tentativaCatalogo, setTentativaCatalogo] = useState(0);
   // progressoCarregado: true quando o GET de progresso já resolveu (ou não
   // há sessão, então não há o que esperar) — usado tanto pra segurar a
   // renderização (evita flash no Dia 0 antes de "pular" pra aula certa)
@@ -170,12 +174,13 @@ export default function AulasMeditacaoRaiz() {
   // fica pro efeito de "continuar de onde parou" logo abaixo, que também
   // precisa do progresso carregado antes de escolher.
   useEffect(() => {
-    // AbortController com timeout de 8s: se o backend travar, desiste e
-    // libera a tela (com a mensagem de erro) em vez de deixar
-    // "Carregando suas aulas..." pra sempre. finally garante setLoading(false)
-    // em qualquer desfecho (sucesso, erro de rede ou timeout).
+    // AbortController com timeout de 5s: se o backend travar, desiste e
+    // libera a tela (com a mensagem de erro + botão "Tentar novamente") em
+    // vez de deixar "Carregando suas aulas..." pra sempre. finally garante
+    // setLoading(false) em qualquer desfecho (sucesso, erro de rede ou
+    // timeout).
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
     // Snapshot do cache ANTES do fetch — decide se um erro de rede pode
     // aparecer como tela de erro (sem cache) ou deve só manter o catálogo já
     // pintado na tela (com cache), sem interromper quem já está navegando.
@@ -187,6 +192,7 @@ export default function AulasMeditacaoRaiz() {
         const listaDias = Array.isArray(data?.dias) ? data.dias : [];
         setDias(listaDias);
         salvarCatalogoCache(listaDias);
+        setErroCatalogo(false);
       })
       .catch((err) => {
         console.error("Erro ao carregar catálogo de aulas-raiz:", err);
@@ -201,7 +207,7 @@ export default function AulasMeditacaoRaiz() {
       controller.abort();
       clearTimeout(timeoutId);
     };
-  }, []);
+  }, [tentativaCatalogo]);
 
   // Progresso: o estado já nasce carregado do localStorage (garante que uma
   // marca local nunca "some", mesmo antes desse efeito rodar). Aqui só
@@ -210,13 +216,13 @@ export default function AulasMeditacaoRaiz() {
   useEffect(() => {
     if (!email) return;
 
-    // Mesmo padrão do fetch do catálogo acima: timeout de 8s via
+    // Mesmo padrão do fetch do catálogo acima: timeout de 5s via
     // AbortController, e finally garante setProgressoCarregado(true) mesmo
     // se o PHP travar — sem isso a tela ficaria presa em "Carregando suas
     // aulas..." (guarda lá embaixo, no render) esperando um progresso que
     // nunca chega.
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
 
     fetch(`${PROGRESSO_AULAS_RAIZ_URL}?email=${encodeURIComponent(email)}`, { signal: controller.signal })
       .then((r) => r.json())
@@ -464,8 +470,36 @@ export default function AulasMeditacaoRaiz() {
   if (erroCatalogo || !dias.length) {
     return (
       <div style={{ padding: 40 }}>
-        Nenhum vídeo encontrado em curso-meditacao-raiz. Em produção, confirme se a variável de
-        ambiente CURSO_RAIZ_DIR está configurada no painel da Hostinger (ver HANDOFF.md).
+        <p style={{ margin: "0 0 14px" }}>
+          {erroCatalogo
+            ? "Não foi possível carregar suas aulas agora. Verifique sua internet e tente de novo."
+            : "Nenhum vídeo encontrado em curso-meditacao-raiz. Em produção, confirme se a variável de ambiente CURSO_RAIZ_DIR está configurada no painel da Hostinger (ver HANDOFF.md)."}
+        </p>
+        {erroCatalogo && (
+          <button
+            type="button"
+            onClick={() => {
+              // Zera o erro e volta pra tela de carregando ANTES do efeito
+              // rodar de novo (setState aqui, no handler de clique, não
+              // dentro do efeito — evita cascata de renders).
+              setErroCatalogo(false);
+              setLoading(true);
+              setTentativaCatalogo((n) => n + 1);
+            }}
+            style={{
+              background: "var(--cm-sage)",
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              padding: "10px 20px",
+              fontSize: "0.9rem",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Tentar novamente
+          </button>
+        )}
       </div>
     );
   }

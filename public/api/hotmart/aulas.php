@@ -11,25 +11,40 @@ $method = $_SERVER['REQUEST_METHOD'];
 $email = $_GET['email'] ?? $_POST['email'] ?? '';
 
 if ($method === 'GET') {
-    // Lista aulas + progresso do usuario se email vier
+    $inicio = microtime(true);
+
+    // Lista aulas + progresso do usuario, numa query só (LEFT JOIN em vez do
+    // SELECT por aula dentro do while de antes — N+1: com N aulas liberadas
+    // e email preenchido eram 1 + N queries a cada carregamento da tela de
+    // aulas). email='' quando não vier nenhum (visitante sem sessão) nunca
+    // bate com pa.email de verdade, então o LEFT JOIN só resolve NULL e cai
+    // no fallback 0/false abaixo — mesmo comportamento de antes.
+    $stmt = $mysqli->prepare(
+        "SELECT ar.*, pa.progresso_percent, pa.assistida
+         FROM aulas_raiz ar
+         LEFT JOIN progresso_aulas pa ON pa.aula_id = ar.id AND pa.email = ?
+         WHERE ar.liberada = 1
+         ORDER BY ar.ordem ASC, ar.id ASC"
+    );
+    $stmt->bind_param('s', $email);
+    $stmt->execute();
+    $res = $stmt->get_result();
     $aulas = [];
-    $res = $mysqli->query("SELECT * FROM aulas_raiz WHERE liberada=1 ORDER BY ordem ASC, id ASC");
-    while($row = $res->fetch_assoc()) {
-        $row['progresso'] = 0;
-        $row['assistida'] = false;
-        if ($email) {
-            $stmt = $mysqli->prepare("SELECT progresso_percent, assistida FROM progresso_aulas WHERE email=? AND aula_id=?");
-            $stmt->bind_param('si', $email, $row['id']);
-            $stmt->execute();
-            $pr = $stmt->get_result()->fetch_assoc();
-            if ($pr) {
-                $row['progresso'] = (int)$pr['progresso_percent'];
-                $row['assistida'] = (bool)$pr['assistida'];
-            }
-            $stmt->close();
-        }
+    while ($row = $res->fetch_assoc()) {
+        $row['progresso'] = $row['progresso_percent'] !== null ? (int) $row['progresso_percent'] : 0;
+        $row['assistida'] = (bool) $row['assistida'];
+        unset($row['progresso_percent']);
         $aulas[] = $row;
     }
+    $stmt->close();
+
+    // Log de timing (Hostinger não dá acesso a slow query log) — só grava
+    // quando passa de 300ms, pra não poluir o error_log em uso normal.
+    $duracaoMs = round((microtime(true) - $inicio) * 1000);
+    if ($duracaoMs > 300) {
+        error_log("[timing] aulas.php GET: {$duracaoMs}ms");
+    }
+
     echo json_encode(['ok'=>true, 'aulas'=>$aulas]);
     exit;
 }

@@ -47,33 +47,55 @@ $semana = (int) $res->fetch_assoc()['sem'];
 // ANTES do DELETE abaixo e independente da tabela desafio_semana já existir
 // — o reset "vale" a partir de agora mesmo que ninguém tenha marcado nada
 // ainda essa semana.
+//
+// CREATE TABLE fica FORA da transação de propósito: DDL causa commit
+// implícito no MySQL/InnoDB, então uma transação aberta antes dela não
+// protegeria nada — o begin_transaction() abaixo (INSERT do marcador + o
+// DELETE mais adiante) é quem precisa ser atômico de verdade.
 $mysqli->query(
     "CREATE TABLE IF NOT EXISTS desafio_semana_reset (
         semana INT NOT NULL PRIMARY KEY,
         resetado_em DATETIME NOT NULL
     )"
 );
-$stmtReset = $mysqli->prepare(
-    "INSERT INTO desafio_semana_reset (semana, resetado_em) VALUES (?, NOW())
-     ON DUPLICATE KEY UPDATE resetado_em = NOW()"
-);
-$stmtReset->bind_param('i', $semana);
-$stmtReset->execute();
-$stmtReset->close();
 
-// A tabela desafio_semana só existe depois do primeiro check de algum
-// aluno (criada por desafio-semana.php, não por garantirEstruturaClube) —
-// se ainda não existir, não há nada pra resetar, mas isso não é erro.
-$existeTabela = $mysqli->query("SHOW TABLES LIKE 'desafio_semana'");
-if (!$existeTabela || $existeTabela->num_rows === 0) {
-    echo json_encode(['ok' => true, 'linhasApagadas' => 0, 'semana' => $semana]);
+// Transação: marcador de reset + DELETE precisam acontecer juntos. Sem isso,
+// uma falha entre os dois passos deixava o banco num estado inconsistente
+// (ex: marcador gravado mas DELETE não rodou, ou vice-versa) — em botão
+// admin que zera progresso de todo mundo, meio caminho é pior que erro.
+$mysqli->begin_transaction();
+
+try {
+    $stmtReset = $mysqli->prepare(
+        "INSERT INTO desafio_semana_reset (semana, resetado_em) VALUES (?, NOW())
+         ON DUPLICATE KEY UPDATE resetado_em = NOW()"
+    );
+    $stmtReset->bind_param('i', $semana);
+    $stmtReset->execute();
+    $stmtReset->close();
+
+    // A tabela desafio_semana só existe depois do primeiro check de algum
+    // aluno (criada por desafio-semana.php, não por garantirEstruturaClube) —
+    // se ainda não existir, não há nada pra resetar, mas isso não é erro.
+    $existeTabela = $mysqli->query("SHOW TABLES LIKE 'desafio_semana'");
+    if (!$existeTabela || $existeTabela->num_rows === 0) {
+        $mysqli->commit();
+        echo json_encode(['ok' => true, 'linhasApagadas' => 0, 'semana' => $semana]);
+        exit;
+    }
+
+    $stmt = $mysqli->prepare("DELETE FROM desafio_semana WHERE semana = ?");
+    $stmt->bind_param('i', $semana);
+    $stmt->execute();
+    $linhasApagadas = $stmt->affected_rows;
+    $stmt->close();
+    $mysqli->commit();
+} catch (mysqli_sql_exception $e) {
+    $mysqli->rollback();
+    error_log('[resetar_desafios] falhou, rollback: ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['erro' => 'Falha ao resetar, nada foi alterado']);
     exit;
 }
-
-$stmt = $mysqli->prepare("DELETE FROM desafio_semana WHERE semana = ?");
-$stmt->bind_param('i', $semana);
-$stmt->execute();
-$linhasApagadas = $stmt->affected_rows;
-$stmt->close();
 
 echo json_encode(['ok' => true, 'linhasApagadas' => $linhasApagadas, 'semana' => $semana]);

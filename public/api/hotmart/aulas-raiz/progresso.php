@@ -17,6 +17,7 @@ garantirEstruturaClube($mysqli); // cria progresso_aulas_raiz se ainda não exis
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET') {
+    $inicio = microtime(true);
     $email = strtolower(trim($_GET['email'] ?? ''));
     if (!$email) {
         http_response_code(400);
@@ -52,6 +53,11 @@ if ($method === 'GET') {
     // decidir se "já é um novo dia" no bloqueio por calendário (ver
     // progressoDias.js/podeAssistir). Sem isso, um dispositivo com fuso
     // diferente de BRT podia destravar o próximo dia cedo/tarde demais.
+    $duracaoMs = round((microtime(true) - $inicio) * 1000);
+    if ($duracaoMs > 300) {
+        error_log("[timing] aulas-raiz/progresso.php GET: {$duracaoMs}ms");
+    }
+
     echo json_encode(['ok' => true, 'aulas' => $aulas, 'hoje' => date('Y-m-d')]);
     exit;
 }

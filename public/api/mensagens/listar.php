@@ -45,13 +45,19 @@ if (!empty($_GET['apenas_contagem'])) {
 // de equipe (EMAIL_ADMINISTRADOR/EMAIL_ORIENTADOR, ver ComentarioCard.jsx)
 // têm registro em `alunos` como qualquer aluno, então o nome real (ex:
 // "Raphael", "reN") já sai direto da coluna alunos.nome.
+// Pega as 300 mais recentes (DESC) e reordena em PHP pra ASC — sem isso um
+// thread muito longo (ano de conversa) traria a tabela inteira numa query só
+// a cada carregamento de Mensagens.jsx. DESC+LIMIT garante que, se algum dia
+// isso cortar histórico, é o passado antigo que some, nunca a mensagem mais
+// recente.
 $stmt = $mysqli->prepare(
     "SELECT mp.id, mp.de_email, mp.para_email, mp.mensagem, mp.lida, mp.created_at,
             a.nome AS de_nome, a.avatar_versao AS de_avatar_versao
      FROM mensagens_privadas mp
      LEFT JOIN alunos a ON a.email = mp.de_email
      WHERE mp.de_email = ? OR mp.para_email = ?
-     ORDER BY mp.created_at ASC"
+     ORDER BY mp.created_at DESC
+     LIMIT 300"
 );
 $stmt->bind_param('ss', $email, $email);
 $stmt->execute();
@@ -73,5 +79,6 @@ while ($row = $res->fetch_assoc()) {
     ];
 }
 $stmt->close();
+$itens = array_reverse($itens); // volta pra ordem cronológica (mais antiga primeiro)
 
 echo json_encode(['ok' => true, 'itens' => $itens]);
