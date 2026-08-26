@@ -665,15 +665,6 @@
   }
 }
 
-/* Desktop grande: trava a largura pra não esticar 100% da viewport em
-   telas muito largas (ex.: monitor ultrawide). */
-@media (min-width: 1025px) {
-  .cm-main {
-    max-width: 1440px;
-    margin: 0 auto;
-  }
-}
-
 /* Login */
 .cm-login-page {
   display: flex;
