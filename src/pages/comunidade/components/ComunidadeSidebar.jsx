@@ -2,6 +2,7 @@ import { NavLink } from "react-router-dom";
 import { Home, Library, Users, Settings, Leaf, LogOut, Mail, Shield } from "lucide-react";
 import useMensagensNaoLidas from "./useMensagensNaoLidas";
 import { isAdminEmail } from "./isAdmin";
+import HamburgerMenu from "./HamburgerMenu";
 
 function iniciais(nome) {
   return nome
@@ -49,6 +50,12 @@ function ComunidadeSidebar({ session, onSair }) {
           <span>POR DR. RENATO DE PAULA</span>
         </div>
       </div>
+
+      {/* Só visível <=768px (ComunidadeApp.css) — brand/nav/footer viram
+          display:none nessa faixa e este botão + o avatar do rodapé (só
+          ele, o resto do card do usuário também some) sobram como os 2
+          únicos elementos do topbar. Ver HamburgerMenu.jsx. */}
+      <HamburgerMenu session={session} onSair={onSair} mensagensNaoLidas={mensagensNaoLidas} />
 
       <nav className="cm-sidebar-nav">
         {NAV_ITEMS.map((item) => (

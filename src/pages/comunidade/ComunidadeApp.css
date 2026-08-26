@@ -362,6 +362,16 @@
   margin: 12px 0 0;
 }
 
+/* Hamburger (HamburgerMenu.jsx) — só existe visualmente <=768px (regras em
+   @media mais abaixo); no desktop fica sempre invisível (a sidebar comum já
+   cobre a navegação). Base aqui fora do @media garante isso mesmo antes do
+   CSS mobile carregar (evita flash do botão/drawer). */
+.cm-hamburger-btn,
+.cm-hamburger-overlay,
+.cm-hamburger-drawer {
+  display: none;
+}
+
 .cm-content {
   flex: 1;
   min-width: 0;
@@ -4784,84 +4794,209 @@ h3.cm-config-subtitle {
     flex-direction: column;
   }
 
-  /* Sidebar esquerda de 240px vira topbar: ícones + card do usuário numa
-     linha (grid-template-areas), "Meditação raiz" abaixo, largura cheia. */
+  /* 26/08, bug relatado: nessa largura (375px) a sidebar virava uma topbar
+     com nav em ícones + card do usuário (nome "Olá Nome" + badge "Membro
+     da comunidade" + Sair) dividindo a MESMA linha via grid-template-areas
+     — sem espaço pra tudo, o conteúdo quebrava/estourava. Trocado por
+     hamburger: o topbar agora só tem 2 elementos lado a lado (botão
+     hamburger à esquerda, avatar à direita); brand, nav completa e o resto
+     do card do usuário (nome/badge/Sair) foram todos pro drawer que abre
+     por cima da página (HamburgerMenu.jsx, renderizado por
+     ComunidadeSidebar.jsx entre o brand e a nav — os dois ficam
+     display:none aqui, então sobra só o botão do hamburger no lugar). */
   .cm-sidebar-left {
     width: 100%;
     height: auto;
     position: static;
-    display: grid;
-    grid-template-areas:
-      "nav footer"
-      "brand brand";
-    grid-template-columns: auto 1fr;
+    display: flex;
+    flex-direction: row;
     align-items: center;
-    gap: 10px 12px;
+    justify-content: space-between;
     padding: 14px 16px;
   }
 
-  .cm-sidebar-nav {
-    grid-area: nav;
-    margin: 0;
-  }
-
-  .cm-sidebar-footer {
-    grid-area: footer;
-    margin-top: 0;
-    padding-top: 0;
-  }
-
+  .cm-sidebar-brand,
+  .cm-sidebar-nav,
   .cm-sidebar-copy {
     display: none;
   }
 
-  /* .cm-ajuda-card--desktop já some a partir de 960px (ver @media lá em
-     cima) — essa faixa (<=768px) está sempre dentro dela, nada a repetir
-     aqui. Ícone do WhatsApp na nav (.cm-sidebar-nav-whatsapp) também já
-     está ligado desde os 960px pelo mesmo motivo. */
-
-  /* Nesta faixa a nav (ícones) divide a linha com o card do usuário
-     (grid-template-areas "nav footer" acima) — em telas de celular
-     estreitas isso deixava pouco espaço e o botão do WhatsApp (fixo,
-     flex-shrink:0) ficava cortado pelo card ao lado. Encolhe um pouco os
-     ícones/padding/gap da nav pra linha inteira caber (pedido do
-     cliente, 26/08). */
-  .cm-sidebar-nav {
-    gap: 2px;
+  .cm-sidebar-footer {
+    margin: 0;
+    padding: 0;
   }
 
-  .cm-sidebar-nav-item {
-    padding: 8px;
-  }
-
-  .cm-sidebar-nav-item svg {
-    width: 16px;
-    height: 16px;
-  }
-
-  .cm-sidebar-nav-whatsapp {
-    width: 32px;
-    height: 32px;
-  }
-
-  .cm-sidebar-nav-whatsapp svg {
-    width: 14px;
-    height: 14px;
-  }
-
-  /* Sem versão mobile própria ainda — some do topbar compacto em vez de
-     quebrar o layout de "nav footer" apertado. A rota /comunidade/mensagens
-     continua acessível por link direto. */
-  .cm-mensagens-card {
+  /* Cards de mensagens/ajuda somem do topbar — "Mensagens" vira link
+     dentro do drawer (com o mesmo badge de não lidas), ajuda desktop já
+     some desde os 960px (ver @media lá em cima). */
+  .cm-mensagens-card,
+  .cm-ajuda-card--desktop {
     display: none !important;
   }
 
-  .cm-sidebar-brand {
-    grid-area: brand;
+  /* Do card do usuário, só o avatar continua visível no topbar — nome,
+     badge e botão Sair também foram pro header do drawer. */
+  .cm-sidebar-user-card {
+    background: none;
+    padding: 0;
+  }
+
+  .cm-sidebar-user-info,
+  .cm-sidebar-logout {
+    display: none;
+  }
+
+  /* Botão hamburger: 3 traços (ver HamburgerMenu.jsx) — quadrado simples
+     sem fundo, do lado esquerdo do topbar (a ordem no DOM já garante isso,
+     já que brand/nav ao redor dele estão display:none acima). */
+  .cm-hamburger-btn {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    background: none;
+    border: none;
+    flex-shrink: 0;
+  }
+
+  .cm-hamburger-btn span {
+    display: block;
+    width: 22px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--cm-text);
+  }
+
+  .cm-hamburger-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 1001;
+  }
+
+  .cm-hamburger-drawer {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: -80%;
+    width: 80%;
+    max-width: 300px;
+    height: 100vh;
     background: var(--cm-beige-soft);
-    border: 1px solid var(--cm-border);
-    border-radius: 16px;
-    padding: 10px 14px;
+    padding: 20px 16px;
+    z-index: 1002;
+    transition: left 0.3s ease;
+    overflow-y: auto;
+  }
+
+  .cm-hamburger-drawer.is-open {
+    left: 0;
+  }
+
+  .cm-hamburger-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 18px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--cm-border);
+  }
+
+  .cm-hamburger-header strong {
+    display: block;
+    font-size: 0.9rem;
+  }
+
+  .cm-hamburger-header .cm-badge-membro {
+    margin-top: 4px;
+  }
+
+  .cm-hamburger-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .cm-hamburger-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 12px;
+    border-radius: 12px;
+    text-decoration: none;
+    color: var(--cm-text-soft);
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  .cm-hamburger-link:hover {
+    background: var(--cm-beige);
+    color: var(--cm-text);
+  }
+
+  .cm-hamburger-link.is-ativo {
+    background: var(--cm-text);
+    color: #fff;
+  }
+
+  .cm-hamburger-badge {
+    margin-left: auto;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    background: var(--cm-red);
+    color: #fff;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    display: grid;
+    place-items: center;
+    line-height: 1;
+  }
+
+  .cm-hamburger-footer {
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid var(--cm-border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .cm-hamburger-whatsapp {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 12px;
+    border-radius: 12px;
+    border: none;
+    background: #25d366;
+    color: #fff;
+    font-size: 0.86rem;
+    font-weight: 600;
+  }
+
+  .cm-hamburger-sair {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 12px;
+    border-radius: 12px;
+    border: none;
+    background: transparent;
+    color: var(--cm-text-soft);
+    font-size: 0.86rem;
+    font-weight: 500;
+  }
+
+  .cm-hamburger-sair:hover {
+    background: var(--cm-beige);
+    color: var(--cm-text);
   }
 
   /* Grid único do conteúdo: 1 ou 2 colunas dependendo do espaço (auto-fit),
@@ -4960,6 +5095,17 @@ h3.cm-config-subtitle {
   .cm-duvida {
     order: 10;
     padding: 20px;
+  }
+}
+
+/* Reforço explícito: hamburger/drawer/overlay nunca aparecem no desktop
+   (a regra base, sem @media, lá em cima já faz isso — aqui é só uma trava
+   a mais, caso a ordem das regras mude no futuro). */
+@media (min-width: 769px) {
+  .cm-hamburger-btn,
+  .cm-hamburger-overlay,
+  .cm-hamburger-drawer {
+    display: none !important;
   }
 }
 
