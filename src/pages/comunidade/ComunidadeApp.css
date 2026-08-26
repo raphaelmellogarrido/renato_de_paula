@@ -403,65 +403,60 @@
   color: var(--cm-text);
 }
 
-/* 26/08: no desktop (sidebar fixa em 240px, ver .cm-sidebar-left), o card do
-   usuário precisa de 2 LINHAS DE VERDADE, cada uma com sua própria largura
-   disponível — linha 1: avatar + "Olá, Nome" (usa a largura toda, Sair não
-   entra nela); linha 2: badge "Membro da comunidade" + Sair (o avatar não
-   entra nela). Um flex row só (a versão anterior) não consegue expressar
-   isso: os 3 filhos (avatar/info/sair) dividem UMA largura só pras 2 linhas
-   juntas, então o Sair "roubava" largura da linha do nome mesmo sem estar
-   nela, sobrando pouco espaço pro badge e cortando o texto. Grid resolve:
-   avatar ocupa a coluna 1 nas 2 linhas; nome ocupa as colunas 2+3 (linha 1,
-   largura toda); badge fica na coluna 2 e Sair na coluna 3, só na linha 2.
-   .cm-sidebar-user-info vira display:contents pra "sumir" como caixa e
-   deixar strong/span (nome/badge) participarem do grid do pai diretamente.
-   Só 1025px+ (26/08: faixa tablet 768-1024 estendida pra usar o hamburger,
-   ver @media max-width:1024px mais abaixo — abaixo de 1025px o card nem
-   aparece, some pro topbar/drawer). */
+/* 26/08: no desktop (sidebar fixa em 240px, ver .cm-sidebar-left), card do
+   usuário em 2 linhas: linha 1 = avatar + "Olá, Nome", linha 2 = badge
+   "Membro da comunidade" (Sair fica sobreposto nela, ancorado no canto).
+   Tentativa anterior usava CSS Grid com o avatar espalhando 2 linhas
+   (grid-row: 1/3) + .cm-sidebar-user-info como display:contents — essa
+   combinação (coluna "auto" dimensionada só por um item que "spanna" 2
+   linhas, sem nenhum outro item de 1 linha só na mesma coluna) fez o avatar
+   sumir. Solução mais simples e robusta: continua sendo o flex row normal
+   (avatar - coluna nome/badge) que SEMPRE mostra o avatar (é só um filho
+   flex comum, sem grid nem display:contents), e o botão Sair sai do fluxo
+   (position:absolute) ancorado embaixo à direita — assim ele não disputa
+   largura com a linha do nome (que é o que cortava o badge antes) e fica
+   alinhado exatamente com a linha do badge, sem depender de nenhum
+   comportamento exótico de grid. padding-right no card reserva o espaço
+   fixo do Sair pra o badge nunca ficar embaixo dele. Só 1025px+ (26/08:
+   faixa tablet 768-1024 estendida pra usar o hamburger, ver @media
+   max-width:1024px mais abaixo — abaixo de 1025px o card nem aparece, some
+   pro topbar/drawer). */
 @media (min-width: 1025px) {
   .cm-sidebar-user-card {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
+    position: relative;
     align-items: center;
-    column-gap: 8px;
-    row-gap: 4px;
-    padding: 8px 10px;
-  }
-
-  .cm-sidebar-user-card .cm-sidebar-avatar {
-    grid-row: 1 / 3;
-    grid-column: 1 / 2;
-  }
-
-  .cm-sidebar-user-info {
-    display: contents;
+    padding: 8px 58px 8px 10px;
+    gap: 8px;
   }
 
   .cm-sidebar-user-info strong {
-    grid-row: 1 / 2;
-    grid-column: 2 / 4;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
+  /* width:100% (em vez de fit-content) + overflow/ellipsis — a versão
+     anterior (fit-content + só nowrap) deixava o texto vazar por cima do
+     botão Sair quando "Membro da comunidade" não cabia nos ~90px que
+     sobram ao lado do avatar. Com largura fixa igual à coluna disponível,
+     o texto que não couber trunca em "…" em vez de sobrepor o Sair. */
   .cm-sidebar-user-card .cm-badge-membro {
-    grid-row: 2 / 3;
-    grid-column: 2 / 3;
-    justify-self: start;
+    justify-content: flex-start;
     font-size: 10px;
     padding: 4px 10px;
     min-height: 0;
-    width: fit-content;
+    width: 100%;
     max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
-    margin-top: 0;
+    margin-top: 3px;
   }
 
   .cm-sidebar-logout {
-    grid-row: 2 / 3;
-    grid-column: 3 / 4;
-    justify-self: end;
+    position: absolute;
+    right: 10px;
+    bottom: 8px;
     flex-direction: row;
     gap: 3px;
     font-size: 10px;
