@@ -66,7 +66,12 @@ function ComentarioCard({ comentario, podeExcluir, onExcluir, podeResponder = tr
   // aberto ou respostas pra mostrar, senão "Responder"/as respostas ficariam
   // cortados pelo overflow:hidden. Em ComentariosFeed.jsx (fora de .cm-duvida)
   // não tem efeito nenhum, já que lá a altura já é automática.
-  const classeExpandido = respondendoAberto || temRespostas ? "cm-comentario-card-expandido" : "";
+  // comentario.image_url entrou aqui em 26/08 (pedido do cliente: foto mini
+  // saiu do cabeçalho e foi pro rodapé, do lado do "Responder" — ver -rodape
+  // abaixo) — sem isso, em "Sua prática hoje" (.cm-duvida, card travado em
+  // 92px) a foto no rodapé ficaria cortada pelo overflow:hidden sempre que
+  // não houvesse resposta aberta nem respostas já existentes.
+  const classeExpandido = respondendoAberto || temRespostas || comentario.image_url ? "cm-comentario-card-expandido" : "";
   // Não faz sentido mandar mensagem privada pra outro admin/orientador —
   // só o nome de alunos "normais" vira clicável.
   const nomeClicavel = podeEnviarMensagem && !autorAdmin && !autorOrientador && typeof onIniciarMensagem === "function";
@@ -119,17 +124,11 @@ function ComentarioCard({ comentario, podeExcluir, onExcluir, podeResponder = tr
           {autorAdmin && <span className="cm-badge-admin">Administrador</span>}
           {/* Cluster da direita, empurrado pro fim da linha em bloco (o
                 margin-left:auto está no wrapper, não mais em -quando sozinho):
-                foto (se tiver) -> data -> lixeira (se podeExcluir), sempre
-                nessa ordem, gap:8px entre eles, centralizados verticalmente.
-                Miniatura 40x40 — nunca mais o bloco de 78px que ficava fora do
-                header como irmão de -corpo; a linha inteira do comentário só
-                cresce com o conteúdo de texto, não com a foto. */}
+                data -> lixeira (se podeExcluir), gap:8px entre eles,
+                centralizados verticalmente. A foto (image_url) NÃO mora mais
+                aqui (saiu em 26/08, pedido do cliente) — foi pro rodapé, do
+                lado do "Responder", ver -rodape logo abaixo do parágrafo. */}
           <span className="cm-comentario-card-topo-direita">
-            {comentario.image_url && (
-              <button type="button" className="cm-comentario-card-foto-mini" aria-label="Ampliar foto" onClick={() => setLightboxAberto(true)}>
-                <img src={comentario.image_url} alt="" />
-              </button>
-            )}
             <span className="cm-comentario-card-quando">{formatarDataBr(comentario.created_at)}</span>
             {podeExcluir && (
               <button type="button" className="cm-comentario-card-excluir" aria-label="Excluir comentário" title="Excluir comentário" onClick={() => onExcluir(comentario.id)}>
@@ -140,10 +139,26 @@ function ComentarioCard({ comentario, podeExcluir, onExcluir, podeResponder = tr
         </div>
         <p className="cm-comentario-card-texto">{comentario.comentario}</p>
 
-        {podeResponder && onResponder && (
-          <button type="button" className="cm-comentario-card-responder-btn" onClick={() => setRespondendoAberto((v) => !v)}>
-            Responder
-          </button>
+        {/* Rodapé: "Responder" (se houver) + miniatura da foto anexada (se
+            houver), sempre nessa ordem, foto empurrada pro fim da linha
+            (margin-left:auto nela mesma no CSS, não no wrapper — assim
+            funciona tanto com os dois quanto só com a foto sozinha, caso de
+            ComentariosFeed.jsx que não passa onResponder). Pedido do cliente
+            26/08: a foto morava no cabeçalho ao lado da data; desceu pra cá,
+            um pouco abaixo e à direita do "Responder". */}
+        {((podeResponder && onResponder) || comentario.image_url) && (
+          <div className="cm-comentario-card-rodape">
+            {podeResponder && onResponder && (
+              <button type="button" className="cm-comentario-card-responder-btn" onClick={() => setRespondendoAberto((v) => !v)}>
+                Responder
+              </button>
+            )}
+            {comentario.image_url && (
+              <button type="button" className="cm-comentario-card-foto-mini" aria-label="Ampliar foto" onClick={() => setLightboxAberto(true)}>
+                <img src={comentario.image_url} alt="" />
+              </button>
+            )}
+          </div>
         )}
 
         {respondendoAberto && (

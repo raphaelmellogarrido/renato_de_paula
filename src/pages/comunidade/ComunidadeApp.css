@@ -1135,12 +1135,11 @@
   word-break: break-word;
 }
 
-/* Miniatura da foto anexada a um comentário (image_url) — dentro do cluster
-   -topo-direita, ANTES da data (ver ordem no JSX/comentário em -topo-direita
-   acima). 40x40, rounded 6px, flex-shrink:0 — nunca estica a linha: a altura
-   do card volta a ser ditada só pelo header de texto + parágrafo (2 linhas
-   clamp), igual um comentário sem foto. Clique abre o lightbox
-   (ImageLightbox.jsx). */
+/* Miniatura da foto anexada a um comentário (image_url) — no rodapé
+   (.cm-comentario-card-rodape, ver regra acima), ao lado/à direita do
+   "Responder" (mudou de lugar em 26/08 — antes ficava no cabeçalho, no
+   cluster -topo-direita, ANTES da data). 40x40, rounded 6px, flex-shrink:0.
+   Clique abre o lightbox (ImageLightbox.jsx). */
 .cm-comentario-card-foto-mini {
   display: block;
   width: 40px;
@@ -1240,10 +1239,27 @@
   text-decoration: underline;
 }
 
-/* Botão "Responder" (Tarefa 1) — discreto, abaixo do texto do comentário. */
+/* Rodapé do card: "Responder" (Tarefa 1) + miniatura da foto anexada
+   (image_url), lado a lado logo abaixo do texto do comentário — a foto saiu
+   do cabeçalho (ao lado da data) e desceu pra cá em 26/08 (pedido do
+   cliente: "abaixo e à direita do Responder"). margin-left:auto mora na
+   PRÓPRIA foto (regra logo abaixo), não aqui no wrapper — assim ela vai pro
+   fim da linha tanto quando "Responder" existe (caso normal) quanto sozinha
+   (ComentariosFeed.jsx não passa onResponder, então às vezes só a foto
+   aparece aqui). */
+.cm-comentario-card-rodape {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.cm-comentario-card-rodape .cm-comentario-card-foto-mini {
+  margin-left: auto;
+}
+
 .cm-comentario-card-responder-btn {
   display: inline-block;
-  margin-top: 4px;
   background: none;
   border: none;
   padding: 0;
@@ -4883,13 +4899,15 @@ h3.cm-config-subtitle {
     word-wrap: break-word;
   }
 
-  /* PROBLEMA 3: foto mini/data/lixeira do cabeçalho (cluster
-     .cm-comentario-card-topo-direita) — encolhe a foto de 40px pra 32px no
-     celular (card mais estreito) mantendo a centralização vertical que já
-     existe via align-items:center (.cm-comentario-card-topo) e
+  /* PROBLEMA 3: data/lixeira do cabeçalho (cluster
+     .cm-comentario-card-topo-direita) — mantém a centralização vertical que
+     já existe via align-items:center (.cm-comentario-card-topo) e
      align-self:center (.cm-comentario-card-topo-direita > *, ambos lá em
      cima) — aqui só reforça o mesmo eixo pro cluster inteiro, garantindo
-     que sobrevive mesmo com o card agora de altura variável (Problema 1). */
+     que sobrevive mesmo com o card agora de altura variável (Problema 1). A
+     foto mini (image_url) saiu daqui em 26/08 — a regra de encolher ela pra
+     32px no celular, logo abaixo, agora vale pra onde ela mora hoje (rodapé,
+     ao lado do "Responder"), não precisou mudar por ser um seletor geral. */
   .cm-comentario-card-topo {
     display: flex;
     align-items: center;
