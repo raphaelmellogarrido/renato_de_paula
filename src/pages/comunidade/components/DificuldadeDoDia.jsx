@@ -685,7 +685,7 @@ function DificuldadeDoDia() {
           <button
             ref={emojiBotaoRef}
             type="button"
-            className={`cm-toolbar-btn ${emojiAberto ? "is-ativo" : ""}`}
+            className={`cm-toolbar-btn cm-btn-emoji ${emojiAberto ? "is-ativo" : ""}`}
             aria-label="Inserir emoji"
             title="Inserir emoji"
             onClick={() => setEmojiAberto((v) => !v)}

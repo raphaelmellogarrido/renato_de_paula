@@ -37,10 +37,21 @@
 
 html {
   scroll-behavior: smooth;
+  /* Trava scroll horizontal do documento (26/08, bug relatado: dava pra
+     arrastar o celular pros lados por causa de algum card estourando
+     100vw). overflow-x:hidden no html+body corta o scroll horizontal em
+     nível de documento independente de qual elemento filho é o culpado —
+     mais robusto que caçar cada card que pode estourar. Não afeta scrolls
+     horizontais internos (ex: .cm-sidebar-nav com overflow-x:auto próprio
+     no mobile), só o do documento inteiro. */
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 body {
   margin: 0;
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 #root {

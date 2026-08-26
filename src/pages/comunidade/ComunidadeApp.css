@@ -46,6 +46,20 @@
   box-sizing: border-box;
 }
 
+/* 26/08, bug relatado: dava pra arrastar a tela pro lado no celular (algum
+   card estourando 100vw). overflow-x:hidden no html/body (index.css) já
+   trava o scroll do documento; aqui é reforço local — se algum filho
+   crescer além do container, ele é cortado aqui em vez de empurrar a
+   largura do .comunidade-app inteiro. */
+.comunidade-app {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+.cm-content {
+  max-width: 100%;
+}
+
 .comunidade-app button {
   font-family: inherit;
   cursor: pointer;
@@ -290,14 +304,28 @@
 }
 
 .cm-badge-membro {
-  display: inline-block;
+  /* 26/08, bug relatado no mobile: pill de fundo cinza com o texto quebrando
+     em 2 linhas e descentralizado dentro do círculo. inline-block deixava o
+     texto alinhar à esquerda da caixa quando ela ficava mais larga que o
+     texto (min-height); flex+justify-content/align-items centraliza nos 2
+     eixos de verdade. white-space:nowrap é o que garante 1 linha só — a
+     largura disponível em .cm-sidebar-user-info (flex:1, min-width:0) é mais
+     que suficiente pro texto em qualquer breakpoint, então nowrap nunca
+     estoura a pill pro lado de fora. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   margin-top: 2px;
-  font-size: 0.62rem;
+  font-size: 12px;
+  line-height: 1.1;
   font-weight: 600;
   color: var(--cm-sage-dark);
   background: var(--cm-sage-soft);
   border-radius: 999px;
-  padding: 1px 8px;
+  padding: 6px 12px;
+  min-height: 28px;
+  white-space: nowrap;
+  text-align: center;
 }
 
 .cm-sidebar-logout {
@@ -760,6 +788,24 @@
   }
 }
 
+/* 26/08, bug relatado: o picker completo (emoji-picker-react) não cabe bem
+   no mobile mesmo com o ajuste de largura acima — print mostrou o campo de
+   busca cortado. Em vez de continuar ajustando a lib de terceiro pro mobile,
+   o botão de emoji some só ali (mantém B/I/foto) e o picker fica reservado
+   pro desktop, onde tem espaço de sobra e abre pra baixo normalmente. */
+@media (max-width: 768px) {
+  .cm-btn-emoji,
+  .cm-duvida-emoji-popover {
+    display: none !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .cm-btn-emoji {
+    display: flex !important;
+  }
+}
+
 .cm-duvida-form-acoes {
   display: flex;
   align-items: center;
@@ -918,6 +964,8 @@
 .cm-comentario-card {
   position: relative;
   display: flex;
+  width: 100%;
+  max-width: 100%;
   /* avatar (36px) + corpo são os 2 únicos filhos diretos agora — foto e
      lixeira moraram pra dentro de -topo-direita (ver comentário lá embaixo),
      então quem dita a altura da linha é sempre o conteúdo de texto, nunca
