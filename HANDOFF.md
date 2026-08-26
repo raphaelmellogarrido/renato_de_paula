@@ -102,6 +102,27 @@ VIDEOS_DIR=/home/u790959747/meditacao-videos  <- ver Problema 1, provavelmente p
 
 ---
 
+## PROBLEMA 3 (26/08): fotos anexadas em "Sua prática hoje" somem em produção (ícone de imagem quebrada no celular)
+
+### Sintoma
+Reportado pelo usuário com screenshots reais do Android/Chrome em produção: fotos que alunos anexam nos comentários de "Sua prática hoje" (`DificuldadeDoDia.jsx`, upload via `upload-imagem-comentario.php`) aparecem como ícone de imagem quebrada em vez de carregar.
+
+### Causa provável (mesmo mecanismo do PROBLEMA 1, ainda não confirmada 100% pra este caso específico)
+`upload-imagem-comentario.php` salva o arquivo em `public/uploads/posts/` (relativo ao próprio script) e devolve a URL `/uploads/posts/<nome>`. Essa pasta está no `.gitignore` (com `.gitkeep` só pra existir no Git) — ou seja, os arquivos enviados por aluno em produção **nunca vêm do Git**. O PROBLEMA 1 já confirmou que a Hostinger recria a pasta do app do zero a cada novo `git push` + deploy, apagando qualquer coisa que não veio do Git. Se esse mesmo comportamento vale pra pasta pública servida via PHP (bem provável, dado que é a mesma conta/plano), toda foto enviada por aluno some no próximo deploy — o que bate exatamente com o sintoma (fotos de comentários antigos quebradas, depois de vários commits/deploys terem passado).
+
+### Correção já aplicada (mitigação no front, não resolve a causa)
+`ComentarioCard.jsx` agora tem `onError` no `<img>` da foto anexada: se a imagem falhar ao carregar, o botão da foto some (em vez de mostrar o glyph feio de imagem quebrada pro aluno). Isso deixa a experiência menos ruim mas **não recupera fotos já perdidas nem impede que fotos novas sumam no próximo deploy**.
+
+### Próximo passo sugerido (mesmo do Problema 1 — infra, não código)
+Mover `public/uploads/posts/` pra fora da pasta que a Hostinger reconstrói a cada deploy, do mesmo jeito que já foi feito pra `VIDEOS_DIR`/`CURSO_RAIZ_DIR`: criar uma pasta persistente (ex: `/home/u790959747/domains/renatodepaula.com/uploads-posts`), configurar `upload-imagem-comentario.php` (e o handler que serve leitura dessas imagens) pra usar um caminho configurável por variável de ambiente/config apontando pra lá, e confirmar que ela sobrevive a um `git push`. Enquanto isso não for feito, qualquer foto enviada por aluno é considerada temporária (some no próximo deploy).
+
+### Arquivos relevantes
+- `public/api/hotmart/upload-imagem-comentario.php` — grava o arquivo e devolve `/uploads/posts/<nome>`.
+- `src/pages/comunidade/components/ComentarioCard.jsx` — `onError` no `<img>` da foto (mitigação no front).
+- `.gitignore` — comentário acima de `public/uploads/posts/*` documentando a suspeita original.
+
+---
+
 ## Outras notas úteis
 - **Vídeos do curso Meditação Raiz (`/comunidade/aulas-raiz`)**: mesmo padrão do Problema 1 acima. O backend serve a pasta `CURSO_RAIZ_DIR` (env var) na rota `/curso-meditacao-raiz`, e monta o catálogo (dias/vídeos/títulos) lendo essa pasta com `fs.readdirSync` — sem cadastro manual em banco. Título de cada arquivo vem de `src/lib/titulosAulasRaiz.js`. **Para funcionar em produção**, crie a variável de ambiente `CURSO_RAIZ_DIR=/home/u790959747/domains/renatodepaula.com/curso-meditacao-raiz` no painel da Hostinger (a pasta com os 49 vídeos já foi enviada manualmente lá, fora do `public_html`) e reinicie o app. Sem essa env var, a rota cai no fallback local (`server/curso-meditacao-raiz/`, vazia) e a página mostra "Nenhum vídeo encontrado".
 

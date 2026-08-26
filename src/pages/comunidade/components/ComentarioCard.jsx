@@ -55,6 +55,16 @@ function ComentarioCard({ comentario, podeExcluir, onExcluir, podeResponder = tr
   const [respondendoAberto, setRespondendoAberto] = useState(false);
   const [textoResposta, setTextoResposta] = useState("");
   const [enviandoResposta, setEnviandoResposta] = useState(false);
+  // 26/08 (bug reportado no celular): fotos antigas enviadas em
+  // "Sua prática hoje" pararam de carregar em produção (ícone de imagem
+  // quebrada). Causa provável: public/uploads/posts/ não sobrevive a um
+  // novo deploy (mesmo problema já documentado em HANDOFF.md pra
+  // server/videos/ e CURSO_RAIZ_DIR — ver nota no .gitignore). Isso é
+  // infra/deploy, não dá pra "consertar" só no front, mas o front não
+  // devia mostrar o ícone feio de imagem quebrada quando isso acontece —
+  // se o <img> falhar ao carregar, simplesmente esconde o botão da foto
+  // em vez de deixar o glyph quebrado visível pro aluno.
+  const [fotoQuebrada, setFotoQuebrada] = useState(false);
   const emailAutor = (comentario.email || "").toLowerCase().trim();
   const autorOrientador = emailAutor === EMAIL_ORIENTADOR;
   const autorAdmin = !autorOrientador && emailAutor === EMAIL_ADMINISTRADOR;
@@ -146,9 +156,9 @@ function ComentarioCard({ comentario, podeExcluir, onExcluir, podeResponder = tr
             pro fim da linha) — agora cada um fica em sua própria linha,
             foto primeiro (maior que antes) e "Responder" depois, abaixo
             dela. */}
-        {comentario.image_url && (
+        {comentario.image_url && !fotoQuebrada && (
           <button type="button" className="cm-comentario-card-foto-mini" aria-label="Ampliar foto" onClick={() => setLightboxAberto(true)}>
-            <img src={comentario.image_url} alt="" />
+            <img src={comentario.image_url} alt="" onError={() => setFotoQuebrada(true)} />
           </button>
         )}
 

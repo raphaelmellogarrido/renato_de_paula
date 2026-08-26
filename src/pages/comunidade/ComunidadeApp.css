@@ -4935,4 +4935,33 @@ h3.cm-config-subtitle {
     width: 64px;
     height: 64px;
   }
+
+  /* PROBLEMA 4 (26/08): data da resposta estourando pra fora da bolha em
+     respostas do Administrador/Orientador. .cm-comentario-card-topo herda
+     flex-wrap:nowrap da regra base (desktop, lá em cima) e nunca é
+     resetado pra mobile — junto com overflow:visible do Problema 1 (que
+     precisa continuar visible pro card crescer em altura), isso deixa o
+     cluster nome+badge+data sem pra onde ir quando não cabe tudo numa
+     linha só: em vez de quebrar, ele vaza pra direita, escapando da
+     bolida. É mais fácil de acontecer numa resposta aninhada
+     (.cm-comentario-respostas indenta com padding-left, sobrando ainda
+     menos largura) com badge "Administrador"/"Orientador" (flex-shrink:0,
+     nunca encolhe) + data lado a lado. Correção: permite quebrar linha
+     igual o resto do card já faz (altura livre) — .cm-comentario-card-nome
+     continua encolhendo primeiro (min-width:0 + ellipsis), e só se ainda
+     assim não couber, o cluster inteiro de .cm-comentario-card-topo-direita
+     (data + lixeira, flex-shrink:0) desce pra 2ª linha dentro da própria
+     bolha em vez de vazar pra fora dela. margin-left:auto da regra base
+     também precisa ser zerado aqui, senão o cluster continua sendo
+     empurrado pra ponta direita mesmo já estando sozinho numa linha nova,
+     ao invés de ficar colado no restante do conteúdo. */
+  .cm-comentario-card-topo {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+
+  .cm-comentario-card-topo-direita {
+    margin-left: 0;
+    flex-wrap: nowrap;
+  }
 }

@@ -33,8 +33,10 @@ server/curso-meditacao-raiz/*
 # public/ pra dist/ do zero, se o deploy da Hostinger reconstruir dist/ a
 # partir do Git a cada push, fotos enviadas por aluno em produção podem
 # não sobreviver a um novo deploy - mesmo problema documentado em
-# HANDOFF.md (Problema 1) pra server/videos. Ainda não confirmado se esse
-# comportamento também afeta a pasta pública servida via PHP (public/api).
+# HANDOFF.md (Problema 1) pra server/videos. 26/08: bug reportado em
+# produção (fotos antigas quebradas no celular) bate com essa suspeita -
+# ver HANDOFF.md (PROBLEMA 3) pro diagnóstico e próximo passo (mover pra
+# pasta persistente fora do deploy, mesmo padrão de VIDEOS_DIR).
 public/uploads/posts/*
 !public/uploads/posts/.gitkeep
 
