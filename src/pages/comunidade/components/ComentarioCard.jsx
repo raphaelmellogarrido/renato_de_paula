@@ -94,39 +94,6 @@ function ComentarioCard({ comentario, podeExcluir, onExcluir, podeResponder = tr
       {comentario.avatar_url ? <img src={comentario.avatar_url} alt="" className="cm-comentario-card-avatar cm-comentario-card-avatar-img" /> : <div className="cm-comentario-card-avatar">{iniciais(comentario.nome)}</div>}
       <div className="cm-comentario-card-corpo">
         <div className="cm-comentario-card-corpo">
-          <div className="cm-comentario-card-topo">
-            {/* ESQUERDA - nome colado na foto */}
-            <div className="cm-comentario-card-topo-esq">
-              {nomeClicavel ? (
-                <button type="button" className="cm-comentario-card-nome cm-comentario-card-nome-clicavel" onClick={() => onIniciarMensagem(comentario)}>
-                  {comentario.nome}
-                </button>
-              ) : (
-                <span className="cm-comentario-card-nome">{comentario.nome}</span>
-              )}
-              {autorOrientador && (
-                <span className="cm-badge-orientador">
-                  <Star size={11} /> Orientador
-                </span>
-              )}
-              {autorAdmin && <span className="cm-badge-admin">Administrador</span>}
-            </div>
-
-            {/* DIREITA - foto + data + lixeira alinhados */}
-            <span className="cm-comentario-card-topo-direita">
-              {comentario.image_url && (
-                <button type="button" className="cm-comentario-card-foto-mini" onClick={() => setLightboxAberto(true)}>
-                  <img src={comentario.image_url} alt="" />
-                </button>
-              )}
-              <span className="cm-comentario-card-quando">{formatarDataBr(comentario.created_at)}</span>
-              {podeExcluir && (
-                <button type="button" className="cm-comentario-card-excluir" onClick={() => onExcluir(comentario.id)}>
-                  <Trash2 size={15} />
-                </button>
-              )}
-            </span>
-          </div>
           {nomeClicavel ? (
             <button type="button" className="cm-comentario-card-nome cm-comentario-card-nome-clicavel" onClick={() => onIniciarMensagem(comentario)} title={`Enviar mensagem para ${comentario.nome}`}>
               {comentario.nome}
