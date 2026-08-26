@@ -34,9 +34,16 @@ export const EMAIL_ORIENTADOR = "rsp.ren@gmail.com";
  *               respostas é opcional (array, mesmo formato de comentario) —
  *               vem embutido do GET de comentarios.php pros comentários
  *               raiz, já renderizado aninhado/indentado abaixo do texto.
- *   podeExcluir bool — se true, mostra a lixeira (decidido pelo usuário
- *               LOGADO, não pelo autor do comentário: admin/orientador
- *               apaga o comentário de qualquer um, não só o próprio)
+ *   podeExcluir bool — true quando quem está LOGADO é admin/orientador:
+ *               nesse caso a lixeira aparece em QUALQUER comentário, não só
+ *               no próprio (pedido do cliente). Um aluno normal também
+ *               apaga o PRÓPRIO comentário — isso é decidido aqui dentro
+ *               comparando `emailAtual` com o autor do comentário, não por
+ *               este prop (que fica reservado pro "apaga tudo" do
+ *               admin/orientador). Backend (comentarios.php DELETE) refaz a
+ *               mesma checagem de dono no servidor — nunca confia só nisso.
+ *   emailAtual  string — email de quem está vendo a tela (useEmailSessao),
+ *               usado só pra decidir se ESTE comentário é do próprio autor.
  *   onExcluir   (id) => void
  *   podeResponder bool (default true) — mostra o botão "Responder". Passado
  *               como false ao renderizar uma RESPOSTA (recursão abaixo) pra
@@ -50,7 +57,7 @@ export const EMAIL_ORIENTADOR = "rsp.ren@gmail.com";
  *               true quando quem está vendo é admin/orientador (Tarefa 2).
  *   onIniciarMensagem (comentario) => void — chamado ao clicar no nome.
  */
-function ComentarioCard({ comentario, podeExcluir, onExcluir, podeResponder = true, onResponder, podeEnviarMensagem = false, onIniciarMensagem }) {
+function ComentarioCard({ comentario, podeExcluir, emailAtual, onExcluir, podeResponder = true, onResponder, podeEnviarMensagem = false, onIniciarMensagem }) {
   const [lightboxAberto, setLightboxAberto] = useState(false);
   const [respondendoAberto, setRespondendoAberto] = useState(false);
   const [textoResposta, setTextoResposta] = useState("");
@@ -68,6 +75,12 @@ function ComentarioCard({ comentario, podeExcluir, onExcluir, podeResponder = tr
   const emailAutor = (comentario.email || "").toLowerCase().trim();
   const autorOrientador = emailAutor === EMAIL_ORIENTADOR;
   const autorAdmin = !autorOrientador && emailAutor === EMAIL_ADMINISTRADOR;
+  // Dono do comentário sempre pode excluir o próprio, mesmo sem ser
+  // admin/orientador — só entra na conta quando emailAtual veio preenchido
+  // (usuário deslogado nunca "é o autor" de nada).
+  const emailAtualNormalizado = (emailAtual || "").toLowerCase().trim();
+  const souAutor = emailAtualNormalizado !== "" && emailAutor === emailAtualNormalizado;
+  const podeExcluirEste = podeExcluir || souAutor;
   const classeDestaque = autorOrientador ? "cm-comentario-card-orientador" : autorAdmin ? "cm-comentario-card-admin" : "";
   const temRespostas = Array.isArray(comentario.respostas) && comentario.respostas.length > 0;
   // Em "Sua prática hoje" (DificuldadeDoDia.jsx) o card tem altura FIXA de
@@ -141,7 +154,7 @@ function ComentarioCard({ comentario, podeExcluir, onExcluir, podeResponder = tr
                 texto, própria linha, ver logo abaixo do parágrafo. */}
           <span className="cm-comentario-card-topo-direita">
             <span className="cm-comentario-card-quando">{formatarDataBr(comentario.created_at)}</span>
-            {podeExcluir && (
+            {podeExcluirEste && (
               <button type="button" className="cm-comentario-card-excluir" aria-label="Excluir comentário" title="Excluir comentário" onClick={() => onExcluir(comentario.id)}>
                 <Trash2 size={15} />
               </button>
@@ -193,7 +206,7 @@ function ComentarioCard({ comentario, podeExcluir, onExcluir, podeResponder = tr
         {Array.isArray(comentario.respostas) && comentario.respostas.length > 0 && (
           <div className="cm-comentario-respostas">
             {comentario.respostas.map((resposta) => (
-              <ComentarioCard key={resposta.id} comentario={resposta} podeExcluir={podeExcluir} onExcluir={onExcluir} podeResponder={false} podeEnviarMensagem={podeEnviarMensagem} onIniciarMensagem={onIniciarMensagem} />
+              <ComentarioCard key={resposta.id} comentario={resposta} podeExcluir={podeExcluir} emailAtual={emailAtual} onExcluir={onExcluir} podeResponder={false} podeEnviarMensagem={podeEnviarMensagem} onIniciarMensagem={onIniciarMensagem} />
             ))}
           </div>
         )}

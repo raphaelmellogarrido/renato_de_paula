@@ -26,8 +26,10 @@ function ComentariosFeed() {
   const [texto, setTexto] = useState("");
   const [enviando, setEnviando] = useState(false);
 
-  // Quem está logado agora — decide se aparece a lixeira em TODO comentário
-  // (não só nos próprios), igual pedido: admin/orientador apaga qualquer um.
+  // Quem está logado agora — decide se a lixeira aparece em TODO comentário
+  // (admin/orientador apaga qualquer um). Um aluno normal também exclui o
+  // PRÓPRIO comentário mesmo com isso false — essa parte é decidida dentro
+  // de ComentarioCard.jsx via o prop emailAtual (comparado ao autor).
   const emailAtualNormalizado = (email || "").toLowerCase().trim();
   const souAdmin = emailAtualNormalizado === EMAIL_ADMINISTRADOR;
   const souOrientador = emailAtualNormalizado === EMAIL_ORIENTADOR;
@@ -143,7 +145,7 @@ function ComentariosFeed() {
       {!carregando && !vazio && (
         <div className="cm-comentarios-lista">
           {itens.map((comentario) => (
-            <ComentarioCard key={comentario.id} comentario={comentario} podeExcluir={podeExcluir} onExcluir={handleExcluir} />
+            <ComentarioCard key={comentario.id} comentario={comentario} podeExcluir={podeExcluir} emailAtual={email} onExcluir={handleExcluir} />
           ))}
         </div>
       )}

@@ -68,11 +68,20 @@ if ($metodo === 'GET') {
     // foto depois, comentários antigos também mostram a foto nova. LEFT (não
     // INNER) porque o autor pode ter sido removido de `alunos` e o
     // comentário continua existindo; nesse caso avatar_url só vem null.
+    // ORDER BY c.created_at DESC, c.id DESC — created_at é DATETIME (granularidade
+    // de segundo, ver _conexao.php); dois comentários no mesmo segundo empatam e o
+    // MySQL não garante ordem estável entre empates. Sem o `id DESC` como
+    // desempate, um refetch (ex: logo após um admin excluir um comentário, ver
+    // handleExcluir em DificuldadeDoDia.jsx) podia devolver os empatados em ordem
+    // diferente do fetch anterior — parecia "apareceu um comentário aleatório no
+    // lugar do que eu excluí", quando na real era só reordenação do mesmo lote.
+    // `id` é auto-increment e único, então desempata sempre igual (mais recente
+    // primeiro = id maior primeiro, mesmo sentido do created_at DESC).
     $stmt = $mysqli->prepare(
         "SELECT c.id, c.email, c.nome, c.comentario, c.image_url, c.created_at, a.avatar_versao
          FROM comentarios c
          LEFT JOIN alunos a ON a.email = c.email
-         WHERE c.aula_id = ? AND c.parent_id IS NULL ORDER BY c.created_at DESC LIMIT ? OFFSET ?"
+         WHERE c.aula_id = ? AND c.parent_id IS NULL ORDER BY c.created_at DESC, c.id DESC LIMIT ? OFFSET ?"
     );
     $stmt->bind_param('sii', $aulaId, $limite, $offset);
     $stmt->execute();
@@ -108,11 +117,13 @@ if ($metodo === 'GET') {
     if ($idsRaiz) {
         $placeholders = implode(',', array_fill(0, count($idsRaiz), '?'));
         $tipos = str_repeat('i', count($idsRaiz));
+        // Mesmo desempate por `id` do SELECT raiz acima, aqui em ASC (ordem
+        // cronológica de leitura das respostas).
         $stmtResp = $mysqli->prepare(
             "SELECT c.id, c.parent_id, c.email, c.nome, c.comentario, c.image_url, c.created_at, a.avatar_versao
              FROM comentarios c
              LEFT JOIN alunos a ON a.email = c.email
-             WHERE c.parent_id IN ($placeholders) ORDER BY c.created_at ASC"
+             WHERE c.parent_id IN ($placeholders) ORDER BY c.created_at ASC, c.id ASC"
         );
         $stmtResp->bind_param($tipos, ...$idsRaiz);
         $stmtResp->execute();
@@ -211,7 +222,11 @@ if ($metodo === 'POST') {
 }
 
 if ($metodo === 'DELETE') {
-    // Excluir comentário — só admins/orientadores (lista fixa abaixo).
+    // Excluir comentário — admins/orientadores (lista fixa abaixo) apagam
+    // QUALQUER comentário; um aluno normal só apaga o PRÓPRIO (pedido do
+    // cliente, 26/08: antes só a lista fixa podia excluir, ninguém mais —
+    // agora compara o email de quem pede com o email do AUTOR do comentário
+    // no banco, não confia em nada que o front mande além do id).
     // Esta API não tem $_SESSION nem cookie nenhum: o "login" da /comunidade
     // é 100% client-side (email salvo em localStorage, ver usuarioStorage.js),
     // não existe autenticação de verdade no servidor em nenhuma outra rota
@@ -219,26 +234,41 @@ if ($metodo === 'DELETE') {
     // caso de uso). Então o e-mail de quem está pedindo o DELETE vem do
     // próprio corpo da requisição, igual ao POST acima já faz — é permissão
     // de usuário como pedido, não um cofre: quem souber o endpoint e mandar
-    // um desses e-mails no body consegue apagar comentário. Risco aceitável
-    // pro que está em jogo (comentário de comunidade), mas não é uma
-    // barreira de segurança forte — sinalizando aqui pra não confundir com
-    // proteção real tipo ADMIN_SECRET.
+    // um e-mail alheio no body se passa por outro autor. Risco aceitável pro
+    // que está em jogo (comentário de comunidade), mas não é uma barreira de
+    // segurança forte — sinalizando aqui pra não confundir com proteção real
+    // tipo ADMIN_SECRET.
     $admins = ['raphaelmellogarrido@gmail.com', 'rsp.ren@gmail.com'];
 
     $input = json_decode(file_get_contents('php://input'), true) ?: [];
     $id = intval($_GET['id'] ?? $input['id'] ?? 0);
     $emailSolicitante = strtolower(trim($input['email'] ?? $_GET['email'] ?? ''));
 
-    if (!in_array($emailSolicitante, $admins, true)) {
-        http_response_code(403);
-        echo json_encode(['erro' => 'Sem permissão para excluir comentários']);
-        exit;
-    }
-
     if ($id <= 0) {
         http_response_code(400);
         echo json_encode(['erro' => 'id inválido']);
         exit;
+    }
+
+    $souAdmin = in_array($emailSolicitante, $admins, true);
+    if (!$souAdmin) {
+        // Não-admin: só pode se for o dono. Busca o autor no banco (nunca
+        // confia num "sou o autor" que viesse do front) — id inexistente
+        // aqui vira 404 mais abaixo, não 403.
+        $stmtAutor = $mysqli->prepare("SELECT email FROM comentarios WHERE id = ?");
+        $stmtAutor->bind_param('i', $id);
+        $stmtAutor->execute();
+        $autor = $stmtAutor->get_result()->fetch_assoc();
+        $stmtAutor->close();
+
+        $emailAutor = $autor ? strtolower(trim($autor['email'])) : null;
+        $souAutor = $emailSolicitante !== '' && $emailAutor !== null && $emailAutor === $emailSolicitante;
+
+        if (!$souAutor) {
+            http_response_code(403);
+            echo json_encode(['erro' => 'Sem permissão para excluir este comentário']);
+            exit;
+        }
     }
 
     $stmt = $mysqli->prepare("DELETE FROM comentarios WHERE id = ?");

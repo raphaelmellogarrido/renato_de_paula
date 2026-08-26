@@ -29,9 +29,11 @@ const TAMANHO_PAGINA = 10;
 // atualizava quando o PRÓPRIO usuário compartilhava algo (carregarInicial()
 // dentro de handleEnviar) — a partilha de outro aluno só aparecia depois de
 // um F5. Mesmo "realtime pobre" de useMensagensNaoLidas.js/Mensagens.jsx
-// (backend é PHP puro na Hostinger, sem WebSocket) — 8s dá a sensação de
-// instantâneo sem pesar demais no servidor.
-const POLL_INTERVALO_MS = 8000;
+// (backend é PHP puro na Hostinger, sem WebSocket). 3s (reduzido de 8s,
+// pedido do cliente, 26/08) — mesmo intervalo de MeditandoJunto.jsx
+// (INTERVALO_MS), pra resposta a um comentário aparecer pra quem já está
+// com o feed aberto quase na hora, não só pra quem respondeu.
+const POLL_INTERVALO_MS = 3000;
 // Limite visual do textarea: card tem ~700px de largura, fonte 14px (~8px/char,
 // ~87 chars/linha) — 2 linhas dariam ~174 chars, mas 140 garante que também
 // caiba em 2 linhas no mobile (card mais estreito). Mesmo limite do
@@ -250,7 +252,14 @@ function DificuldadeDoDia() {
   // (b) remove da lista quem sumiu dessa mesma janela desde o tick anterior
   // — é assim que uma exclusão feita pelo admin some do feed de quem está
   // vendo, sem precisar de F5 (pedido do cliente, 26/08: antes só o próprio
-  // admin via a lista atualizar, via o refetch de handleExcluir). Só mexe
+  // admin via a lista atualizar, via o refetch de handleExcluir); (c)
+  // re-sincroniza `respostas` de comentários-raiz que JÁ estavam na tela —
+  // sem isso, quando alguém respondia um comentário que outro aluno já tinha
+  // carregado, a resposta nunca aparecia pra esse outro aluno (o id do pai
+  // já estava em idsAtuais, então nunca caía no ramo "novos" acima; só quem
+  // respondeu via na hora, via o carregarInicial() do próprio handleResponder).
+  // Pedido do cliente 26/08: resposta a um comentário do feed "Sua prática
+  // hoje" precisa aparecer pra quem está vendo em poucos segundos. Só mexe
   // nessa janela (os TAMANHO_INICIAL mais recentes) — itens carregados via
   // scroll infinito (carregarMais) ficam de fora da checagem, mesma
   // limitação que já existia pra detecção de novidades. Nunca reseta `itens`
@@ -261,6 +270,7 @@ function DificuldadeDoDia() {
     buscarComentarios(`${COMENTARIOS_URL}?aula_id=${AULA_ID}&limit=${TAMANHO_INICIAL}&offset=0`)
       .then((dados) => {
         const recentes = Array.isArray(dados?.itens) ? dados.itens : [];
+        const recentesPorId = new Map(recentes.map((c) => [c.id, c]));
         const idsAtuais = new Set(itensRef.current.map((c) => c.id));
         const novos = recentes.filter((c) => !idsAtuais.has(c.id));
 
@@ -269,8 +279,6 @@ function DificuldadeDoDia() {
           [...idsConhecidosRef.current].filter((id) => !idsRecentes.has(id))
         );
         idsConhecidosRef.current = idsRecentes;
-
-        if (novos.length === 0 && idsRemovidos.size === 0) return;
 
         if (idsRemovidos.size > 0) {
           // só ids de TOPO contam pro offset — respostas removidas não mexem
@@ -281,15 +289,34 @@ function DificuldadeDoDia() {
         if (novos.length > 0) setOffset((atual) => atual + novos.length);
 
         setItens((atual) => {
+          let mudou = novos.length > 0 || idsRemovidos.size > 0;
           const semExcluidos = idsRemovidos.size > 0 ? removerIds(atual, idsRemovidos) : atual;
-          return novos.length > 0 ? [...novos, ...semExcluidos] : semExcluidos;
+          // Troca `respostas` pela versão fresca do servidor sempre que a
+          // lista de ids mudou (nova resposta chegou, ou uma foi excluída
+          // direto por essa via em vez de via idsRemovidos acima) — compara
+          // por ids em vez de só length pra pegar o caso raro de uma
+          // resposta ser excluída e outra chegar no mesmo tick (length bate,
+          // ids não).
+          const comRespostasAtualizadas = semExcluidos.map((c) => {
+            const fresco = recentesPorId.get(c.id);
+            if (!fresco) return c; // fora da janela dos recentes — não mexe
+            const respostasAtuais = Array.isArray(c.respostas) ? c.respostas : [];
+            const respostasFrescas = Array.isArray(fresco.respostas) ? fresco.respostas : [];
+            const idsAtuaisResp = respostasAtuais.map((r) => r.id).join(",");
+            const idsFrescosResp = respostasFrescas.map((r) => r.id).join(",");
+            if (idsAtuaisResp === idsFrescosResp) return c;
+            mudou = true;
+            return { ...c, respostas: respostasFrescas };
+          });
+          if (!mudou) return atual; // mesma referência — React não re-renderiza à toa
+          return novos.length > 0 ? [...novos, ...comRespostasAtualizadas] : comRespostasAtualizadas;
         });
       })
       .catch(() => {
-        // falha silenciosa — só não pega a novidade/exclusão dessa vez, o
-        // próximo tick de 8s tenta de novo. Nunca derruba o feed já pintado
-        // por causa disso, nem atualiza idsConhecidosRef (baseline só avança
-        // quando o fetch realmente resolve).
+        // falha silenciosa — só não pega a novidade/exclusão/resposta dessa
+        // vez, o próximo tick de 3s tenta de novo. Nunca derruba o feed já
+        // pintado por causa disso, nem atualiza idsConhecidosRef (baseline
+        // só avança quando o fetch realmente resolve).
       });
   }, []);
 
@@ -673,6 +700,7 @@ function DificuldadeDoDia() {
               key={comentario.id}
               comentario={comentario}
               podeExcluir={podeExcluir}
+              emailAtual={email}
               onExcluir={handleExcluir}
               onResponder={handleResponder}
               podeEnviarMensagem={podeExcluir}
