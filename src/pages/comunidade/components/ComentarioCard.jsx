@@ -50,15 +50,7 @@ export const EMAIL_ORIENTADOR = "rsp.ren@gmail.com";
  *               true quando quem está vendo é admin/orientador (Tarefa 2).
  *   onIniciarMensagem (comentario) => void — chamado ao clicar no nome.
  */
-function ComentarioCard({
-  comentario,
-  podeExcluir,
-  onExcluir,
-  podeResponder = true,
-  onResponder,
-  podeEnviarMensagem = false,
-  onIniciarMensagem,
-}) {
+function ComentarioCard({ comentario, podeExcluir, onExcluir, podeResponder = true, onResponder, podeEnviarMensagem = false, onIniciarMensagem }) {
   const [lightboxAberto, setLightboxAberto] = useState(false);
   const [respondendoAberto, setRespondendoAberto] = useState(false);
   const [textoResposta, setTextoResposta] = useState("");
@@ -99,20 +91,44 @@ function ComentarioCard({
 
   return (
     <div className={`cm-comentario-card ${classeDestaque} ${classeExpandido}`}>
-      {comentario.avatar_url ? (
-        <img src={comentario.avatar_url} alt="" className="cm-comentario-card-avatar cm-comentario-card-avatar-img" />
-      ) : (
-        <div className="cm-comentario-card-avatar">{iniciais(comentario.nome)}</div>
-      )}
+      {comentario.avatar_url ? <img src={comentario.avatar_url} alt="" className="cm-comentario-card-avatar cm-comentario-card-avatar-img" /> : <div className="cm-comentario-card-avatar">{iniciais(comentario.nome)}</div>}
       <div className="cm-comentario-card-corpo">
-        <div className="cm-comentario-card-topo">
+        <div className="cm-comentario-card-corpo">
+          <div className="cm-comentario-card-topo">
+            {/* ESQUERDA - nome colado na foto */}
+            <div className="cm-comentario-card-topo-esq">
+              {nomeClicavel ? (
+                <button type="button" className="cm-comentario-card-nome cm-comentario-card-nome-clicavel" onClick={() => onIniciarMensagem(comentario)}>
+                  {comentario.nome}
+                </button>
+              ) : (
+                <span className="cm-comentario-card-nome">{comentario.nome}</span>
+              )}
+              {autorOrientador && (
+                <span className="cm-badge-orientador">
+                  <Star size={11} /> Orientador
+                </span>
+              )}
+              {autorAdmin && <span className="cm-badge-admin">Administrador</span>}
+            </div>
+
+            {/* DIREITA - foto + data + lixeira alinhados */}
+            <span className="cm-comentario-card-topo-direita">
+              {comentario.image_url && (
+                <button type="button" className="cm-comentario-card-foto-mini" onClick={() => setLightboxAberto(true)}>
+                  <img src={comentario.image_url} alt="" />
+                </button>
+              )}
+              <span className="cm-comentario-card-quando">{formatarDataBr(comentario.created_at)}</span>
+              {podeExcluir && (
+                <button type="button" className="cm-comentario-card-excluir" onClick={() => onExcluir(comentario.id)}>
+                  <Trash2 size={15} />
+                </button>
+              )}
+            </span>
+          </div>
           {nomeClicavel ? (
-            <button
-              type="button"
-              className="cm-comentario-card-nome cm-comentario-card-nome-clicavel"
-              onClick={() => onIniciarMensagem(comentario)}
-              title={`Enviar mensagem para ${comentario.nome}`}
-            >
+            <button type="button" className="cm-comentario-card-nome cm-comentario-card-nome-clicavel" onClick={() => onIniciarMensagem(comentario)} title={`Enviar mensagem para ${comentario.nome}`}>
               {comentario.nome}
             </button>
           ) : (
@@ -133,24 +149,13 @@ function ComentarioCard({
               cresce com o conteúdo de texto, não com a foto. */}
           <span className="cm-comentario-card-topo-direita">
             {comentario.image_url && (
-              <button
-                type="button"
-                className="cm-comentario-card-foto-mini"
-                aria-label="Ampliar foto"
-                onClick={() => setLightboxAberto(true)}
-              >
+              <button type="button" className="cm-comentario-card-foto-mini" aria-label="Ampliar foto" onClick={() => setLightboxAberto(true)}>
                 <img src={comentario.image_url} alt="" />
               </button>
             )}
             <span className="cm-comentario-card-quando">{formatarDataBr(comentario.created_at)}</span>
             {podeExcluir && (
-              <button
-                type="button"
-                className="cm-comentario-card-excluir"
-                aria-label="Excluir comentário"
-                title="Excluir comentário"
-                onClick={() => onExcluir(comentario.id)}
-              >
+              <button type="button" className="cm-comentario-card-excluir" aria-label="Excluir comentário" title="Excluir comentário" onClick={() => onExcluir(comentario.id)}>
                 <Trash2 size={15} />
               </button>
             )}
@@ -159,27 +164,14 @@ function ComentarioCard({
         <p className="cm-comentario-card-texto">{comentario.comentario}</p>
 
         {podeResponder && onResponder && (
-          <button
-            type="button"
-            className="cm-comentario-card-responder-btn"
-            onClick={() => setRespondendoAberto((v) => !v)}
-          >
+          <button type="button" className="cm-comentario-card-responder-btn" onClick={() => setRespondendoAberto((v) => !v)}>
             Responder
           </button>
         )}
 
         {respondendoAberto && (
           <form className="cm-comentario-resposta-form" onSubmit={handleEnviarResposta}>
-            <input
-              type="text"
-              className="cm-comentario-resposta-input"
-              placeholder={`Responder para @${comentario.nome}...`}
-              value={textoResposta}
-              onChange={(e) => setTextoResposta(e.target.value)}
-              maxLength={2000}
-              autoFocus
-              disabled={enviandoResposta}
-            />
+            <input type="text" className="cm-comentario-resposta-input" placeholder={`Responder para @${comentario.nome}...`} value={textoResposta} onChange={(e) => setTextoResposta(e.target.value)} maxLength={2000} autoFocus disabled={enviandoResposta} />
             <div className="cm-comentario-resposta-acoes">
               <button
                 type="button"
@@ -202,15 +194,7 @@ function ComentarioCard({
         {Array.isArray(comentario.respostas) && comentario.respostas.length > 0 && (
           <div className="cm-comentario-respostas">
             {comentario.respostas.map((resposta) => (
-              <ComentarioCard
-                key={resposta.id}
-                comentario={resposta}
-                podeExcluir={podeExcluir}
-                onExcluir={onExcluir}
-                podeResponder={false}
-                podeEnviarMensagem={podeEnviarMensagem}
-                onIniciarMensagem={onIniciarMensagem}
-              />
+              <ComentarioCard key={resposta.id} comentario={resposta} podeExcluir={podeExcluir} onExcluir={onExcluir} podeResponder={false} podeEnviarMensagem={podeEnviarMensagem} onIniciarMensagem={onIniciarMensagem} />
             ))}
           </div>
         )}
