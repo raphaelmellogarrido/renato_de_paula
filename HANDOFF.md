@@ -102,24 +102,31 @@ VIDEOS_DIR=/home/u790959747/meditacao-videos  <- ver Problema 1, provavelmente p
 
 ---
 
-## PROBLEMA 3 (26/08): fotos anexadas em "Sua prática hoje" somem em produção (ícone de imagem quebrada no celular)
+## PROBLEMA 3 (26/08): fotos anexadas em "Sua prática hoje" somem em produção — RESOLVIDO
 
 ### Sintoma
-Reportado pelo usuário com screenshots reais do Android/Chrome em produção: fotos que alunos anexam nos comentários de "Sua prática hoje" (`DificuldadeDoDia.jsx`, upload via `upload-imagem-comentario.php`) aparecem como ícone de imagem quebrada em vez de carregar.
+Reportado pelo usuário com screenshots reais do Android/Chrome em produção: fotos que alunos anexam nos comentários de "Sua prática hoje" (`DificuldadeDoDia.jsx`, upload via `upload-imagem-comentario.php`) apareciam como ícone de imagem quebrada em vez de carregar — de forma inconsistente entre quem olhava (não era filtro por admin/usuário, era "olhou antes ou depois do próximo deploy").
 
-### Causa provável (mesmo mecanismo do PROBLEMA 1, ainda não confirmada 100% pra este caso específico)
-`upload-imagem-comentario.php` salva o arquivo em `public/uploads/posts/` (relativo ao próprio script) e devolve a URL `/uploads/posts/<nome>`. Essa pasta está no `.gitignore` (com `.gitkeep` só pra existir no Git) — ou seja, os arquivos enviados por aluno em produção **nunca vêm do Git**. O PROBLEMA 1 já confirmou que a Hostinger recria a pasta do app do zero a cada novo `git push` + deploy, apagando qualquer coisa que não veio do Git. Se esse mesmo comportamento vale pra pasta pública servida via PHP (bem provável, dado que é a mesma conta/plano), toda foto enviada por aluno some no próximo deploy — o que bate exatamente com o sintoma (fotos de comentários antigos quebradas, depois de vários commits/deploys terem passado).
+### Causa confirmada (mesmo mecanismo do PROBLEMA 1)
+`upload-imagem-comentario.php` salvava o arquivo em `public/uploads/posts/` (relativo ao próprio script) e devolvia a URL `/uploads/posts/<nome>`. Essa pasta está no `.gitignore` (com `.gitkeep` só pra existir no Git) — ou seja, os arquivos enviados por aluno em produção nunca vinham do Git. A Hostinger recria a pasta do app do zero a cada novo `git push` + deploy, apagando qualquer coisa que não veio do Git — toda foto enviada por aluno sumia no próximo deploy.
 
-### Correção já aplicada (mitigação no front, não resolve a causa)
-`ComentarioCard.jsx` agora tem `onError` no `<img>` da foto anexada: se a imagem falhar ao carregar, o botão da foto some (em vez de mostrar o glyph feio de imagem quebrada pro aluno). Isso deixa a experiência menos ruim mas **não recupera fotos já perdidas nem impede que fotos novas sumam no próximo deploy**.
+### Correção aplicada (26/08, mesma sessão que resolveu o bug de avatar sumindo — 25/08)
+Migrado pro mesmo padrão já usado pra foto de perfil (`alunos.avatar_blob`/`avatar_versao`/`avatar.php`): a foto agora vive **dentro do MySQL**, não em arquivo:
+- `upload-imagem-comentario.php` não grava mais em disco — grava os bytes em staging (`comentario_imagens_pendentes`, tabela efêmera com limpeza de 1h) e devolve um `token`.
+- `comentarios.php` POST aceita `image_token` (em vez de `image_url`), migra o blob da staging pra `comentarios.image_blob`/`image_mime` no INSERT.
+- Novo `public/api/hotmart/imagem-comentario.php` serve o blob por `GET ?id=<comentario_id>`, cache longo e imutável (foto de comentário não é editável depois de postada).
+- `comentarios.php` GET agora devolve `image_url` computado: `/api/hotmart/imagem-comentario.php?id=...` quando a foto está em BLOB; cai pro valor legado da coluna antiga `image_url` só pra comentários muito antigos (esses continuam perdidos — arquivo já foi apagado por um deploy anterior, sem regressão em relação a hoje).
+- Schema: `_conexao.php`, `garantirEstruturaClube()` v6.
 
-### Próximo passo sugerido (mesmo do Problema 1 — infra, não código)
-Mover `public/uploads/posts/` pra fora da pasta que a Hostinger reconstrói a cada deploy, do mesmo jeito que já foi feito pra `VIDEOS_DIR`/`CURSO_RAIZ_DIR`: criar uma pasta persistente (ex: `/home/u790959747/domains/renatodepaula.com/uploads-posts`), configurar `upload-imagem-comentario.php` (e o handler que serve leitura dessas imagens) pra usar um caminho configurável por variável de ambiente/config apontando pra lá, e confirmar que ela sobrevive a um `git push`. Enquanto isso não for feito, qualquer foto enviada por aluno é considerada temporária (some no próximo deploy).
+O padrão "pasta persistente fora do Git" sugerido antes (igual à tentativa do PROBLEMA 1) foi descartado a favor do BLOB — mais simples, não depende de descobrir/confirmar caminho nenhum na Hostinger, e já é um padrão comprovado nesta base (avatar).
 
 ### Arquivos relevantes
-- `public/api/hotmart/upload-imagem-comentario.php` — grava o arquivo e devolve `/uploads/posts/<nome>`.
-- `src/pages/comunidade/components/ComentarioCard.jsx` — `onError` no `<img>` da foto (mitigação no front).
-- `.gitignore` — comentário acima de `public/uploads/posts/*` documentando a suspeita original.
+- `public/api/hotmart/upload-imagem-comentario.php` — grava blob em staging, devolve token.
+- `public/api/hotmart/comentarios.php` — POST migra blob pro comentário; GET computa a URL servida.
+- `public/api/hotmart/imagem-comentario.php` — **novo**, serve o blob.
+- `public/api/hotmart/_conexao.php` — schema (`image_blob`/`image_mime` em `comentarios`, tabela `comentario_imagens_pendentes`).
+- `src/pages/comunidade/components/ComentarioCard.jsx` — `onError` no `<img>` continua como rede de segurança pros comentários antigos/legados, nada mudou aqui.
+- `.gitignore` — comentário acima de `public/uploads/posts/*` ainda documenta a causa original (pasta não é mais usada por comentários novos, mas não foi removida do ignore).
 
 ---
 

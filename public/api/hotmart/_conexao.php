@@ -81,7 +81,7 @@ function garantirEstruturaClube(mysqli $mysqli): void
 {
     // (não pode ser `const` aqui dentro — PHP só aceita const no nível do
     // arquivo/classe, não dentro do corpo de uma função)
-    $estruturaClubeVersao = 5;
+    $estruturaClubeVersao = 6;
     $marcador = sys_get_temp_dir() . '/comunidade_estrutura_v' . $estruturaClubeVersao . '.ok';
     if (file_exists($marcador)) {
         return;
@@ -199,6 +199,43 @@ function garantirEstruturaClube(mysqli $mysqli): void
         if ($temImageUrl && $temImageUrl->num_rows === 0) {
             $mysqli->query("ALTER TABLE comentarios ADD COLUMN image_url VARCHAR(255) NULL AFTER comentario");
         }
+
+        // Foto de "Sua prática hoje", v2 (mesmo bug documentado abaixo pro
+        // avatar_blob, reportado de novo 26/08: a foto de comentário some
+        // porque upload-imagem-comentario.php salvava em
+        // public/uploads/posts/, apagado a cada deploy). image_url acima
+        // fica em desuso (nunca mais escrito, só não é dropado — mesmo
+        // tratamento dado a avatar_url v1); a foto nova vive DENTRO do banco
+        // (image_blob) e é servida por public/api/hotmart/imagem-comentario.php.
+        // Diferente do avatar (upload já grava direto, sem staging): aqui o
+        // comentário ainda não existe no momento do upload, então o blob
+        // passa antes por comentario_imagens_pendentes (abaixo) e só migra
+        // pra cá quando comentarios.php POST cria a linha de verdade.
+        $temImageBlob = $mysqli->query(
+            "SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'comentarios' AND COLUMN_NAME = 'image_blob'"
+        );
+        if ($temImageBlob && $temImageBlob->num_rows === 0) {
+            $mysqli->query("ALTER TABLE comentarios ADD COLUMN image_blob MEDIUMBLOB NULL AFTER image_url");
+            $mysqli->query("ALTER TABLE comentarios ADD COLUMN image_mime VARCHAR(20) NULL AFTER image_blob");
+        }
+
+        // Staging da foto entre o upload (upload-imagem-comentario.php) e o
+        // envio do comentário de verdade (comentarios.php POST) — token
+        // efêmero, mesmo espírito de password_resets acima (linha
+        // temporária + limpeza oportunista, sem cron). Se o aluno escolher
+        // uma foto e nunca enviar o comentário, a linha fica órfã até a
+        // limpeza de 1h abaixo apagar.
+        $mysqli->query(
+            "CREATE TABLE IF NOT EXISTS comentario_imagens_pendentes (
+                token CHAR(32) NOT NULL PRIMARY KEY,
+                image_blob MEDIUMBLOB NOT NULL,
+                image_mime VARCHAR(20) NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )"
+        );
+        // Mesmo padrão de limpeza oportunista do password_resets acima.
+        $mysqli->query("DELETE FROM comentario_imagens_pendentes WHERE created_at < NOW() - INTERVAL 1 HOUR");
 
         // Foto de perfil (Configuracoes.jsx + upload-avatar.php) — caminho
         // público (ex: /uploads/avatars/xxx.webp) gravado direto por

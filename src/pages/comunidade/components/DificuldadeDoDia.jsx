@@ -249,7 +249,11 @@ function DificuldadeDoDia() {
   // sem isso, quando alguém respondia um comentário que outro aluno já tinha
   // carregado, a resposta nunca aparecia pra esse outro aluno (o id do pai
   // já estava em idsAtuais, então nunca caía no ramo "novos" acima; só quem
-  // respondeu via na hora, via o carregarInicial() do próprio handleResponder).
+  // respondeu via na hora, via o carregarInicial() do próprio handleResponder);
+  // (d) re-sincroniza o TEXTO de comentários-raiz e respostas já na tela que
+  // foram editados (Tarefa edição, 26/08) — handleEditar já atualiza local na
+  // hora pra quem editou, isso aqui é só pra quem MAIS está vendo o feed
+  // enxergar a edição sem F5.
   // Pedido do cliente 26/08: resposta a um comentário do feed "Sua prática
   // hoje" precisa aparecer pra quem está vendo em poucos segundos. Só mexe
   // nessa janela (os TAMANHO_INICIAL mais recentes) — itens carregados via
@@ -296,9 +300,18 @@ function DificuldadeDoDia() {
             const respostasFrescas = Array.isArray(fresco.respostas) ? fresco.respostas : [];
             const idsAtuaisResp = respostasAtuais.map((r) => r.id).join(",");
             const idsFrescosResp = respostasFrescas.map((r) => r.id).join(",");
-            if (idsAtuaisResp === idsFrescosResp) return c;
+            // Edição (pedido do cliente 26/08): compara o TEXTO, não só os
+            // ids — sem isso uma edição só aparecia pra quem editou
+            // (handleEditar já atualiza local na hora), outros alunos só
+            // veriam a mudança com F5. Cobre tanto o comentário raiz quanto
+            // cada resposta dele (mesma janela dos ids que já bate).
+            const textoRaizMudou = fresco.comentario !== c.comentario;
+            const algumTextoRespostaMudou =
+              idsAtuaisResp === idsFrescosResp &&
+              respostasAtuais.some((r, i) => r.comentario !== respostasFrescas[i]?.comentario);
+            if (idsAtuaisResp === idsFrescosResp && !textoRaizMudou && !algumTextoRespostaMudou) return c;
             mudou = true;
-            return { ...c, respostas: respostasFrescas };
+            return { ...c, comentario: fresco.comentario, respostas: respostasFrescas };
           });
           if (!mudou) return atual; // mesma referência — React não re-renderiza à toa
           return novos.length > 0 ? [...novos, ...comRespostasAtualizadas] : comRespostasAtualizadas;
@@ -470,20 +483,24 @@ function DificuldadeDoDia() {
 
     setEnviando(true);
     try {
-      let imageUrl = "";
+      let imageToken = "";
       if (foto) {
         const formData = new FormData();
         formData.append("imagem", foto);
         const respostaUpload = await fetch(UPLOAD_IMAGEM_URL, { method: "POST", body: formData });
         const dadosUpload = await respostaUpload.json();
         if (dadosUpload?.erro) throw new Error(dadosUpload.erro);
-        imageUrl = dadosUpload?.url || "";
+        // v2 (bug 26/08, foto sumindo): upload-imagem-comentario.php agora
+        // grava o blob em staging (comentario_imagens_pendentes) em vez de
+        // arquivo em disco, e devolve um token em vez de url — o POST
+        // abaixo migra esse blob pra dentro do comentário de verdade.
+        imageToken = dadosUpload?.token || "";
       }
 
       const resposta = await fetch(COMENTARIOS_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, nome: lerNomeSessao(), aula_id: AULA_ID, comentario: valor, image_url: imageUrl }),
+        body: JSON.stringify({ email, nome: lerNomeSessao(), aula_id: AULA_ID, comentario: valor, image_token: imageToken }),
       });
       const data = await resposta.json();
       if (data?.erro) throw new Error(data.erro);
@@ -514,6 +531,34 @@ function DificuldadeDoDia() {
     const data = await resposta.json();
     if (data?.erro) throw new Error(data.erro);
     carregarInicial();
+  }
+
+  // Editar comentário (pedido do cliente, 26/08: "como em rede social", só o
+  // próprio dono edita — checagem de verdade é no backend, PUT em
+  // comentarios.php, mas ComentarioCard já nem mostra o lápis pra quem não é
+  // o autor). Atualiza local otimisticamente em vez de refazer
+  // carregarInicial(): edição não muda ordenação nem paginação, só o texto de
+  // UM item (raiz ou dentro de `respostas`) — refetch completo seria
+  // desperdício. `id` pode ser tanto de um comentário raiz quanto de uma
+  // resposta, então checa os dois níveis.
+  async function handleEditar(id, novoTexto) {
+    const resposta = await fetch(`${COMENTARIOS_URL}?id=${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, comentario: novoTexto }),
+    });
+    const data = await resposta.json();
+    if (data?.erro) throw new Error(data.erro);
+
+    setItens((atual) =>
+      atual.map((c) => {
+        if (c.id === id) return { ...c, comentario: novoTexto };
+        if (Array.isArray(c.respostas) && c.respostas.some((r) => r.id === id)) {
+          return { ...c, respostas: c.respostas.map((r) => (r.id === id ? { ...r, comentario: novoTexto } : r)) };
+        }
+        return c;
+      })
+    );
   }
 
   // Modal "Enviar mensagem para @Nome" (Tarefa 2) — só chamado quando
@@ -699,6 +744,7 @@ function DificuldadeDoDia() {
               onResponder={handleResponder}
               podeEnviarMensagem={podeExcluir}
               onIniciarMensagem={setDestinatarioMensagem}
+              onEditar={handleEditar}
             />
           ))}
           {carregandoMais && [0, 1, 2].map((i) => <SkeletonMensagem key={`mais-${i}`} />)}

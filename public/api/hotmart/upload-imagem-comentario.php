@@ -1,14 +1,25 @@
 <?php
 // Upload de foto anexada em "Sua prática hoje" (DificuldadeDoDia.jsx).
-// POST multipart/form-data, campo "imagem" -> salva em public/uploads/posts/
-// com nome único e devolve o caminho público ({ok:true, url}). Não grava
-// nada no banco — quem grava o caminho na coluna comentarios.image_url é o
-// POST de comentarios.php, chamado pelo front logo em seguida com essa url.
+// POST multipart/form-data, campo "imagem" -> grava os bytes em staging
+// (comentario_imagens_pendentes, ver _conexao.php) e devolve um token
+// ({ok:true, token}). Não grava em comentarios ainda — quem migra o blob de
+// staging pra image_blob/image_mime é o POST de comentarios.php, chamado
+// pelo front logo em seguida com esse token (campo image_token).
+//
+// v2 (bug reportado 26/08, mesmo problema já resolvido pro avatar em
+// upload-avatar.php/avatar.php): antes salvava o arquivo em
+// public/uploads/posts/ com move_uploaded_file — a Hostinger recria a pasta
+// do app do zero a cada `git push`/deploy, apagando qualquer arquivo que não
+// veio do Git, então a foto sumia pra QUALQUER pessoa que olhasse depois do
+// próximo deploy (não era filtro por admin/usuário). Banco não sofre disso.
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit; }
+
+require __DIR__ . '/_conexao.php';
+garantirEstruturaClube($mysqli); // cria comentario_imagens_pendentes se ainda não existir
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -51,20 +62,23 @@ if (!isset($tiposAceitos[$mime])) {
     exit;
 }
 
-$pastaDestino = __DIR__ . '/../../uploads/posts';
-if (!is_dir($pastaDestino)) {
-    mkdir($pastaDestino, 0755, true);
-}
-
-// Nome único: nunca confia em nenhuma parte do nome original enviado pelo
-// cliente (evita path traversal/colisão), extensão vem do mime real acima.
-$nomeUnico = bin2hex(random_bytes(12)) . '.' . $tiposAceitos[$mime];
-$caminhoDestino = $pastaDestino . '/' . $nomeUnico;
-
-if (!move_uploaded_file($arquivo['tmp_name'], $caminhoDestino)) {
+$bytes = file_get_contents($arquivo['tmp_name']);
+if ($bytes === false) {
     http_response_code(500);
-    echo json_encode(['erro' => 'Não foi possível salvar a imagem']);
+    echo json_encode(['erro' => 'Não foi possível ler a imagem enviada']);
     exit;
 }
 
-echo json_encode(['ok' => true, 'url' => '/uploads/posts/' . $nomeUnico]);
+// Token efêmero (não é segredo de autenticação, só identifica a linha de
+// staging até comentarios.php POST migrar ela pra image_blob) — 32 chars
+// hex, mesmo tamanho da coluna CHAR(32) em comentario_imagens_pendentes.
+$token = bin2hex(random_bytes(16));
+
+$stmt = $mysqli->prepare(
+    "INSERT INTO comentario_imagens_pendentes (token, image_blob, image_mime) VALUES (?, ?, ?)"
+);
+$stmt->bind_param('sss', $token, $bytes, $mime);
+$stmt->execute();
+$stmt->close();
+
+echo json_encode(['ok' => true, 'token' => $token]);

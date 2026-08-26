@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEmailSessao, lerNomeSessao } from "./usuarioStorage";
 import ComentarioCard, { EMAIL_ADMINISTRADOR, EMAIL_ORIENTADOR } from "./ComentarioCard";
-import { chaveCacheComentarios, lerCacheComentarios, salvarCacheComentarios, buscarComentarios } from "./cacheComentarios";
+import { chaveCacheComentarios, lerCacheComentarios, salvarCacheComentarios, limparCacheComentarios, buscarComentarios } from "./cacheComentarios";
 
 const COMENTARIOS_URL = "/api/hotmart/comentarios.php";
 // aula_id fixo — antes cada vídeo tinha seu próprio bucket de comentários
@@ -91,6 +91,14 @@ function ComentariosFeed() {
       .finally(() => setEnviando(false));
   }
 
+  // Fonte de verdade é o servidor, não um filter local: um filter otimista
+  // aqui deixaria a página cacheada (ver cacheComentarios.js) desatualizada
+  // até o TTL de 2min expirar sozinho — reabrir/repaginar nesse intervalo
+  // reexibiria por um instante o comentário já excluído, ou (pior, empate de
+  // created_at no mesmo segundo) uma ordem diferente da que o servidor
+  // devolveria agora. Mesmo padrão de handleExcluir em DificuldadeDoDia.jsx
+  // (buscarPrimeiraPagina), só que aqui é a página ATUAL, não sempre a 1ª —
+  // este feed é paginação de verdade (1/3), não scroll infinito.
   function handleExcluir(id) {
     if (!window.confirm("Excluir este comentário?")) return;
 
@@ -102,8 +110,8 @@ function ComentariosFeed() {
       .then((r) => r.json())
       .then((data) => {
         if (data?.erro) throw new Error(data.erro);
-        setItens((atual) => atual.filter((c) => c.id !== id));
-        setTotal((atual) => (typeof atual === "number" ? Math.max(0, atual - 1) : atual));
+        limparCacheComentarios(AULA_ID);
+        carregar(page);
       })
       .catch((err) => {
         console.error("[Clube Presença] falha ao excluir comentário:", err);

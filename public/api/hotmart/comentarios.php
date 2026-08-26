@@ -1,7 +1,7 @@
 <?php
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit; }
 
@@ -10,7 +10,10 @@ garantirEstruturaClube($mysqli); // cria a tabela comentarios se ainda não exis
 
 // Comentários por aula, paginados (10 mais recentes por página por padrão).
 // GET  ?aula_id=&page=&per_page=  -> { itens:[{id,nome,comentario,created_at,respostas:[...]}], total, page, pages }
-// POST { email, nome, aula_id, comentario, parent_id? } -> INSERT
+// POST { email, nome, aula_id, comentario, parent_id?, image_token? } -> INSERT
+// image_token vem de upload-imagem-comentario.php (staging em
+// comentario_imagens_pendentes, ver _conexao.php) — migra o blob pra
+// comentarios.image_blob na hora do INSERT.
 // Permanente: não é afetado por nenhum reset semanal (DesafioSemana etc.).
 // `per_page` é opcional (default 10) — o widget "Dificuldade do dia"
 // (DificuldadeDoDia.jsx) pede 7; ComentariosFeed.jsx não manda, fica em 10.
@@ -78,7 +81,7 @@ if ($metodo === 'GET') {
     // `id` é auto-increment e único, então desempata sempre igual (mais recente
     // primeiro = id maior primeiro, mesmo sentido do created_at DESC).
     $stmt = $mysqli->prepare(
-        "SELECT c.id, c.email, c.nome, c.comentario, c.image_url, c.created_at, a.avatar_versao
+        "SELECT c.id, c.email, c.nome, c.comentario, c.image_url, c.image_mime, c.created_at, a.avatar_versao
          FROM comentarios c
          LEFT JOIN alunos a ON a.email = c.email
          WHERE c.aula_id = ? AND c.parent_id IS NULL ORDER BY c.created_at DESC, c.id DESC LIMIT ? OFFSET ?"
@@ -99,7 +102,13 @@ if ($metodo === 'GET') {
             'comentario' => $row['comentario'],
             // null quando o comentário não tem foto — front (ComentarioCard.jsx)
             // só mostra o quadradinho/lightbox se isso vier truthy.
-            'image_url' => $row['image_url'] !== null && $row['image_url'] !== '' ? $row['image_url'] : null,
+            // Prioriza image_mime (foto nova, guardada em BLOB no banco —
+            // ver comentarios image_blob/imagem-comentario.php, bug 26/08:
+            // arquivo em disco sumia a cada deploy). image_url legado só
+            // sobra pra comentários antigos, de antes dessa migração (já
+            // quebrado hoje mesmo — sem regressão, o front já esconde foto
+            // quebrada via onError em ComentarioCard.jsx).
+            'image_url' => $row['image_mime'] ? ('/api/hotmart/imagem-comentario.php?id=' . $row['id']) : ($row['image_url'] ?: null),
             // null quando o autor não tem foto de perfil — front mostra as
             // iniciais nesse caso (mesmo fallback de image_url acima).
             // avatarUrlPublica (_conexao.php) monta a URL a partir de
@@ -120,7 +129,7 @@ if ($metodo === 'GET') {
         // Mesmo desempate por `id` do SELECT raiz acima, aqui em ASC (ordem
         // cronológica de leitura das respostas).
         $stmtResp = $mysqli->prepare(
-            "SELECT c.id, c.parent_id, c.email, c.nome, c.comentario, c.image_url, c.created_at, a.avatar_versao
+            "SELECT c.id, c.parent_id, c.email, c.nome, c.comentario, c.image_url, c.image_mime, c.created_at, a.avatar_versao
              FROM comentarios c
              LEFT JOIN alunos a ON a.email = c.email
              WHERE c.parent_id IN ($placeholders) ORDER BY c.created_at ASC, c.id ASC"
@@ -137,7 +146,8 @@ if ($metodo === 'GET') {
                 'email' => $row['email'],
                 'nome' => $row['nome'] !== null && $row['nome'] !== '' ? $row['nome'] : 'Aluno',
                 'comentario' => $row['comentario'],
-                'image_url' => $row['image_url'] !== null && $row['image_url'] !== '' ? $row['image_url'] : null,
+                // Mesma lógica image_mime > image_url legado do bloco raiz acima.
+                'image_url' => $row['image_mime'] ? ('/api/hotmart/imagem-comentario.php?id=' . $row['id']) : ($row['image_url'] ?: null),
                 'avatar_url' => avatarUrlPublica($row['email'], $row['avatar_versao']),
                 'created_at' => $row['created_at'],
             ];
@@ -185,14 +195,23 @@ if ($metodo === 'POST') {
     }
 
     // Foto opcional (upload já feito antes por upload-imagem-comentario.php,
-    // que devolve o caminho). Só aceita o formato exato que aquele endpoint
-    // gera — qualquer outra coisa é ignorada (nunca guarda URL arbitrária
-    // mandada no corpo do POST).
-    $imageUrl = trim($input['image_url'] ?? '');
-    if ($imageUrl !== '' && !preg_match('#^/uploads/posts/[A-Za-z0-9_.-]+$#', $imageUrl)) {
-        $imageUrl = '';
+    // que devolve um token — bytes ficam em staging, comentario_imagens_pendentes,
+    // até aqui). image_token só é aceito no formato exato que aquele endpoint
+    // gera (32 chars hex) — qualquer outra coisa é ignorada, nunca faz SELECT
+    // com valor arbitrário mandado no corpo do POST. Token que não bate com
+    // nenhuma linha de staging (expirado pela limpeza de 1h, ou reenvio do
+    // mesmo token) simplesmente vira comentário sem foto, sem erro.
+    $imageBlobParam = null;
+    $imageMimeParam = null;
+    $imageToken = trim($input['image_token'] ?? '');
+    if ($imageToken !== '' && preg_match('#^[a-f0-9]{32}$#', $imageToken)) {
+        $stmtStaging = $mysqli->prepare("SELECT image_blob, image_mime FROM comentario_imagens_pendentes WHERE token = ?");
+        $stmtStaging->bind_param('s', $imageToken);
+        $stmtStaging->execute();
+        $stmtStaging->bind_result($imageBlobParam, $imageMimeParam);
+        $stmtStaging->fetch();
+        $stmtStaging->close();
     }
-    $imageUrlParam = $imageUrl !== '' ? $imageUrl : null;
 
     // parent_id opcional (botão "Responder", Tarefa 1) — resposta a um
     // comentário existente. 0/negativo/ausente = comentário raiz normal.
@@ -204,12 +223,21 @@ if ($metodo === 'POST') {
     $parentIdParam = $parentId > 0 ? $parentId : null;
 
     $stmt = $mysqli->prepare(
-        "INSERT INTO comentarios (email, nome, aula_id, comentario, image_url, parent_id) VALUES (?, ?, ?, ?, ?, ?)"
+        "INSERT INTO comentarios (email, nome, aula_id, comentario, image_blob, image_mime, parent_id) VALUES (?, ?, ?, ?, ?, ?, ?)"
     );
-    $stmt->bind_param('sssssi', $email, $nome, $aulaId, $comentario, $imageUrlParam, $parentIdParam);
+    $stmt->bind_param('ssssssi', $email, $nome, $aulaId, $comentario, $imageBlobParam, $imageMimeParam, $parentIdParam);
     $stmt->execute();
     $novoId = $stmt->insert_id;
     $stmt->close();
+
+    // Migração pra image_blob acima já copiou os bytes — apaga a linha de
+    // staging (se existia) pra não acumular lixo esperando a limpeza de 1h.
+    if ($imageToken !== '' && $imageBlobParam !== null) {
+        $stmtLimpa = $mysqli->prepare("DELETE FROM comentario_imagens_pendentes WHERE token = ?");
+        $stmtLimpa->bind_param('s', $imageToken);
+        $stmtLimpa->execute();
+        $stmtLimpa->close();
+    }
 
     // Invalida o cache em disco do "Meditando junto" (pulso.php, cache de
     // 60s) — mesmo padrão de presenca.php pro ranking/pulso ao marcar
@@ -218,6 +246,62 @@ if ($metodo === 'POST') {
     @unlink(sys_get_temp_dir() . '/comunidade_pulso_cache.json');
 
     echo json_encode(['ok' => true, 'id' => $novoId]);
+    exit;
+}
+
+if ($metodo === 'PUT') {
+    // Editar comentário (pedido do cliente, 26/08: "como em rede social",
+    // hoje só chamado por DificuldadeDoDia.jsx / "Sua prática hoje" — ver
+    // handleEditar lá). Diferente do DELETE acima, aqui NÃO existe exceção
+    // pra admin/orientador: edição é SEMPRE só do próprio dono, sem lista de
+    // admins envolvida. Mesmo espírito "sem autenticação real" documentado
+    // no DELETE — o email de quem pede vem do corpo da requisição, não de
+    // sessão/cookie.
+    $input = json_decode(file_get_contents('php://input'), true) ?: [];
+    $id = intval($_GET['id'] ?? $input['id'] ?? 0);
+    $emailSolicitante = strtolower(trim($input['email'] ?? ''));
+    $comentario = trim($input['comentario'] ?? '');
+
+    if ($id <= 0 || $emailSolicitante === '' || $comentario === '') {
+        http_response_code(400);
+        echo json_encode(['erro' => 'id, email e comentario obrigatórios']);
+        exit;
+    }
+    // Limite de 140 chars — mesmo LIMITE_TEXTO do textarea em
+    // DificuldadeDoDia.jsx, único lugar que hoje chama este endpoint. Nunca
+    // confia só no maxLength do front: um PUT direto (sem passar pela UI)
+    // ainda cairia aqui. Se um dia o mural "geral" (ComentariosFeed.jsx,
+    // limite de 2000 no POST acima) ganhar edição também, este cap fixo
+    // precisa virar condicional por aula_id.
+    if (mb_strlen($comentario) > 140) {
+        $comentario = mb_substr($comentario, 0, 140);
+    }
+
+    $stmtAutor = $mysqli->prepare("SELECT email FROM comentarios WHERE id = ?");
+    $stmtAutor->bind_param('i', $id);
+    $stmtAutor->execute();
+    $autor = $stmtAutor->get_result()->fetch_assoc();
+    $stmtAutor->close();
+
+    if (!$autor) {
+        http_response_code(404);
+        echo json_encode(['erro' => 'Comentário não encontrado']);
+        exit;
+    }
+
+    $emailAutor = strtolower(trim($autor['email']));
+    if ($emailAutor !== $emailSolicitante) {
+        http_response_code(403);
+        echo json_encode(['erro' => 'Sem permissão para editar este comentário']);
+        exit;
+    }
+
+    $stmt = $mysqli->prepare("UPDATE comentarios SET comentario = ? WHERE id = ?");
+    $stmt->bind_param('si', $comentario, $id);
+    $stmt->execute();
+    $stmt->close();
+
+    echo json_encode(['ok' => true, 'comentario' => $comentario]);
     exit;
 }
 

@@ -38,6 +38,26 @@ export function salvarCacheComentarios(chave, dados) {
   }
 }
 
+// Apaga TODAS as páginas cacheadas de um mural (todas as chaves
+// cm_comentarios_{aulaId}_p*) — usado depois de um DELETE bem-sucedido
+// (ComentariosFeed.jsx) pra evitar que um refetch dentro do TTL de 2min
+// pinte de novo, mesmo que brevemente, uma página cacheada que ainda inclui
+// o comentário recém-excluído. DificuldadeDoDia.jsx não precisa disso: seu
+// handleExcluir já ignora completamente o cache e busca direto do servidor
+// (buscarPrimeiraPagina), sobrescrevendo o cache na sequência.
+export function limparCacheComentarios(aulaId) {
+  try {
+    const prefixo = `cm_comentarios_${aulaId}_p`;
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const chave = localStorage.key(i);
+      if (chave && chave.startsWith(prefixo)) localStorage.removeItem(chave);
+    }
+  } catch {
+    // localStorage indisponível — nada pra limpar, mesmo espírito try/catch
+    // do resto deste arquivo.
+  }
+}
+
 async function tentarBuscarJson(url, options) {
   const r = await fetch(url, options);
   if (!r.ok) throw new Error(`HTTP ${r.status}`);

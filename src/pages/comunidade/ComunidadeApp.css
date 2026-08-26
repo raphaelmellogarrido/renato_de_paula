@@ -735,16 +735,29 @@
   cursor: not-allowed;
 }
 
-/* Popover de emoji (item 4): flutua acima da toolbar. Só cuida do
+/* Popover de emoji (item 4): abre ABAIXO da toolbar (era acima, com
+   bottom:100%, e cobria o textarea/título — bug reportado). Só cuida do
    posicionamento — o conteúdo agora é a lib emoji-picker-react (busca +
    categorias, ~1000 emojis), que já vem com seu próprio card/sombra/borda,
    então esta regra não duplica background/padding/shadow como fazia com o
    grid de 20 emojis fixos de antes. */
 .cm-duvida-emoji-popover {
   position: absolute;
-  bottom: calc(100% + 8px);
+  top: calc(100% + 8px);
   left: 0;
-  z-index: 5;
+  z-index: 30;
+}
+
+@media (max-width: 600px) {
+  .cm-duvida-emoji-popover {
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90vw;
+  }
+
+  .cm-duvida-emoji-popover .EmojiPickerReact {
+    width: 100% !important;
+  }
 }
 
 .cm-duvida-form-acoes {
@@ -1193,6 +1206,31 @@
   border-color: rgba(255, 255, 255, 0.25);
 }
 
+/* Lápis de editar (pedido do cliente 26/08, "como em rede social") — mesmo
+   reset de botão que a lixeira ao lado (.cm-comentario-card-excluir), só que
+   com hover na cor sage (mesma cor de "Responder" no hover) em vez de
+   vermelho, pra não parecer uma ação destrutiva. Só existe no DOM quando
+   ComentarioCard decide podeEditarEste (sempre o próprio autor, nunca
+   admin/orientador só por serem admin/orientador). */
+.cm-comentario-card-editar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--cm-text-soft);
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 6px;
+  line-height: 0;
+}
+
+.cm-comentario-card-editar:hover {
+  color: var(--cm-sage);
+  background: rgba(138, 154, 140, 0.12); /* --cm-sage (#8a9a8c) em rgba */
+}
+
 .cm-comentario-card-excluir {
   display: flex;
   align-items: center;
@@ -1244,7 +1282,9 @@
 }
 
 .cm-comentario-card-admin .cm-comentario-card-excluir,
-.cm-comentario-card-orientador .cm-comentario-card-excluir {
+.cm-comentario-card-orientador .cm-comentario-card-excluir,
+.cm-comentario-card-admin .cm-comentario-card-editar,
+.cm-comentario-card-orientador .cm-comentario-card-editar {
   color: rgba(241, 245, 249, 0.65);
 }
 
@@ -1361,6 +1401,58 @@
 .cm-comentario-resposta-enviar:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
+/* Formulário de edição inline (pedido do cliente 26/08) — substitui o <p>
+   do texto quando o autor clica no lápis (.cm-comentario-card-editar acima).
+   Mesmo visual do formulário de resposta (-resposta-form/-input/-acoes/
+   -cancelar/-enviar são reaproveitados, ver ComentarioCard.jsx), só que
+   textarea (2 linhas) em vez de input de 1 linha só, já que o texto
+   original pode ocupar as 2 linhas do clamp do card. */
+.cm-comentario-edicao-form {
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cm-comentario-edicao-textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--cm-border);
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  color: var(--cm-text);
+  background: #fff;
+  resize: none;
+}
+
+.cm-comentario-card-admin .cm-comentario-edicao-textarea,
+.cm-comentario-card-orientador .cm-comentario-edicao-textarea {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #f1f5f9;
+}
+
+.cm-comentario-edicao-textarea:focus {
+  outline: none;
+  border-color: var(--cm-sage);
+}
+
+/* Contador "N/140" — mesma linha dos botões Cancelar/Salvar
+   (.cm-comentario-resposta-acoes já é flex + justify-content:flex-end),
+   margin-right:auto empurra ele pro início da linha sem precisar de wrapper
+   extra. */
+.cm-comentario-edicao-contador {
+  margin-right: auto;
+  font-size: 0.72rem;
+  color: var(--cm-text-soft);
+}
+
+.cm-comentario-card-admin .cm-comentario-edicao-contador,
+.cm-comentario-card-orientador .cm-comentario-edicao-contador {
+  color: rgba(241, 245, 249, 0.65);
 }
 
 /* Respostas aninhadas — indentadas abaixo do comentário pai, com uma borda

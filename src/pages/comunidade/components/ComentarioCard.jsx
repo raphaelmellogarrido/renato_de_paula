@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Star, Trash2 } from "lucide-react";
+import { Star, Trash2, Pencil } from "lucide-react";
 import { iniciais, formatarDataBr } from "./comentariosUtils";
 import ImageLightbox from "./ImageLightbox";
 
@@ -30,6 +30,14 @@ function renderizarMarkdown(texto) {
 // usa no DELETE — comparação sempre em minúsculo/trim dos dois lados.
 export const EMAIL_ADMINISTRADOR = "raphaelmellogarrido@gmail.com";
 export const EMAIL_ORIENTADOR = "rsp.ren@gmail.com";
+
+// Limite de edição (pedido do cliente, 26/08: "como em rede social", cada um
+// só edita o PRÓPRIO comentário) — mesmo valor de LIMITE_TEXTO em
+// DificuldadeDoDia.jsx (único lugar que hoje passa `onEditar`, ver prop
+// abaixo). Não importa de lá pra cá pra não criar dependência circular
+// (DificuldadeDoDia já importa ComentarioCard); mesmo cap de 140 do PUT em
+// comentarios.php, que nunca confia só nisso.
+const LIMITE_TEXTO_EDICAO = 140;
 
 /**
  * Card de UM comentário — único lugar que decide como um comentário é
@@ -76,12 +84,23 @@ export const EMAIL_ORIENTADOR = "rsp.ren@gmail.com";
  *               clicável (abre modal "Enviar mensagem para @Nome") — só
  *               true quando quem está vendo é admin/orientador (Tarefa 2).
  *   onIniciarMensagem (comentario) => void — chamado ao clicar no nome.
+ *   onEditar    (id, novoTexto) => Promise — chamado ao salvar a edição
+ *               inline. Se omitido, o lápis de editar nem aparece (mesmo
+ *               espírito opt-in de onResponder acima) — hoje só
+ *               DificuldadeDoDia.jsx passa isso (pedido do cliente 26/08:
+ *               edição só em "Sua prática hoje", não no mural "geral" de
+ *               ComentariosFeed.jsx). Diferente da lixeira (podeExcluir cobre
+ *               admin/orientador também), editar é SEMPRE só do próprio
+ *               autor — "como em rede social", nem admin edita texto alheio.
  */
-function ComentarioCard({ comentario, podeExcluir, emailAtual, onExcluir, podeResponder = true, onResponder, podeEnviarMensagem = false, onIniciarMensagem }) {
+function ComentarioCard({ comentario, podeExcluir, emailAtual, onExcluir, podeResponder = true, onResponder, podeEnviarMensagem = false, onIniciarMensagem, onEditar }) {
   const [lightboxAberto, setLightboxAberto] = useState(false);
   const [respondendoAberto, setRespondendoAberto] = useState(false);
   const [textoResposta, setTextoResposta] = useState("");
   const [enviandoResposta, setEnviandoResposta] = useState(false);
+  const [editando, setEditando] = useState(false);
+  const [textoEdicao, setTextoEdicao] = useState("");
+  const [salvandoEdicao, setSalvandoEdicao] = useState(false);
   // 26/08 (bug reportado no celular): fotos antigas enviadas em
   // "Sua prática hoje" pararam de carregar em produção (ícone de imagem
   // quebrada). Causa provável: public/uploads/posts/ não sobrevive a um
@@ -115,10 +134,41 @@ function ComentarioCard({ comentario, podeExcluir, emailAtual, onExcluir, podeRe
   // em 92px) a foto ficaria cortada pelo overflow:hidden sempre que não
   // houvesse resposta aberta nem respostas já existentes. Vale ainda mais
   // agora que a foto ficou maior e empilhada (2ª mudança, mesmo dia).
-  const classeExpandido = respondendoAberto || temRespostas || comentario.image_url ? "cm-comentario-card-expandido" : "";
+  const classeExpandido = respondendoAberto || editando || temRespostas || comentario.image_url ? "cm-comentario-card-expandido" : "";
   // Não faz sentido mandar mensagem privada pra outro admin/orientador —
   // só o nome de alunos "normais" vira clicável.
   const nomeClicavel = podeEnviarMensagem && !autorAdmin && !autorOrientador && typeof onIniciarMensagem === "function";
+  // Editar é SEMPRE só do próprio dono (nunca do podeExcluir de admin/
+  // orientador, diferente da lixeira) — ver docstring do prop onEditar acima.
+  const podeEditarEste = souAutor && typeof onEditar === "function";
+
+  function handleAbrirEdicao() {
+    setTextoEdicao(comentario.comentario);
+    setEditando(true);
+  }
+
+  function handleCancelarEdicao() {
+    setEditando(false);
+    setTextoEdicao("");
+  }
+
+  async function handleSalvarEdicao(e) {
+    e.preventDefault();
+    const valor = textoEdicao.trim();
+    if (!valor || salvandoEdicao || !onEditar) return;
+
+    setSalvandoEdicao(true);
+    try {
+      await onEditar(comentario.id, valor);
+      setEditando(false);
+      setTextoEdicao("");
+    } catch (err) {
+      console.error("[Clube Presença] falha ao editar comentário:", err);
+      window.alert("Não foi possível editar o comentário.");
+    } finally {
+      setSalvandoEdicao(false);
+    }
+  }
 
   async function handleEnviarResposta(e) {
     e.preventDefault();
@@ -174,6 +224,11 @@ function ComentarioCard({ comentario, podeExcluir, emailAtual, onExcluir, podeRe
                 texto, própria linha, ver logo abaixo do parágrafo. */}
           <span className="cm-comentario-card-topo-direita">
             <span className="cm-comentario-card-quando">{formatarDataBr(comentario.created_at)}</span>
+            {podeEditarEste && !editando && (
+              <button type="button" className="cm-comentario-card-editar" aria-label="Editar comentário" title="Editar comentário" onClick={handleAbrirEdicao}>
+                <Pencil size={14} />
+              </button>
+            )}
             {podeExcluirEste && (
               <button type="button" className="cm-comentario-card-excluir" aria-label="Excluir comentário" title="Excluir comentário" onClick={() => onExcluir(comentario.id)}>
                 <Trash2 size={15} />
@@ -181,7 +236,36 @@ function ComentarioCard({ comentario, podeExcluir, emailAtual, onExcluir, podeRe
             )}
           </span>
         </div>
-        <p className="cm-comentario-card-texto">{renderizarMarkdown(comentario.comentario)}</p>
+        {editando ? (
+          // Substitui o <p> pelo formulário de edição inline — mesmo limite
+          // de 140 chars do textarea original (LIMITE_TEXTO em
+          // DificuldadeDoDia.jsx), reforçado de novo no PUT de
+          // comentarios.php (nunca confia só no maxLength do front).
+          <form className="cm-comentario-edicao-form" onSubmit={handleSalvarEdicao}>
+            <textarea
+              className="cm-comentario-edicao-textarea"
+              value={textoEdicao}
+              onChange={(e) => setTextoEdicao(e.target.value)}
+              maxLength={LIMITE_TEXTO_EDICAO}
+              autoFocus
+              disabled={salvandoEdicao}
+              rows={2}
+            />
+            <div className="cm-comentario-resposta-acoes">
+              <span className="cm-comentario-edicao-contador">
+                {textoEdicao.length}/{LIMITE_TEXTO_EDICAO}
+              </span>
+              <button type="button" className="cm-comentario-resposta-cancelar" onClick={handleCancelarEdicao} disabled={salvandoEdicao}>
+                Cancelar
+              </button>
+              <button type="submit" className="cm-comentario-resposta-enviar" disabled={!textoEdicao.trim() || salvandoEdicao}>
+                {salvandoEdicao ? "Salvando..." : "Salvar"}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <p className="cm-comentario-card-texto">{renderizarMarkdown(comentario.comentario)}</p>
+        )}
 
         {/* Foto anexada (se houver): própria linha, alinhada à esquerda,
             logo abaixo do texto. Pedido do cliente 26/08 (2ª mudança): antes
@@ -226,7 +310,7 @@ function ComentarioCard({ comentario, podeExcluir, emailAtual, onExcluir, podeRe
         {Array.isArray(comentario.respostas) && comentario.respostas.length > 0 && (
           <div className="cm-comentario-respostas">
             {comentario.respostas.map((resposta) => (
-              <ComentarioCard key={resposta.id} comentario={resposta} podeExcluir={podeExcluir} emailAtual={emailAtual} onExcluir={onExcluir} podeResponder={false} podeEnviarMensagem={podeEnviarMensagem} onIniciarMensagem={onIniciarMensagem} />
+              <ComentarioCard key={resposta.id} comentario={resposta} podeExcluir={podeExcluir} emailAtual={emailAtual} onExcluir={onExcluir} podeResponder={false} podeEnviarMensagem={podeEnviarMensagem} onIniciarMensagem={onIniciarMensagem} onEditar={onEditar} />
             ))}
           </div>
         )}
