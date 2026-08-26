@@ -4950,7 +4950,7 @@ h3.cm-config-subtitle {
     width: 100%;
     height: 56px;
     padding: 10px 12px;
-    background: #f5e8d2;
+    /* background: #f5e8d2; */
     max-width: 100vw;
     overflow: hidden;
   }
