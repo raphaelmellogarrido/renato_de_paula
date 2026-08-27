@@ -20,8 +20,8 @@ function iniciais(nome) {
 // troca de layout futura precisa olhar pra decidir se navega ou não.
 const COMUNIDADES = [
   { id: "meditacao", label: "Meditação", img: "/meditacao.png", bloqueada: false },
-  { id: "alimentacao", label: "Alimentação", bloqueada: true },
-  { id: "exercicio", label: "Exercício", bloqueada: true },
+  { id: "alimentacao", label: "Alimentação", img: "/alimentacao.png", bloqueada: true },
+  { id: "exercicio", label: "Exercício", img: "/exercicio.png", bloqueada: true },
 ];
 
 const NAV_ITEMS = [
@@ -91,7 +91,7 @@ function ComunidadeSidebar({ session, onSair }) {
           <div className="cm-comunidade-dropdown" role="menu">
             {COMUNIDADES.filter((c) => c.id !== comunidadeAtiva).map((c) => (
               <div key={c.id} className="cm-comunidade-dropdown-item" aria-disabled={c.bloqueada}>
-                <Lock size={14} strokeWidth={2} />
+                <img src={c.img} alt="" className="cm-comunidade-dropdown-img" />
                 <span>{c.label}</span>
                 <Lock size={14} strokeWidth={2} />
               </div>
