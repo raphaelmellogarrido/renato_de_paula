@@ -195,12 +195,20 @@ function ComentarioCard({
   // em 92px) a foto ficaria cortada pelo overflow:hidden sempre que não
   // houvesse resposta aberta nem respostas já existentes. Vale ainda mais
   // agora que a foto ficou maior e empilhada (2ª mudança, mesmo dia).
-  // visibilidadeAberta entra aqui também (27/08): o selinho de visibilidade
-  // fica no TOPO do card, mas o menu que ele abre precisa do mesmo destrave
-  // de altura que editando/respondendoAberto já ganham — senão o
-  // overflow:hidden de 92px (.cm-duvida .cm-comentario-card) cortaria o menu
-  // pela metade.
-  const classeExpandido = respondendoAberto || editando || temRespostas || comentario.image_url || visibilidadeAberta ? "cm-comentario-card-expandido" : "";
+  const classeExpandido = respondendoAberto || editando || temRespostas || comentario.image_url ? "cm-comentario-card-expandido" : "";
+  // Menu de visibilidade (27/08) é um caso À PARTE de -expandido acima: o
+  // selinho fica no TOPO do card e o popover abre pra BAIXO (position:
+  // absolute), então ele nunca faz o card crescer de verdade — só precisa
+  // que o overflow:hidden do card não o corte no meio. Reaproveitar
+  // -expandido pra isso (como era antes) trazia de brinde o
+  // align-items:flex-start dele, que só faz sentido quando o card CRESCE de
+  // fato (resposta/edição/foto) — aplicado aqui, fazia a foto do autor
+  // "pular" pra cima toda vez que o menu abria, mesmo num comentário curto
+  // que não cresceu nada. Bug real (reportado 27/08): num comentário curto
+  // o card ficava baixo, o popover de 3 opções vazava pra fora dele, e
+  // overflow:hidden cortava as 2 últimas — sobrava só "Público" visível.
+  // Classe própria abaixo só libera o overflow, sem mexer no alinhamento.
+  const classePopoverVisibilidade = visibilidadeAberta ? "cm-comentario-card-popover-visibilidade-aberto" : "";
   // Não faz sentido mandar mensagem privada pra outro admin/orientador —
   // só o nome de alunos "normais" vira clicável.
   const nomeClicavel = podeEnviarMensagem && !autorAdmin && !autorOrientador && typeof onIniciarMensagem === "function";
@@ -309,7 +317,7 @@ function ComentarioCard({
   }
 
   return (
-    <div className={`cm-comentario-card ${classeDestaque} ${classeExpandido}`}>
+    <div className={`cm-comentario-card ${classeDestaque} ${classeExpandido} ${classePopoverVisibilidade}`}>
       {comentario.avatar_url ? <img src={comentario.avatar_url} alt="" className="cm-comentario-card-avatar cm-comentario-card-avatar-img" /> : <div className="cm-comentario-card-avatar">{iniciais(comentario.nome)}</div>}
       <div className="cm-comentario-card-corpo">
         {/* Wrapper -topo é OBRIGATÓRIO (25/08, bug reaparecido): é ele quem

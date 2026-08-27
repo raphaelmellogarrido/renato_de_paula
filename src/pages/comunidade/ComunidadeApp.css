@@ -1249,6 +1249,21 @@
   align-items: flex-start;
 }
 
+/* Menu de troca de visibilidade (27/08, bug corrigido no mesmo dia): classe
+   À PARTE de -expandido acima — o popover (position:absolute, abre pra
+   BAIXO a partir do selinho no topo do card) nunca faz o card crescer de
+   verdade, só precisa que o overflow:hidden do card fixo de 92px não o
+   corte. Usar -expandido aqui (como antes) trazia de brinde o
+   align-items:flex-start dele, fazendo a foto do autor "pular" pra cima
+   toda vez que o menu abria mesmo em comentário curto — e mesmo assim, num
+   comentário curto o card continuava baixo, então o popover de 3 opções
+   vazava pra fora dele e sobrava só "Público" visível (max-height:none não
+   destrava overflow, só a altura). Esta regra só libera o overflow, sem
+   mexer em mais nada do layout normal do card. */
+.cm-duvida .cm-comentario-card-popover-visibilidade-aberto {
+  overflow: visible;
+}
+
 .cm-duvida .cm-comentario-skeleton-msg {
   /* mesma altura de .cm-duvida .cm-comentario-card acima — sem isso o
      skeleton (78px) e o card real (92px) trocam de tamanho quando o fetch
