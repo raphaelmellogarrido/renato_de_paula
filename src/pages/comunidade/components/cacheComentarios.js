@@ -10,8 +10,14 @@
 // ser compartilhado entre visitas do mesmo navegador, não por email.
 const TTL_MS = 2 * 60 * 1000; // 2 minutos
 
-export function chaveCacheComentarios(aulaId, page) {
-  return `cm_comentarios_${aulaId}_p${page}`;
+// `email` é opcional (27/08, reação rápida) — só DificuldadeDoDia.jsx passa
+// isso agora, porque o payload cacheado passou a incluir `minhaReacao`
+// (por-usuário, ver comentarios.php GET). Sem separar a chave por email, um
+// navegador compartilhado por 2 contas podia ler do cache a reação de uma
+// pintada como se fosse da outra. ComentariosFeed.jsx continua chamando sem
+// o 3º argumento — mesma chave de sempre, sem quebra.
+export function chaveCacheComentarios(aulaId, page, email) {
+  return `cm_comentarios_${aulaId}_p${page}${email ? `_${email}` : ""}`;
 }
 
 // Devolve os dados cacheados (mesma forma que o backend devolve: {itens,

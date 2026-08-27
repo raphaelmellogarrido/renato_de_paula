@@ -39,6 +39,10 @@ export const EMAIL_ORIENTADOR = "rsp.ren@gmail.com";
 // comentarios.php, que nunca confia só nisso.
 const LIMITE_TEXTO_EDICAO = 140;
 
+// Reação rápida (pedido do cliente, 27/08) — mesma lista fixa validada em
+// comentario-reacao.php, ordem em que os botões aparecem no rodapé do card.
+const EMOJIS_REACAO = ["🙏", "❤️", "🔥"];
+
 /**
  * Card de UM comentário — único lugar que decide como um comentário é
  * desenhado (avatar, nome, badge de Administrador/Orientador, data, texto,
@@ -92,8 +96,16 @@ const LIMITE_TEXTO_EDICAO = 140;
  *               ComentariosFeed.jsx). Diferente da lixeira (podeExcluir cobre
  *               admin/orientador também), editar é SEMPRE só do próprio
  *               autor — "como em rede social", nem admin edita texto alheio.
+ *   onReagir    (id, emoji) => Promise — chamado ao tocar num dos 3 emojis de
+ *               reação rápida (🙏 ❤️ 🔥). Se omitido, a barra de reação nem
+ *               aparece (mesmo espírito opt-in de onResponder/onEditar acima)
+ *               — hoje só DificuldadeDoDia.jsx passa isso (pedido do cliente
+ *               27/08: reação só em "Sua prática hoje", não no mural "geral").
+ *               Espera `comentario.reacoes` ({🙏,❤️,🔥} -> contagem) e
+ *               `comentario.minhaReacao` (emoji atual da pessoa vendo a tela,
+ *               ou null) já vindos do GET de comentarios.php.
  */
-function ComentarioCard({ comentario, podeExcluir, emailAtual, onExcluir, podeResponder = true, onResponder, podeEnviarMensagem = false, onIniciarMensagem, onEditar }) {
+function ComentarioCard({ comentario, podeExcluir, emailAtual, onExcluir, podeResponder = true, onResponder, podeEnviarMensagem = false, onIniciarMensagem, onEditar, onReagir }) {
   const [lightboxAberto, setLightboxAberto] = useState(false);
   const [respondendoAberto, setRespondendoAberto] = useState(false);
   const [textoResposta, setTextoResposta] = useState("");
@@ -111,6 +123,10 @@ function ComentarioCard({ comentario, podeExcluir, emailAtual, onExcluir, podeRe
   // se o <img> falhar ao carregar, simplesmente esconde o botão da foto
   // em vez de deixar o glyph quebrado visível pro aluno.
   const [fotoQuebrada, setFotoQuebrada] = useState(false);
+  // Emoji com uma chamada a onReagir em voo (ou "" quando nenhuma) — trava só
+  // o botão clicado enquanto espera a resposta, os outros 2 continuam
+  // clicáveis (troca de reação sem esperar a anterior "soltar" primeiro).
+  const [reagindo, setReagindo] = useState("");
   const emailAutor = (comentario.email || "").toLowerCase().trim();
   const autorOrientador = emailAutor === EMAIL_ORIENTADOR;
   const autorAdmin = !autorOrientador && emailAutor === EMAIL_ADMINISTRADOR;
@@ -167,6 +183,18 @@ function ComentarioCard({ comentario, podeExcluir, emailAtual, onExcluir, podeRe
       window.alert("Não foi possível editar o comentário.");
     } finally {
       setSalvandoEdicao(false);
+    }
+  }
+
+  async function handleReagir(emoji) {
+    if (reagindo || !onReagir) return;
+    setReagindo(emoji);
+    try {
+      await onReagir(comentario.id, emoji);
+    } catch (err) {
+      console.error("[Clube Presença] falha ao reagir:", err);
+    } finally {
+      setReagindo("");
     }
   }
 
@@ -279,10 +307,43 @@ function ComentarioCard({ comentario, podeExcluir, emailAtual, onExcluir, podeRe
           </button>
         )}
 
-        {podeResponder && onResponder && (
-          <button type="button" className="cm-comentario-card-responder-btn" onClick={() => setRespondendoAberto((v) => !v)}>
-            Responder
-          </button>
+        {/* Responder + reação rápida na MESMA linha (27/08) — cada um opt-in
+            independente (onResponder/onReagir), mas dividem o wrapper pra não
+            gastar uma linha extra de altura: em "Sua prática hoje" o card tem
+            altura FIXA (92px, ver .cm-duvida .cm-comentario-card no CSS) e já
+            não sobra espaço pra "Responder" sozinho numa linha e a reação
+            noutra sem entrar na classe -expandido (reservada pra formulário
+            de resposta aberto/respostas existentes/foto, não pra isso). */}
+        {((podeResponder && onResponder) || onReagir) && (
+          <div className="cm-comentario-card-acoes-linha">
+            {podeResponder && onResponder && (
+              <button type="button" className="cm-comentario-card-responder-btn" onClick={() => setRespondendoAberto((v) => !v)}>
+                Responder
+              </button>
+            )}
+            {onReagir && (
+              <div className="cm-comentario-reacoes">
+                {EMOJIS_REACAO.map((emoji) => {
+                  const contagem = comentario.reacoes?.[emoji] || 0;
+                  const ativo = comentario.minhaReacao === emoji;
+                  return (
+                    <button
+                      key={emoji}
+                      type="button"
+                      className={`cm-comentario-reacao-btn${ativo ? " cm-comentario-reacao-btn-ativo" : ""}`}
+                      onClick={() => handleReagir(emoji)}
+                      disabled={reagindo === emoji}
+                      aria-pressed={ativo}
+                      title={`Reagir com ${emoji}`}
+                    >
+                      {emoji}
+                      {contagem > 0 && <span className="cm-comentario-reacao-contagem">{contagem}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         )}
 
         {respondendoAberto && (
@@ -310,7 +371,7 @@ function ComentarioCard({ comentario, podeExcluir, emailAtual, onExcluir, podeRe
         {Array.isArray(comentario.respostas) && comentario.respostas.length > 0 && (
           <div className="cm-comentario-respostas">
             {comentario.respostas.map((resposta) => (
-              <ComentarioCard key={resposta.id} comentario={resposta} podeExcluir={podeExcluir} emailAtual={emailAtual} onExcluir={onExcluir} podeResponder={false} podeEnviarMensagem={podeEnviarMensagem} onIniciarMensagem={onIniciarMensagem} onEditar={onEditar} />
+              <ComentarioCard key={resposta.id} comentario={resposta} podeExcluir={podeExcluir} emailAtual={emailAtual} onExcluir={onExcluir} podeResponder={false} podeEnviarMensagem={podeEnviarMensagem} onIniciarMensagem={onIniciarMensagem} onEditar={onEditar} onReagir={onReagir} />
             ))}
           </div>
         )}

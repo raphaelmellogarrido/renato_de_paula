@@ -28,6 +28,10 @@ $metodo = $_SERVER['REQUEST_METHOD'];
 if ($metodo === 'GET') {
     $inicio = microtime(true);
     $aulaId = trim($_GET['aula_id'] ?? '') ?: 'geral';
+    // Opcional — só usado pra "minhaReacao" abaixo (ver bloco de reações),
+    // nunca pra checagem de permissão. Ausente = todo mundo vê minhaReacao
+    // sempre null (mesmo comportamento de antes desta feature).
+    $emailAtual = strtolower(trim($_GET['email'] ?? ''));
 
     // Dois jeitos de pedir página no mesmo endpoint: `page`/`per_page` (usado
     // por ComentariosFeed.jsx, mural "Comentários" em Aulas, paginação 1/3
@@ -115,6 +119,11 @@ if ($metodo === 'GET') {
             // avatar_versao — ver bug reportado 25/08 (foto em BLOB).
             'avatar_url' => avatarUrlPublica($row['email'], $row['avatar_versao']),
             'created_at' => $row['created_at'], // já em horário de Brasília (SET time_zone em _conexao.php)
+            // Preenchido no bloco de reações abaixo (agregado em lote junto
+            // com o dos ids de resposta) — placeholder aqui só garante a
+            // chave existir mesmo se a query de reações falhar por algum motivo.
+            'reacoes' => ['🙏' => 0, '❤️' => 0, '🔥' => 0],
+            'minhaReacao' => null,
             'respostas' => [],
         ];
     }
@@ -123,6 +132,11 @@ if ($metodo === 'GET') {
     // Busca as respostas de todos os comentários raiz desta página numa
     // query só (evita N+1) — ASC pra já vir em ordem cronológica de leitura,
     // diferente da lista raiz (DESC, mais recente primeiro).
+    // Junta raiz + respostas (respostas entram no loop abaixo) — usado pelo
+    // bloco de reações mais abaixo pra agregar tudo numa query só (evita N+1
+    // de novo, mesmo espírito da busca de respostas em lote acima).
+    $todosIds = $idsRaiz;
+
     if ($idsRaiz) {
         $placeholders = implode(',', array_fill(0, count($idsRaiz), '?'));
         $tipos = str_repeat('i', count($idsRaiz));
@@ -140,8 +154,10 @@ if ($metodo === 'GET') {
         while ($row = $resResp->fetch_assoc()) {
             $paiId = (int) $row['parent_id'];
             if (!isset($itens[$paiId])) continue;
+            $respostaId = (int) $row['id'];
+            $todosIds[] = $respostaId;
             $itens[$paiId]['respostas'][] = [
-                'id' => (int) $row['id'],
+                'id' => $respostaId,
                 'parent_id' => $paiId,
                 'email' => $row['email'],
                 'nome' => $row['nome'] !== null && $row['nome'] !== '' ? $row['nome'] : 'Aluno',
@@ -150,9 +166,69 @@ if ($metodo === 'GET') {
                 'image_url' => $row['image_mime'] ? ('/api/hotmart/imagem-comentario.php?id=' . $row['id']) : ($row['image_url'] ?: null),
                 'avatar_url' => avatarUrlPublica($row['email'], $row['avatar_versao']),
                 'created_at' => $row['created_at'],
+                // Mesmo placeholder do item raiz acima — preenchido no bloco
+                // de reações logo abaixo.
+                'reacoes' => ['🙏' => 0, '❤️' => 0, '🔥' => 0],
+                'minhaReacao' => null,
             ];
         }
         $stmtResp->close();
+    }
+
+    // Reações (🙏 ❤️ 🔥) de TODOS os itens desta página (raiz + respostas)
+    // numa query só (evita N+1, mesmo espírito da busca de respostas acima).
+    if ($todosIds) {
+        $placeholdersReacoes = implode(',', array_fill(0, count($todosIds), '?'));
+        $tiposReacoes = str_repeat('i', count($todosIds));
+
+        $stmtContagens = $mysqli->prepare(
+            "SELECT comentario_id, emoji, COUNT(*) AS n FROM comentario_reacoes
+             WHERE comentario_id IN ($placeholdersReacoes) GROUP BY comentario_id, emoji"
+        );
+        $stmtContagens->bind_param($tiposReacoes, ...$todosIds);
+        $stmtContagens->execute();
+        $resContagens = $stmtContagens->get_result();
+        $contagensPorId = [];
+        while ($row = $resContagens->fetch_assoc()) {
+            $contagensPorId[(int) $row['comentario_id']][$row['emoji']] = (int) $row['n'];
+        }
+        $stmtContagens->close();
+
+        $minhaPorId = [];
+        if ($emailAtual !== '') {
+            $stmtMinhas = $mysqli->prepare(
+                "SELECT comentario_id, emoji FROM comentario_reacoes
+                 WHERE comentario_id IN ($placeholdersReacoes) AND email = ?"
+            );
+            $tiposMinhas = $tiposReacoes . 's';
+            $paramsMinhas = $todosIds;
+            $paramsMinhas[] = $emailAtual;
+            $stmtMinhas->bind_param($tiposMinhas, ...$paramsMinhas);
+            $stmtMinhas->execute();
+            $resMinhas = $stmtMinhas->get_result();
+            while ($row = $resMinhas->fetch_assoc()) {
+                $minhaPorId[(int) $row['comentario_id']] = $row['emoji'];
+            }
+            $stmtMinhas->close();
+        }
+
+        // Aplica em $itens (raiz) e dentro de cada respostas[] — dois lugares
+        // porque respostas não são um array plano separado, ver estrutura
+        // montada acima.
+        foreach ($itens as &$raiz) {
+            if (isset($contagensPorId[$raiz['id']])) {
+                $raiz['reacoes'] = array_merge($raiz['reacoes'], $contagensPorId[$raiz['id']]);
+            }
+            if (isset($minhaPorId[$raiz['id']])) $raiz['minhaReacao'] = $minhaPorId[$raiz['id']];
+            foreach ($raiz['respostas'] as &$resposta) {
+                if (isset($contagensPorId[$resposta['id']])) {
+                    $resposta['reacoes'] = array_merge($resposta['reacoes'], $contagensPorId[$resposta['id']]);
+                }
+                if (isset($minhaPorId[$resposta['id']])) $resposta['minhaReacao'] = $minhaPorId[$resposta['id']];
+            }
+            unset($resposta);
+        }
+        unset($raiz);
     }
 
     // Reordena de volta pra DESC (a chave por id em $itens acima não

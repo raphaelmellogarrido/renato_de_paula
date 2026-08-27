@@ -1501,18 +1501,30 @@
   text-decoration: underline;
 }
 
-/* "Responder" (Tarefa 1) — bloco próprio, abaixo da foto anexada quando ela
-   existe (ver .cm-comentario-card-foto-mini acima) ou direto abaixo do texto
-   quando não há foto. Já foi lado a lado com a foto num wrapper
-   -rodape (removido na 2ª mudança de 26/08: cliente pediu foto e Responder
-   cada um na sua própria linha, foto em cima). margin-top substitui o
-   margin-top:4px que antes vinha do wrapper. */
+/* Wrapper de "Responder" + reação rápida (27/08) — mesma linha, cada um
+   opt-in independente (ver comentário em ComentarioCard.jsx). margin-top
+   substitui o que antes vivia só em -responder-btn; flex-wrap:wrap é rede de
+   segurança pro mobile (card estreito com nome longo já reduz o espaço),
+   nunca deveria disparar no desktop (92px de "Sua prática hoje" já conta com
+   1 linha só aqui). */
+.cm-comentario-card-acoes-linha {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+/* "Responder" (Tarefa 1) — antes bloco próprio numa linha só sua, agora
+   dentro de -acoes-linha acima (27/08, ver comentário lá) lado a lado com a
+   reação rápida. Já foi lado a lado com a foto num wrapper -rodape (removido
+   na 2ª mudança de 26/08: cliente pediu foto e Responder cada um na sua
+   própria linha, foto em cima) — este aqui é um wrapper novo/diferente. */
 .cm-comentario-card-responder-btn {
   display: inline-block;
   background: none;
   border: none;
   padding: 0;
-  margin-top: 6px;
   font-size: 0.76rem;
   font-weight: 600;
   color: var(--cm-text-soft);
@@ -1526,6 +1538,60 @@
 
 .cm-comentario-card-admin .cm-comentario-card-responder-btn,
 .cm-comentario-card-orientador .cm-comentario-card-responder-btn {
+  color: rgba(241, 245, 249, 0.65);
+}
+
+/* Reação rápida (🙏 ❤️ 🔥, 27/08) — 3 botões pill dentro de -acoes-linha
+   acima, ao lado de "Responder". Só em "Sua prática hoje" (onReagir é
+   opt-in, ver ComentarioCard.jsx) — mural "geral" (ComentariosFeed.jsx)
+   nunca renderiza este bloco. */
+.cm-comentario-reacoes {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.cm-comentario-reacao-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 1px 6px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.cm-comentario-reacao-btn:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.cm-comentario-reacao-btn:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* Emoji que a PRÓPRIA pessoa escolheu (comentario.minhaReacao) — fundo/borda
+   destacados com a cor de marca do projeto (--cm-sage: #8a9a8c, mesma usada
+   no hover de "Responder" acima). rgba() direto em vez de color-mix() — este
+   projeto já teve bug de celular relatado (ver notas 25/08 acima), evita
+   depender de suporte recente demais de CSS. */
+.cm-comentario-reacao-btn-ativo {
+  background: rgba(138, 154, 140, 0.16);
+  border-color: var(--cm-sage);
+}
+
+.cm-comentario-reacao-contagem {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--cm-text-soft);
+}
+
+.cm-comentario-card-admin .cm-comentario-reacao-contagem,
+.cm-comentario-card-orientador .cm-comentario-reacao-contagem {
   color: rgba(241, 245, 249, 0.65);
 }
 

@@ -9,6 +9,7 @@ import MensagemModal from "./MensagemModal";
 import { chaveCacheComentarios, lerCacheComentarios, salvarCacheComentarios, buscarComentarios } from "./cacheComentarios";
 
 const COMENTARIOS_URL = "/api/hotmart/comentarios.php";
+const REACAO_URL = "/api/hotmart/comentario-reacao.php";
 const UPLOAD_IMAGEM_URL = "/api/hotmart/upload-imagem-comentario.php";
 const MENSAGENS_ENVIAR_URL = "/api/mensagens/enviar.php";
 // Mesmas regras validadas de novo no servidor (upload-imagem-comentario.php)
@@ -64,6 +65,15 @@ function idsDoLote(lista) {
     }
   }
   return ids;
+}
+
+// Fragmento `&email=...` pras 3 URLs de GET de comentarios.php (27/08, reação
+// rápida — o backend só devolve `minhaReacao` certo se souber quem está
+// perguntando). Vazio quando ainda não resolveu a sessão (useEmailSessao),
+// mesmo espírito defensivo do resto do arquivo — nunca manda "email=undefined"
+// pra query string.
+function paramEmail(email) {
+  return email ? `&email=${encodeURIComponent(email)}` : "";
 }
 
 // Remove os ids em `idsParaRemover` de `lista`, tanto no topo quanto dentro
@@ -146,8 +156,8 @@ function DificuldadeDoDia() {
   // só essa parte (refetch completo pós-delete, ver comentário lá) sem
   // reexibir o cache velho por cima do que acabou de ser excluído.
   const buscarPrimeiraPagina = useCallback(() => {
-    const chave = chaveCacheComentarios(AULA_ID, 1);
-    return buscarComentarios(`${COMENTARIOS_URL}?aula_id=${AULA_ID}&limit=${TAMANHO_INICIAL}&offset=0`).then((dados) => {
+    const chave = chaveCacheComentarios(AULA_ID, 1, email);
+    return buscarComentarios(`${COMENTARIOS_URL}?aula_id=${AULA_ID}&limit=${TAMANHO_INICIAL}&offset=0${paramEmail(email)}`).then((dados) => {
       const novos = Array.isArray(dados?.itens) ? dados.itens : [];
       setItens(novos);
       setOffset(novos.length);
@@ -155,7 +165,7 @@ function DificuldadeDoDia() {
       salvarCacheComentarios(chave, dados);
       return dados;
     });
-  }, []);
+  }, [email]);
 
   // 1º carregamento (20 mais recentes) — stale-while-revalidate igual antes:
   // se tiver cache de visita recente (<2min), pinta ele JÁ (sem esperar
@@ -164,7 +174,7 @@ function DificuldadeDoDia() {
   // lotes seguintes (carregarMais) são scroll infinito de verdade, não faz
   // sentido guardar em cache um "page 2" que só existiu naquela sessão.
   const carregarInicial = useCallback(() => {
-    const chave = chaveCacheComentarios(AULA_ID, 1);
+    const chave = chaveCacheComentarios(AULA_ID, 1, email);
     const cache = lerCacheComentarios(chave);
     if (cache) {
       const itensCache = Array.isArray(cache.itens) ? cache.itens : [];
@@ -186,7 +196,7 @@ function DificuldadeDoDia() {
         // que fazia o mural aparecer vazio no primeiro load e só corrigir
         // com F5).
       });
-  }, [buscarPrimeiraPagina]);
+  }, [buscarPrimeiraPagina, email]);
 
   // +10 comentários quando o sentinel entra na viewport. Usa `offset`/
   // `hasMore`/`carregandoMais` do estado (não refs) de propósito: essa
@@ -197,7 +207,7 @@ function DificuldadeDoDia() {
     if (carregandoMais || !hasMore) return;
     setCarregandoMais(true);
 
-    buscarComentarios(`${COMENTARIOS_URL}?aula_id=${AULA_ID}&limit=${TAMANHO_PAGINA}&offset=${offset}`)
+    buscarComentarios(`${COMENTARIOS_URL}?aula_id=${AULA_ID}&limit=${TAMANHO_PAGINA}&offset=${offset}${paramEmail(email)}`)
       .then((dados) => {
         const novos = Array.isArray(dados?.itens) ? dados.itens : [];
         setItens((atual) => [...atual, ...novos]);
@@ -210,7 +220,7 @@ function DificuldadeDoDia() {
         // observado e uma próxima entrada na viewport tenta de novo.
       })
       .finally(() => setCarregandoMais(false));
-  }, [offset, hasMore, carregandoMais]);
+  }, [offset, hasMore, carregandoMais, email]);
 
   useEffect(() => {
     carregarInicial();
@@ -280,7 +290,7 @@ function DificuldadeDoDia() {
   // contam pra paginação) pra carregarMais continuar batendo com o backend.
   const verificarNovidades = useCallback(() => {
     pollEmVooRef.current = true;
-    buscarComentarios(`${COMENTARIOS_URL}?aula_id=${AULA_ID}&limit=${TAMANHO_INICIAL}&offset=0`)
+    buscarComentarios(`${COMENTARIOS_URL}?aula_id=${AULA_ID}&limit=${TAMANHO_INICIAL}&offset=0${paramEmail(email)}`)
       .then((dados) => {
         const recentes = Array.isArray(dados?.itens) ? dados.itens : [];
         const recentesPorId = new Map(recentes.map((c) => [c.id, c]));
@@ -326,9 +336,27 @@ function DificuldadeDoDia() {
             const algumTextoRespostaMudou =
               idsAtuaisResp === idsFrescosResp &&
               respostasAtuais.some((r, i) => r.comentario !== respostasFrescas[i]?.comentario);
-            if (idsAtuaisResp === idsFrescosResp && !textoRaizMudou && !algumTextoRespostaMudou) return c;
+            // Reação rápida (27/08, mesmo espírito da edição acima): pega a
+            // reação de OUTRO aluno em até ~3s sem F5. JSON.stringify nas
+            // contagens é suficiente aqui (objeto pequeno e fixo, 3 chaves) —
+            // não precisa de comparação campo a campo.
+            const reacoesRaizMudou = JSON.stringify(fresco.reacoes) !== JSON.stringify(c.reacoes) || fresco.minhaReacao !== c.minhaReacao;
+            const algumaReacaoRespostaMudou =
+              idsAtuaisResp === idsFrescosResp &&
+              respostasAtuais.some((r, i) => {
+                const fr = respostasFrescas[i];
+                return !fr || JSON.stringify(fr.reacoes) !== JSON.stringify(r.reacoes) || fr.minhaReacao !== r.minhaReacao;
+              });
+            if (
+              idsAtuaisResp === idsFrescosResp &&
+              !textoRaizMudou &&
+              !algumTextoRespostaMudou &&
+              !reacoesRaizMudou &&
+              !algumaReacaoRespostaMudou
+            )
+              return c;
             mudou = true;
-            return { ...c, comentario: fresco.comentario, respostas: respostasFrescas };
+            return { ...c, comentario: fresco.comentario, reacoes: fresco.reacoes, minhaReacao: fresco.minhaReacao, respostas: respostasFrescas };
           });
           if (!mudou) return atual; // mesma referência — React não re-renderiza à toa
           return novos.length > 0 ? [...novos, ...comRespostasAtualizadas] : comRespostasAtualizadas;
@@ -343,7 +371,7 @@ function DificuldadeDoDia() {
       .finally(() => {
         pollEmVooRef.current = false;
       });
-  }, []);
+  }, [email]);
 
   useEffect(() => {
     if (carregandoInicial) return; // só depois do 1º carregamento resolver
@@ -586,6 +614,71 @@ function DificuldadeDoDia() {
     );
   }
 
+  // Acha um comentário (raiz OU resposta) pelo id nos `itens` atuais — usado
+  // por handleReagir abaixo pra saber o `reacoes`/`minhaReacao` de ANTES,
+  // antes de aplicar a atualização otimista.
+  function encontrarComentario(id) {
+    for (const c of itensRef.current) {
+      if (c.id === id) return c;
+      const resposta = (c.respostas || []).find((r) => r.id === id);
+      if (resposta) return resposta;
+    }
+    return null;
+  }
+
+  // Aplica um `patch` ({reacoes, minhaReacao}) no comentário `id`, seja ele
+  // raiz ou dentro de `respostas` — mesma busca nos 2 níveis de handleEditar
+  // acima (reaproveitada em vez de duplicada, aqui e no revert do catch de
+  // handleReagir).
+  function aplicarReacaoLocal(id, patch) {
+    setItens((atual) =>
+      atual.map((c) => {
+        if (c.id === id) return { ...c, ...patch };
+        if (Array.isArray(c.respostas) && c.respostas.some((r) => r.id === id)) {
+          return { ...c, respostas: c.respostas.map((r) => (r.id === id ? { ...r, ...patch } : r)) };
+        }
+        return c;
+      })
+    );
+  }
+
+  // Reação rápida (🙏 ❤️ 🔥, pedido do cliente 27/08) — tocar no mesmo emoji
+  // já escolhido remove (toggle off), tocar em outro troca; nunca mais de 1
+  // reação por pessoa por comentário, mesma regra que o backend garante
+  // (UNIQUE comentario_id+email em comentario_reacoes, ver _conexao.php).
+  // Atualização otimista local primeiro (calculada do mesmo jeito que o
+  // servidor calcularia) pro toque parecer instantâneo; a resposta do
+  // servidor SUBSTITUI esse cálculo pelo estado real (fonte de verdade —
+  // cobre a corrida de reagir em 2 abas/dispositivos quase ao mesmo tempo).
+  // Se o POST falhar, reverte pro estado de antes (mesmo espírito de
+  // handleEditar, mas sem alert — reação é leve demais pra interromper com
+  // um popup, ComentarioCard só loga o erro).
+  async function handleReagir(id, emoji) {
+    const anterior = encontrarComentario(id);
+    const reacoesAnteriores = anterior?.reacoes || { "🙏": 0, "❤️": 0, "🔥": 0 };
+    const minhaAnterior = anterior?.minhaReacao ?? null;
+
+    const novasReacoes = { ...reacoesAnteriores };
+    if (minhaAnterior) novasReacoes[minhaAnterior] = Math.max(0, (novasReacoes[minhaAnterior] || 0) - 1);
+    const novaMinha = minhaAnterior === emoji ? null : emoji;
+    if (novaMinha) novasReacoes[novaMinha] = (novasReacoes[novaMinha] || 0) + 1;
+    aplicarReacaoLocal(id, { reacoes: novasReacoes, minhaReacao: novaMinha });
+
+    try {
+      const resposta = await fetch(REACAO_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ comentario_id: id, email, emoji }),
+      });
+      const data = await resposta.json();
+      if (data?.erro) throw new Error(data.erro);
+      aplicarReacaoLocal(id, { reacoes: data.contagens, minhaReacao: data.minhaReacao });
+    } catch (err) {
+      aplicarReacaoLocal(id, { reacoes: reacoesAnteriores, minhaReacao: minhaAnterior });
+      throw err; // ComentarioCard loga (console.error) e limpa o estado de "reagindo"
+    }
+  }
+
   // Modal "Enviar mensagem para @Nome" (Tarefa 2) — só chamado quando
   // podeExcluir (admin/orientador) já autorizou o clique no nome (ver
   // podeEnviarMensagem passado pro ComentarioCard abaixo).
@@ -770,6 +863,7 @@ function DificuldadeDoDia() {
               podeEnviarMensagem={podeExcluir}
               onIniciarMensagem={setDestinatarioMensagem}
               onEditar={handleEditar}
+              onReagir={handleReagir}
             />
           ))}
           {carregandoMais && [0, 1, 2].map((i) => <SkeletonMensagem key={`mais-${i}`} />)}

@@ -81,7 +81,7 @@ function garantirEstruturaClube(mysqli $mysqli): void
 {
     // (não pode ser `const` aqui dentro — PHP só aceita const no nível do
     // arquivo/classe, não dentro do corpo de uma função)
-    $estruturaClubeVersao = 6;
+    $estruturaClubeVersao = 7;
     $marcador = sys_get_temp_dir() . '/comunidade_estrutura_v' . $estruturaClubeVersao . '.ok';
     if (file_exists($marcador)) {
         return;
@@ -321,6 +321,26 @@ function garantirEstruturaClube(mysqli $mysqli): void
                 nome VARCHAR(255) NULL,
                 criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
                 criado_por VARCHAR(100)
+            )"
+        );
+
+        // Reação rápida (🙏 ❤️ 🔥) em comentário/resposta de "Sua prática hoje"
+        // (ComentarioCard.jsx, botões ao lado de "Responder") — 1 linha por
+        // pessoa por comentário, a UNIQUE abaixo é o que garante isso (trocar
+        // de emoji é UPDATE/ON DUPLICATE KEY, nunca uma 2ª linha; tocar de
+        // novo no mesmo emoji é DELETE, ver comentario-reacao.php). Sem FK pra
+        // comentarios.id de propósito (mesma decisão de parent_id acima): um
+        // comentário apagado deixa reações órfãs, inofensivo — comentarios.php
+        // GET só agrega reação dos ids que ele mesmo já devolveu.
+        $mysqli->query(
+            "CREATE TABLE IF NOT EXISTS comentario_reacoes (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                comentario_id INT NOT NULL,
+                email VARCHAR(255) NOT NULL,
+                emoji VARCHAR(10) NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE KEY uniq_comentario_email (comentario_id, email),
+                INDEX(comentario_id)
             )"
         );
 
