@@ -89,7 +89,7 @@ function MeditandoJunto() {
   const { meditaram_hoje: meditaramHoje, partilhas_hoje: partilhasHoje, total_dias_somados: totalDiasSomados } = pulso;
 
   return (
-    <div className="cm-widget cm-widget-escuro cm-grid-pulso">
+    <div className="cm-widget cm-grid-pulso">
       <h3>
         <span aria-hidden="true">🧘</span> Meditando junto
       </h3>

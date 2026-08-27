@@ -4272,15 +4272,20 @@
   color: var(--cm-text-soft);
 }
 
-/* Card "Meditando junto" (MeditandoJunto.jsx) — mesma variante escura do
-   Ranking (.cm-widget-escuro), coluna do meio, 3 linhas de pulso real da
-   comunidade em vez de itens de ranking. */
+/* Card "Meditando junto" (MeditandoJunto.jsx) — coluna do meio, 3 linhas de
+   pulso real da comunidade em vez de itens de ranking. Fundo branco/texto
+   preto padrão (.cm-widget puro, sem .cm-widget-escuro) e borda sem cor —
+   pedido do cliente 27/08, antes usava a mesma variante escura do Ranking. */
+.cm-grid-pulso {
+  border-color: transparent;
+}
+
 .cm-pulso-linha {
   display: flex;
   align-items: flex-start;
   gap: 10px;
   padding: 10px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--cm-border);
   font-size: 0.85rem;
   line-height: 1.4;
 }
