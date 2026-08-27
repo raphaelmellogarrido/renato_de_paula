@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Bold, Italic, Smile, Image as ImageIcon, ArrowRight, X } from "lucide-react";
+import { Bold, Italic, Smile, Image as ImageIcon, ArrowRight, X, Globe, Lock, ShieldCheck, ChevronDown } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import { useEmailSessao, lerNomeSessao } from "./usuarioStorage";
 import { useComunidadeAuth } from "./useComunidadeAuth";
@@ -50,6 +50,17 @@ const ALTURA_MAX_TEXTAREA = 120;
 // avisa o card "Meditando junto" que uma partilha nova acabou de entrar,
 // pra "💬 partilhas hoje" subir sem esperar o próximo tick do polling nem F5.
 const EVENTO_PARTILHA_CRIADA = "comunidadePartilhaCriada";
+
+// Toggle de visibilidade da partilha, à esquerda do botão "Compartilhar" —
+// mesmos 3 valores que o backend aceita/valida (comentarios.php POST) e
+// filtra no GET (só quem pode ver um item chega a recebê-lo, não é só
+// escondido no front). 'publico' é sempre o default/1º da lista — mesmo
+// comportamento de sempre pra quem nunca mexe no toggle.
+const OPCOES_VISIBILIDADE = [
+  { valor: "publico", label: "Público", descricao: "Todo mundo vê", Icone: Globe },
+  { valor: "privado", label: "Privado", descricao: "Só você vê", Icone: Lock },
+  { valor: "orientador", label: "Orientador", descricao: "Só orientadores veem", Icone: ShieldCheck },
+];
 
 // Achata um lote de comentários (topo + respostas, 1 nível só — replies não
 // têm "onResponder"/podeResponder=false em ComentarioCard, então nunca há
@@ -128,6 +139,14 @@ function DificuldadeDoDia() {
   const [fotoPreview, setFotoPreview] = useState(""); // object URL local, só pro preview
   const [fotoErro, setFotoErro] = useState("");
   const [emojiAberto, setEmojiAberto] = useState(false);
+  // Toggle "Público/Privado/Orientador" (à esquerda de "Compartilhar") —
+  // reseta pra 'publico' a cada envio bem-sucedido (ver handleEnviar), pra
+  // uma escolha de "Privado" numa partilha não vazar sem querer pra
+  // próxima (esquecida ligada).
+  const [visibilidade, setVisibilidade] = useState("publico");
+  const [visibilidadeAberto, setVisibilidadeAberto] = useState(false);
+  const visibilidadePopoverRef = useRef(null);
+  const visibilidadeBotaoRef = useRef(null);
   // Modal "Enviar mensagem para @Nome" (Tarefa 2) — guarda o COMENTÁRIO
   // clicado (não só o email) porque MensagemModal.jsx usa comentario.nome
   // no título. null = modal fechado.
@@ -465,6 +484,27 @@ function DificuldadeDoDia() {
     };
   }, [emojiAberto]);
 
+  // Fecha o popover de visibilidade ao clicar fora ou apertar Esc — mesmo
+  // padrão do popover de emoji logo acima.
+  useEffect(() => {
+    if (!visibilidadeAberto) return;
+
+    function aoClicarFora(e) {
+      if (visibilidadePopoverRef.current?.contains(e.target)) return;
+      if (visibilidadeBotaoRef.current?.contains(e.target)) return;
+      setVisibilidadeAberto(false);
+    }
+    function aoTeclar(e) {
+      if (e.key === "Escape") setVisibilidadeAberto(false);
+    }
+    document.addEventListener("mousedown", aoClicarFora);
+    document.addEventListener("keydown", aoTeclar);
+    return () => {
+      document.removeEventListener("mousedown", aoClicarFora);
+      document.removeEventListener("keydown", aoTeclar);
+    };
+  }, [visibilidadeAberto]);
+
   // Insere `trecho` na posição do cursor (ou substitui a seleção atual),
   // respeitando LIMITE_TEXTO, e recoloca o cursor logo depois do trecho
   // inserido. Base compartilhada por B/I (envolve seleção com marcador) e
@@ -553,12 +593,13 @@ function DificuldadeDoDia() {
       const resposta = await fetch(COMENTARIOS_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, nome: lerNomeSessao(), aula_id: AULA_ID, comentario: valor, image_token: imageToken }),
+        body: JSON.stringify({ email, nome: lerNomeSessao(), aula_id: AULA_ID, comentario: valor, image_token: imageToken, visibilidade }),
       });
       const data = await resposta.json();
       if (data?.erro) throw new Error(data.erro);
 
       setTexto("");
+      setVisibilidade("publico"); // nunca deixa "Privado"/"Orientador" ligado pra próxima partilha sem querer
       handleRemoverFoto();
       carregarInicial(); // comentário novo entra no topo — refaz o 1º lote do zero
       window.dispatchEvent(new CustomEvent(EVENTO_PARTILHA_CRIADA));
@@ -726,6 +767,7 @@ function DificuldadeDoDia() {
 
   const vazio = !carregandoInicial && itens.length === 0 && !hasMore;
   const nomeSessao = session?.nome || lerNomeSessao();
+  const opcaoVisibilidadeAtual = OPCOES_VISIBILIDADE.find((o) => o.valor === visibilidade) || OPCOES_VISIBILIDADE[0];
 
   return (
     <div className="cm-duvida">
@@ -820,10 +862,52 @@ function DificuldadeDoDia() {
           <span className="cm-duvida-contador">
             {texto.length}/{LIMITE_TEXTO}
           </span>
-          <button type="submit" className="cm-duvida-enviar" disabled={!texto.trim() || !email || enviando}>
-            {enviando ? "Enviando..." : "Compartilhar"}
-            {!enviando && <ArrowRight size={15} />}
-          </button>
+          {/* Toggle + "Compartilhar" agrupados à direita (pedido do cliente:
+              toggle no lado esquerdo do botão) — o contador continua sozinho
+              à esquerda via justify-content:space-between em -form-acoes. */}
+          <div className="cm-duvida-form-acoes-direita">
+            <div className="cm-duvida-visibilidade">
+              <button
+                ref={visibilidadeBotaoRef}
+                type="button"
+                className={`cm-duvida-visibilidade-btn ${visibilidadeAberto ? "is-ativo" : ""}`}
+                aria-label={`Visibilidade da partilha: ${opcaoVisibilidadeAtual.label}`}
+                title={`Visibilidade: ${opcaoVisibilidadeAtual.label} — ${opcaoVisibilidadeAtual.descricao}`}
+                onClick={() => setVisibilidadeAberto((v) => !v)}
+              >
+                <opcaoVisibilidadeAtual.Icone size={14} />
+                <span>{opcaoVisibilidadeAtual.label}</span>
+                <ChevronDown size={13} />
+              </button>
+
+              {visibilidadeAberto && (
+                <div className="cm-duvida-visibilidade-popover" ref={visibilidadePopoverRef}>
+                  {OPCOES_VISIBILIDADE.map((opcao) => (
+                    <button
+                      key={opcao.valor}
+                      type="button"
+                      className={`cm-duvida-visibilidade-opcao ${visibilidade === opcao.valor ? "is-selecionada" : ""}`}
+                      onClick={() => {
+                        setVisibilidade(opcao.valor);
+                        setVisibilidadeAberto(false);
+                      }}
+                    >
+                      <opcao.Icone size={15} />
+                      <span className="cm-duvida-visibilidade-opcao-textos">
+                        <span className="cm-duvida-visibilidade-opcao-label">{opcao.label}</span>
+                        <span className="cm-duvida-visibilidade-opcao-desc">{opcao.descricao}</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <button type="submit" className="cm-duvida-enviar" disabled={!texto.trim() || !email || enviando}>
+              {enviando ? "Enviando..." : "Compartilhar"}
+              {!enviando && <ArrowRight size={15} />}
+            </button>
+          </div>
         </div>
       </form>
 

@@ -959,6 +959,108 @@
   color: var(--cm-text-soft);
 }
 
+/* Agrupa o toggle de visibilidade + "Compartilhar" à direita — o contador
+   fica sozinho à esquerda via justify-content:space-between no pai acima. */
+.cm-duvida-form-acoes-direita {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Toggle "Público/Privado/Orientador" — mesma pílula cinza da toolbar B/I/
+   emoji/foto (.cm-toolbar-btn), só que com label de texto (não cabe só
+   ícone: as 3 opções precisam ser distinguíveis de relance). */
+.cm-duvida-visibilidade {
+  position: relative;
+}
+
+.cm-duvida-visibilidade-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: #f5f5f5;
+  border: none;
+  border-radius: 9999px;
+  padding: 8px 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #555;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.cm-duvida-visibilidade-btn:hover,
+.cm-duvida-visibilidade-btn.is-ativo {
+  background: #e5e5e5;
+}
+
+/* Abre PRA CIMA (bottom:100%), diferente do popover de emoji (que abre pra
+   baixo): este botão fica no rodapé do form, colado no fim do card — abrindo
+   pra baixo o popover ficaria por baixo da lista de comentários seguinte,
+   fora da área visível na maioria das telas. */
+.cm-duvida-visibilidade-popover {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  /* min() com 100vw-48px por segurança em telas bem estreitas (320px) —
+     mesmo espírito defensivo do width:90vw do popover de emoji acima. */
+  width: min(210px, calc(100vw - 48px));
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: var(--cm-shadow);
+  border: 1px solid var(--cm-border);
+  padding: 6px;
+}
+
+.cm-duvida-visibilidade-opcao {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  background: none;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+  color: var(--cm-text);
+}
+
+.cm-duvida-visibilidade-opcao:hover {
+  background: var(--cm-beige-soft);
+}
+
+.cm-duvida-visibilidade-opcao.is-selecionada {
+  background: var(--cm-sage-soft);
+}
+
+.cm-duvida-visibilidade-opcao svg {
+  flex-shrink: 0;
+  color: var(--cm-text-soft);
+}
+
+.cm-duvida-visibilidade-opcao.is-selecionada svg {
+  color: var(--cm-sage-dark);
+}
+
+.cm-duvida-visibilidade-opcao-textos {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  line-height: 1.2;
+}
+
+.cm-duvida-visibilidade-opcao-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.cm-duvida-visibilidade-opcao-desc {
+  font-size: 0.72rem;
+  color: var(--cm-text-soft);
+}
+
 .cm-duvida-enviar {
   display: flex;
   align-items: center;
@@ -1340,6 +1442,25 @@
   color: var(--cm-text-soft);
   line-height: 1;
   white-space: nowrap;
+}
+
+/* Selinho de visibilidade (cadeado/escudo) — só existe no DOM quando o
+   comentário não é 'publico' (ver ComentarioCard.jsx). Ícone sozinho, sem
+   texto (o cluster da direita já é apertado: foto/data/lápis/lixeira), tooltip
+   nativo (title=) explica o que significa ao passar o mouse. */
+.cm-comentario-card-visibilidade {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+.cm-comentario-card-visibilidade-privado {
+  color: var(--cm-text-soft);
+}
+
+.cm-comentario-card-visibilidade-orientador {
+  color: #f59e0b; /* mesma cor de .cm-badge-orientador */
 }
 
 .cm-comentario-card-texto {
@@ -5588,8 +5709,40 @@ h3.cm-config-subtitle {
     overflow-x: hidden;
   }
 
-  .cm-duvida-enviar {
+  /* Sobra pouca largura pra "toggle + botão" lado a lado nessa faixa — o
+     contador sobe pra sua própria linha (flex-wrap no pai força isso, já que
+     -direita abaixo pede 100% de largura) e, dentro de -direita, o toggle
+     encolhe pra só o ícone (label "Público"/"Privado"/"Orientador" some,
+     mas continua no aria-label/title e no popover ao abrir) sobrando o
+     máximo de espaço pro botão "Compartilhar", que cresce (flex:1) pra
+     preencher o resto — mesmo efeito visual de "botão ocupando a largura
+     toda" que existia antes do toggle ser adicionado.  */
+  .cm-duvida-form-acoes {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  .cm-duvida-form-acoes-direita {
     width: 100%;
+  }
+
+  .cm-duvida-visibilidade-btn span {
+    display: none;
+  }
+
+  /* No desktop o popover abre pra esquerda (right:0, ver regra base) porque
+     o toggle fica perto do fim da linha, perto de "Compartilhar". Aqui
+     embaixo de 480px o toggle vira o 1º elemento de -direita (que agora
+     ocupa 100% da largura, ver acima) — abrir pra esquerda vazaria pra fora
+     da tela. Abre pra direita em vez disso, onde sobra o espaço todo do
+     botão "Compartilhar" ao lado. */
+  .cm-duvida-visibilidade-popover {
+    right: auto;
+    left: 0;
+  }
+
+  .cm-duvida-enviar {
+    flex: 1;
     justify-content: center;
   }
 

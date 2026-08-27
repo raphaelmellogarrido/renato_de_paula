@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Star, Trash2, Pencil } from "lucide-react";
+import { Star, Trash2, Pencil, Lock, ShieldCheck } from "lucide-react";
 import { iniciais, formatarDataBr } from "./comentariosUtils";
 import ImageLightbox from "./ImageLightbox";
 
@@ -56,7 +56,12 @@ const EMOJIS_REACAO = ["🙏", "❤️", "🔥"];
  *
  * Props:
  *   comentario  { id, email, nome, comentario, image_url, avatar_url,
- *                 created_at, respostas? }
+ *                 created_at, respostas?, visibilidade? }
+ *               visibilidade é 'publico' (default)/'privado'/'orientador'
+ *               (toggle em DificuldadeDoDia.jsx) — só usado aqui pra
+ *               desenhar o selinho de cadeado/escudo quando não é 'publico'.
+ *               O filtro de quem PODE ver o item já acontece no backend
+ *               (comentarios.php GET); este componente nunca decide isso.
  *               image_url é opcional (null na maioria) — foto anexada só
  *               existe hoje no formulário de DificuldadeDoDia.jsx, mas o
  *               card é o mesmo pra ComentariosFeed.jsx, então qualquer
@@ -251,6 +256,22 @@ function ComentarioCard({ comentario, podeExcluir, emailAtual, onExcluir, podeRe
                 aqui (saiu em 26/08, pedido do cliente) — foi pra baixo do
                 texto, própria linha, ver logo abaixo do parágrafo. */}
           <span className="cm-comentario-card-topo-direita">
+            {/* Selinho de visibilidade (toggle em DificuldadeDoDia.jsx) — só
+                aparece quando NÃO é 'publico' (comportamento de sempre,
+                maioria dos comentários). Já chega filtrado certo do backend
+                (ver comentarios.php GET) — isso aqui é só um lembrete visual
+                pra quem pode ver o item (o próprio autor, ou orientador/admin)
+                de que ele não é público. */}
+            {comentario.visibilidade === "privado" && (
+              <span className="cm-comentario-card-visibilidade cm-comentario-card-visibilidade-privado" title="Visível só pra você">
+                <Lock size={11} strokeWidth={2.5} />
+              </span>
+            )}
+            {comentario.visibilidade === "orientador" && (
+              <span className="cm-comentario-card-visibilidade cm-comentario-card-visibilidade-orientador" title="Visível só pra orientadores">
+                <ShieldCheck size={11} strokeWidth={2.5} />
+              </span>
+            )}
             <span className="cm-comentario-card-quando">{formatarDataBr(comentario.created_at)}</span>
             {podeEditarEste && !editando && (
               <button type="button" className="cm-comentario-card-editar" aria-label="Editar comentário" title="Editar comentário" onClick={handleAbrirEdicao}>

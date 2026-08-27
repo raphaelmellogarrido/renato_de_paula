@@ -8,6 +8,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit; }
 require __DIR__ . '/_conexao.php';
 garantirEstruturaClube($mysqli); // cria a tabela comentarios se ainda não existir
 
+// Mesma lista fixa usada no DELETE mais abaixo — extraída pra cá também pro
+// filtro de visibilidade 'orientador' do GET (só quem está nesta lista
+// enxerga partilhas marcadas como "só orientador").
+$ADMINS_CLUBE = ['raphaelmellogarrido@gmail.com', 'rsp.ren@gmail.com'];
+
 // Comentários por aula, paginados (10 mais recentes por página por padrão).
 // GET  ?aula_id=&page=&per_page=  -> { itens:[{id,nome,comentario,created_at,respostas:[...]}], total, page, pages }
 // POST { email, nome, aula_id, comentario, parent_id?, image_token? } -> INSERT
@@ -32,6 +37,24 @@ if ($metodo === 'GET') {
     // nunca pra checagem de permissão. Ausente = todo mundo vê minhaReacao
     // sempre null (mesmo comportamento de antes desta feature).
     $emailAtual = strtolower(trim($_GET['email'] ?? ''));
+    // Toggle "Público/Privado/Orientador" (DificuldadeDoDia.jsx) — decide
+    // aqui, uma vez, se quem está pedindo enxerga partilhas marcadas
+    // 'orientador'; usado nas duas queries abaixo (COUNT e SELECT). Vazio
+    // (sessão ainda não resolveu email) nunca é admin/orientador.
+    $souAdminOuOrientador = $emailAtual !== '' && in_array($emailAtual, $ADMINS_CLUBE, true) ? 1 : 0;
+    // Aplicado só nos comentários RAIZ (parent_id IS NULL) — respostas não
+    // têm visibilidade própria (sempre 'publico'), a privacidade delas vem
+    // de tabela pai: só são buscadas pra ids que já passaram por este
+    // mesmo filtro (ver query de respostas mais abaixo, `WHERE parent_id IN
+    // ($idsRaiz)`), então uma resposta a um comentário privado/orientador
+    // já fica escondida de quem não devia ver o pai, sem precisar filtrar
+    // ela também. 'publico'/NULL cobre tanto partilha nova quanto qualquer
+    // linha antiga de antes desta coluna existir (DEFAULT 'publico' cobre
+    // isso também, o NULL aqui é só defensivo).
+    $condVisibilidade = "(visibilidade = 'publico' OR visibilidade IS NULL OR (visibilidade = 'privado' AND email = ?) OR (visibilidade = 'orientador' AND ? = 1))";
+    // Mesma condição, só com o alias `c.` do JOIN — usada no SELECT logo
+    // abaixo (o COUNT acima não tem alias, é direto na tabela).
+    $condVisibilidadeC = "(c.visibilidade = 'publico' OR c.visibilidade IS NULL OR (c.visibilidade = 'privado' AND c.email = ?) OR (c.visibilidade = 'orientador' AND ? = 1))";
 
     // Dois jeitos de pedir página no mesmo endpoint: `page`/`per_page` (usado
     // por ComentariosFeed.jsx, mural "Comentários" em Aulas, paginação 1/3
@@ -52,8 +75,8 @@ if ($metodo === 'GET') {
         $offset = ($page - 1) * $limite;
     }
 
-    $stmtTotal = $mysqli->prepare("SELECT COUNT(*) AS total FROM comentarios WHERE aula_id = ? AND parent_id IS NULL");
-    $stmtTotal->bind_param('s', $aulaId);
+    $stmtTotal = $mysqli->prepare("SELECT COUNT(*) AS total FROM comentarios WHERE aula_id = ? AND parent_id IS NULL AND $condVisibilidade");
+    $stmtTotal->bind_param('ssi', $aulaId, $emailAtual, $souAdminOuOrientador);
     $stmtTotal->execute();
     $total = (int) $stmtTotal->get_result()->fetch_assoc()['total'];
     $stmtTotal->close();
@@ -85,12 +108,13 @@ if ($metodo === 'GET') {
     // `id` é auto-increment e único, então desempata sempre igual (mais recente
     // primeiro = id maior primeiro, mesmo sentido do created_at DESC).
     $stmt = $mysqli->prepare(
-        "SELECT c.id, c.email, c.nome, c.comentario, c.image_url, c.image_mime, c.created_at, a.avatar_versao
+        "SELECT c.id, c.email, c.nome, c.comentario, c.image_url, c.image_mime, c.visibilidade, c.created_at, a.avatar_versao
          FROM comentarios c
          LEFT JOIN alunos a ON a.email = c.email
-         WHERE c.aula_id = ? AND c.parent_id IS NULL ORDER BY c.created_at DESC, c.id DESC LIMIT ? OFFSET ?"
+         WHERE c.aula_id = ? AND c.parent_id IS NULL AND $condVisibilidadeC
+         ORDER BY c.created_at DESC, c.id DESC LIMIT ? OFFSET ?"
     );
-    $stmt->bind_param('sii', $aulaId, $limite, $offset);
+    $stmt->bind_param('ssiii', $aulaId, $emailAtual, $souAdminOuOrientador, $limite, $offset);
     $stmt->execute();
     $res = $stmt->get_result();
     $itens = [];
@@ -118,6 +142,11 @@ if ($metodo === 'GET') {
             // avatarUrlPublica (_conexao.php) monta a URL a partir de
             // avatar_versao — ver bug reportado 25/08 (foto em BLOB).
             'avatar_url' => avatarUrlPublica($row['email'], $row['avatar_versao']),
+            // 'publico' (default)/'privado'/'orientador' — front (ComentarioCard.jsx)
+            // usa isso só pra mostrar um selinho discreto pro AUTOR lembrar que
+            // aquela partilha não é pública; já chega filtrada certo daqui
+            // (só quem pode ver um item o recebe nesta resposta).
+            'visibilidade' => $row['visibilidade'] ?: 'publico',
             'created_at' => $row['created_at'], // já em horário de Brasília (SET time_zone em _conexao.php)
             // Preenchido no bloco de reações abaixo (agregado em lote junto
             // com o dos ids de resposta) — placeholder aqui só garante a
@@ -298,10 +327,18 @@ if ($metodo === 'POST') {
     $parentId = intval($input['parent_id'] ?? 0);
     $parentIdParam = $parentId > 0 ? $parentId : null;
 
+    // Toggle "Público/Privado/Orientador" (DificuldadeDoDia.jsx) — qualquer
+    // valor fora da lista (campo ausente, adulterado, resposta que não manda
+    // o campo) cai no default seguro 'publico', mesmo comportamento de
+    // sempre. Nunca confia só no <select> do front pra travar isso.
+    $visibilidadesValidas = ['publico', 'privado', 'orientador'];
+    $visibilidade = trim($input['visibilidade'] ?? 'publico');
+    if (!in_array($visibilidade, $visibilidadesValidas, true)) $visibilidade = 'publico';
+
     $stmt = $mysqli->prepare(
-        "INSERT INTO comentarios (email, nome, aula_id, comentario, image_blob, image_mime, parent_id) VALUES (?, ?, ?, ?, ?, ?, ?)"
+        "INSERT INTO comentarios (email, nome, aula_id, comentario, image_blob, image_mime, parent_id, visibilidade) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
     );
-    $stmt->bind_param('ssssssi', $email, $nome, $aulaId, $comentario, $imageBlobParam, $imageMimeParam, $parentIdParam);
+    $stmt->bind_param('ssssssis', $email, $nome, $aulaId, $comentario, $imageBlobParam, $imageMimeParam, $parentIdParam, $visibilidade);
     $stmt->execute();
     $novoId = $stmt->insert_id;
     $stmt->close();
@@ -398,8 +435,6 @@ if ($metodo === 'DELETE') {
     // que está em jogo (comentário de comunidade), mas não é uma barreira de
     // segurança forte — sinalizando aqui pra não confundir com proteção real
     // tipo ADMIN_SECRET.
-    $admins = ['raphaelmellogarrido@gmail.com', 'rsp.ren@gmail.com'];
-
     $input = json_decode(file_get_contents('php://input'), true) ?: [];
     $id = intval($_GET['id'] ?? $input['id'] ?? 0);
     $emailSolicitante = strtolower(trim($input['email'] ?? $_GET['email'] ?? ''));
@@ -410,7 +445,7 @@ if ($metodo === 'DELETE') {
         exit;
     }
 
-    $souAdmin = in_array($emailSolicitante, $admins, true);
+    $souAdmin = in_array($emailSolicitante, $ADMINS_CLUBE, true);
     if (!$souAdmin) {
         // Não-admin: só pode se for o dono. Busca o autor no banco (nunca
         // confia num "sou o autor" que viesse do front) — id inexistente

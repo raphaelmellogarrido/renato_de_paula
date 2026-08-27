@@ -81,7 +81,7 @@ function garantirEstruturaClube(mysqli $mysqli): void
 {
     // (não pode ser `const` aqui dentro — PHP só aceita const no nível do
     // arquivo/classe, não dentro do corpo de uma função)
-    $estruturaClubeVersao = 7;
+    $estruturaClubeVersao = 8;
     $marcador = sys_get_temp_dir() . '/comunidade_estrutura_v' . $estruturaClubeVersao . '.ok';
     if (file_exists($marcador)) {
         return;
@@ -286,6 +286,23 @@ function garantirEstruturaClube(mysqli $mysqli): void
         );
         if ($temParentId && $temParentId->num_rows === 0) {
             $mysqli->query("ALTER TABLE comentarios ADD COLUMN parent_id INT NULL AFTER aula_id, ADD INDEX(parent_id)");
+        }
+
+        // Visibilidade da partilha (toggle "Público/Privado/Orientador" em
+        // "Sua prática hoje", DificuldadeDoDia.jsx) — 'publico' (default, é o
+        // que sempre existiu: todo mundo vê), 'privado' (só quem postou),
+        // 'orientador' (só admin/orientador, mesma lista fixa do DELETE
+        // acima). Filtrado no SELECT do GET, não só escondido no front —
+        // ver comentarios.php. NOT NULL DEFAULT 'publico' pra toda linha
+        // antiga (de antes desta coluna existir) continuar visível pra todo
+        // mundo, sem precisar de UPDATE em massa. Mesmo padrão de ALTER
+        // condicional usado pra parent_id acima.
+        $temVisibilidade = $mysqli->query(
+            "SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'comentarios' AND COLUMN_NAME = 'visibilidade'"
+        );
+        if ($temVisibilidade && $temVisibilidade->num_rows === 0) {
+            $mysqli->query("ALTER TABLE comentarios ADD COLUMN visibilidade VARCHAR(20) NOT NULL DEFAULT 'publico' AFTER parent_id");
         }
 
         // Mensagem privada admin -> aluno (nome clicável em ComentarioCard.jsx
