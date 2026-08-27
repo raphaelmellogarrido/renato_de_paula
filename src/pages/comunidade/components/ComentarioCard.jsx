@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Star, Trash2, Pencil, Lock, ShieldCheck } from "lucide-react";
-import { iniciais, formatarDataBr } from "./comentariosUtils";
+import { useEffect, useRef, useState } from "react";
+import { Star, Trash2, Pencil } from "lucide-react";
+import { iniciais, formatarDataBr, OPCOES_VISIBILIDADE } from "./comentariosUtils";
 import ImageLightbox from "./ImageLightbox";
 
 // Escapa os 3 caracteres que importam antes de injetar via
@@ -109,8 +109,41 @@ const EMOJIS_REACAO = ["🙏", "❤️", "🔥"];
  *               Espera `comentario.reacoes` ({🙏,❤️,🔥} -> contagem) e
  *               `comentario.minhaReacao` (emoji atual da pessoa vendo a tela,
  *               ou null) já vindos do GET de comentarios.php.
+ *   mostrarVisibilidade bool (default false) — mostra o selinho de
+ *               visibilidade (Globo/Cadeado/Escudo, conforme
+ *               comentario.visibilidade) no cluster da direita. Opt-in
+ *               (mesmo espírito de onResponder/onEditar/onReagir) porque
+ *               `comentario.visibilidade` vem 'publico' pra QUALQUER
+ *               comentário (inclusive no mural "geral" de
+ *               ComentariosFeed.jsx, que não tem conceito de privacidade) —
+ *               sem esse opt-in o selinho apareceria em todo comentário de
+ *               todo lugar assim que 'publico' ganhasse ícone próprio
+ *               (Globo). Hoje só DificuldadeDoDia.jsx passa isso. Nunca
+ *               aparece em resposta (comentario.visibilidade vem undefined
+ *               pra respostas, ver GET em comentarios.php — não têm essa
+ *               coluna própria).
+ *   onAlterarVisibilidade (id, novoValor) => Promise — chamado ao escolher
+ *               uma opção no menu do selinho (pedido do cliente 27/08: "se a
+ *               pessoa criou um post privado, ela pode mudar pra público
+ *               quando ela quiser"). Só o próprio autor pode abrir esse menu
+ *               (souAutor, mesma checagem de onEditar) — se omitido, ou se
+ *               quem está vendo não é o autor, o selinho fica só informativo
+ *               (ícone, sem clique).
  */
-function ComentarioCard({ comentario, podeExcluir, emailAtual, onExcluir, podeResponder = true, onResponder, podeEnviarMensagem = false, onIniciarMensagem, onEditar, onReagir }) {
+function ComentarioCard({
+  comentario,
+  podeExcluir,
+  emailAtual,
+  onExcluir,
+  podeResponder = true,
+  onResponder,
+  podeEnviarMensagem = false,
+  onIniciarMensagem,
+  onEditar,
+  onReagir,
+  mostrarVisibilidade = false,
+  onAlterarVisibilidade,
+}) {
   const [lightboxAberto, setLightboxAberto] = useState(false);
   const [respondendoAberto, setRespondendoAberto] = useState(false);
   const [textoResposta, setTextoResposta] = useState("");
@@ -132,6 +165,13 @@ function ComentarioCard({ comentario, podeExcluir, emailAtual, onExcluir, podeRe
   // o botão clicado enquanto espera a resposta, os outros 2 continuam
   // clicáveis (troca de reação sem esperar a anterior "soltar" primeiro).
   const [reagindo, setReagindo] = useState("");
+  // Menu de troca de visibilidade (selinho no topo direito) — mesmo padrão
+  // de popover-com-clique-fora/Esc do toggle em DificuldadeDoDia.jsx
+  // (visibilidadeAberto lá), só que por instância de card (cada comentário
+  // tem o seu, não é um estado global do feed).
+  const [visibilidadeAberta, setVisibilidadeAberta] = useState(false);
+  const visibilidadeBotaoRef = useRef(null);
+  const visibilidadePopoverRef = useRef(null);
   const emailAutor = (comentario.email || "").toLowerCase().trim();
   const autorOrientador = emailAutor === EMAIL_ORIENTADOR;
   const autorAdmin = !autorOrientador && emailAutor === EMAIL_ADMINISTRADOR;
@@ -155,13 +195,60 @@ function ComentarioCard({ comentario, podeExcluir, emailAtual, onExcluir, podeRe
   // em 92px) a foto ficaria cortada pelo overflow:hidden sempre que não
   // houvesse resposta aberta nem respostas já existentes. Vale ainda mais
   // agora que a foto ficou maior e empilhada (2ª mudança, mesmo dia).
-  const classeExpandido = respondendoAberto || editando || temRespostas || comentario.image_url ? "cm-comentario-card-expandido" : "";
+  // visibilidadeAberta entra aqui também (27/08): o selinho de visibilidade
+  // fica no TOPO do card, mas o menu que ele abre precisa do mesmo destrave
+  // de altura que editando/respondendoAberto já ganham — senão o
+  // overflow:hidden de 92px (.cm-duvida .cm-comentario-card) cortaria o menu
+  // pela metade.
+  const classeExpandido = respondendoAberto || editando || temRespostas || comentario.image_url || visibilidadeAberta ? "cm-comentario-card-expandido" : "";
   // Não faz sentido mandar mensagem privada pra outro admin/orientador —
   // só o nome de alunos "normais" vira clicável.
   const nomeClicavel = podeEnviarMensagem && !autorAdmin && !autorOrientador && typeof onIniciarMensagem === "function";
   // Editar é SEMPRE só do próprio dono (nunca do podeExcluir de admin/
   // orientador, diferente da lixeira) — ver docstring do prop onEditar acima.
   const podeEditarEste = souAutor && typeof onEditar === "function";
+  // Selinho de visibilidade — só existe (e só some no card) quando
+  // mostrarVisibilidade=true E comentario.visibilidade veio preenchido
+  // (respostas não têm essa coluna, ver GET em comentarios.php: vem
+  // undefined pra elas, então find() abaixo não acha nada e o selinho nunca
+  // aparece numa resposta, mesmo se algum dia passarmos mostrarVisibilidade
+  // pra recursão de respostas). Trocar é sempre só do próprio dono, mesmo
+  // espírito de podeEditarEste acima.
+  const opcaoVisibilidadeAtual = mostrarVisibilidade ? OPCOES_VISIBILIDADE.find((o) => o.valor === comentario.visibilidade) : null;
+  const podeAlterarVisibilidade = souAutor && typeof onAlterarVisibilidade === "function";
+
+  // Fecha o menu de visibilidade ao clicar fora dele (e fora do botão que
+  // abre) ou ao apertar Esc — mesmo padrão do popover de emoji/visibilidade
+  // em DificuldadeDoDia.jsx.
+  useEffect(() => {
+    if (!visibilidadeAberta) return;
+
+    function aoClicarFora(e) {
+      if (visibilidadePopoverRef.current?.contains(e.target)) return;
+      if (visibilidadeBotaoRef.current?.contains(e.target)) return;
+      setVisibilidadeAberta(false);
+    }
+    function aoTeclar(e) {
+      if (e.key === "Escape") setVisibilidadeAberta(false);
+    }
+    document.addEventListener("mousedown", aoClicarFora);
+    document.addEventListener("keydown", aoTeclar);
+    return () => {
+      document.removeEventListener("mousedown", aoClicarFora);
+      document.removeEventListener("keydown", aoTeclar);
+    };
+  }, [visibilidadeAberta]);
+
+  async function handleAlterarVisibilidade(novoValor) {
+    setVisibilidadeAberta(false);
+    if (!onAlterarVisibilidade || novoValor === comentario.visibilidade) return;
+    try {
+      await onAlterarVisibilidade(comentario.id, novoValor);
+    } catch (err) {
+      console.error("[Clube Presença] falha ao alterar visibilidade:", err);
+      window.alert("Não foi possível alterar a visibilidade.");
+    }
+  }
 
   function handleAbrirEdicao() {
     setTextoEdicao(comentario.comentario);
@@ -256,22 +343,51 @@ function ComentarioCard({ comentario, podeExcluir, emailAtual, onExcluir, podeRe
                 aqui (saiu em 26/08, pedido do cliente) — foi pra baixo do
                 texto, própria linha, ver logo abaixo do parágrafo. */}
           <span className="cm-comentario-card-topo-direita">
-            {/* Selinho de visibilidade (toggle em DificuldadeDoDia.jsx) — só
-                aparece quando NÃO é 'publico' (comportamento de sempre,
-                maioria dos comentários). Já chega filtrado certo do backend
-                (ver comentarios.php GET) — isso aqui é só um lembrete visual
-                pra quem pode ver o item (o próprio autor, ou orientador/admin)
-                de que ele não é público. */}
-            {comentario.visibilidade === "privado" && (
-              <span className="cm-comentario-card-visibilidade cm-comentario-card-visibilidade-privado" title="Visível só pra você">
-                <Lock size={11} strokeWidth={2.5} />
-              </span>
-            )}
-            {comentario.visibilidade === "orientador" && (
-              <span className="cm-comentario-card-visibilidade cm-comentario-card-visibilidade-orientador" title="Visível só pra orientadores">
-                <ShieldCheck size={11} strokeWidth={2.5} />
-              </span>
-            )}
+            {/* Selinho de visibilidade (toggle em DificuldadeDoDia.jsx,
+                27/08: agora inclui Globo pro público, além de
+                Cadeado/Escudo) — já chega filtrado certo do backend (ver
+                comentarios.php GET), isso aqui é só um lembrete visual de
+                qual é a visibilidade atual. Pro próprio autor
+                (podeAlterarVisibilidade), vira botão que abre um menu pra
+                trocar na hora; pra quem só está vendo, fica só informativo
+                (sem clique). */}
+            {opcaoVisibilidadeAtual &&
+              (podeAlterarVisibilidade ? (
+                <span className="cm-comentario-card-visibilidade-wrap">
+                  <button
+                    ref={visibilidadeBotaoRef}
+                    type="button"
+                    className={`cm-comentario-card-visibilidade cm-comentario-card-visibilidade-${opcaoVisibilidadeAtual.valor} cm-comentario-card-visibilidade-btn`}
+                    aria-label={`Visibilidade: ${opcaoVisibilidadeAtual.label}. Clique para mudar.`}
+                    title={`Visibilidade: ${opcaoVisibilidadeAtual.label} — clique para mudar`}
+                    onClick={() => setVisibilidadeAberta((v) => !v)}
+                  >
+                    <opcaoVisibilidadeAtual.Icone size={11} strokeWidth={2.5} />
+                  </button>
+                  {visibilidadeAberta && (
+                    <div className="cm-duvida-visibilidade-popover cm-comentario-card-visibilidade-popover" ref={visibilidadePopoverRef}>
+                      {OPCOES_VISIBILIDADE.map((opcao) => (
+                        <button
+                          key={opcao.valor}
+                          type="button"
+                          className={`cm-duvida-visibilidade-opcao ${comentario.visibilidade === opcao.valor ? "is-selecionada" : ""}`}
+                          onClick={() => handleAlterarVisibilidade(opcao.valor)}
+                        >
+                          <opcao.Icone size={15} />
+                          <span className="cm-duvida-visibilidade-opcao-textos">
+                            <span className="cm-duvida-visibilidade-opcao-label">{opcao.label}</span>
+                            <span className="cm-duvida-visibilidade-opcao-desc">{opcao.descricao}</span>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </span>
+              ) : (
+                <span className={`cm-comentario-card-visibilidade cm-comentario-card-visibilidade-${opcaoVisibilidadeAtual.valor}`} title={`Visibilidade: ${opcaoVisibilidadeAtual.label}`}>
+                  <opcaoVisibilidadeAtual.Icone size={11} strokeWidth={2.5} />
+                </span>
+              ))}
             <span className="cm-comentario-card-quando">{formatarDataBr(comentario.created_at)}</span>
             {podeEditarEste && !editando && (
               <button type="button" className="cm-comentario-card-editar" aria-label="Editar comentário" title="Editar comentário" onClick={handleAbrirEdicao}>
@@ -392,7 +508,20 @@ function ComentarioCard({ comentario, podeExcluir, emailAtual, onExcluir, podeRe
         {Array.isArray(comentario.respostas) && comentario.respostas.length > 0 && (
           <div className="cm-comentario-respostas">
             {comentario.respostas.map((resposta) => (
-              <ComentarioCard key={resposta.id} comentario={resposta} podeExcluir={podeExcluir} emailAtual={emailAtual} onExcluir={onExcluir} podeResponder={false} podeEnviarMensagem={podeEnviarMensagem} onIniciarMensagem={onIniciarMensagem} onEditar={onEditar} onReagir={onReagir} />
+              <ComentarioCard
+                key={resposta.id}
+                comentario={resposta}
+                podeExcluir={podeExcluir}
+                emailAtual={emailAtual}
+                onExcluir={onExcluir}
+                podeResponder={false}
+                podeEnviarMensagem={podeEnviarMensagem}
+                onIniciarMensagem={onIniciarMensagem}
+                onEditar={onEditar}
+                onReagir={onReagir}
+                mostrarVisibilidade={mostrarVisibilidade}
+                onAlterarVisibilidade={onAlterarVisibilidade}
+              />
             ))}
           </div>
         )}

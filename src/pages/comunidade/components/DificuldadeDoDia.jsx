@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Bold, Italic, Smile, Image as ImageIcon, ArrowRight, X, Globe, Lock, ShieldCheck, ChevronDown } from "lucide-react";
+import { Bold, Italic, Smile, Image as ImageIcon, ArrowRight, X, ChevronDown } from "lucide-react";
 import EmojiPicker from "emoji-picker-react";
 import { useEmailSessao, lerNomeSessao } from "./usuarioStorage";
 import { useComunidadeAuth } from "./useComunidadeAuth";
-import { iniciais } from "./comentariosUtils";
+import { iniciais, OPCOES_VISIBILIDADE } from "./comentariosUtils";
 import ComentarioCard, { EMAIL_ADMINISTRADOR, EMAIL_ORIENTADOR } from "./ComentarioCard";
 import MensagemModal from "./MensagemModal";
 import { chaveCacheComentarios, lerCacheComentarios, salvarCacheComentarios, buscarComentarios } from "./cacheComentarios";
@@ -50,17 +50,6 @@ const ALTURA_MAX_TEXTAREA = 120;
 // avisa o card "Meditando junto" que uma partilha nova acabou de entrar,
 // pra "💬 partilhas hoje" subir sem esperar o próximo tick do polling nem F5.
 const EVENTO_PARTILHA_CRIADA = "comunidadePartilhaCriada";
-
-// Toggle de visibilidade da partilha, à esquerda do botão "Compartilhar" —
-// mesmos 3 valores que o backend aceita/valida (comentarios.php POST) e
-// filtra no GET (só quem pode ver um item chega a recebê-lo, não é só
-// escondido no front). 'publico' é sempre o default/1º da lista — mesmo
-// comportamento de sempre pra quem nunca mexe no toggle.
-const OPCOES_VISIBILIDADE = [
-  { valor: "publico", label: "Público", descricao: "Todo mundo vê", Icone: Globe },
-  { valor: "privado", label: "Privado", descricao: "Só você vê", Icone: Lock },
-  { valor: "orientador", label: "Orientador", descricao: "Só orientadores veem", Icone: ShieldCheck },
-];
 
 // Achata um lote de comentários (topo + respostas, 1 nível só — replies não
 // têm "onResponder"/podeResponder=false em ComentarioCard, então nunca há
@@ -655,6 +644,27 @@ function DificuldadeDoDia() {
     );
   }
 
+  // Alterar a visibilidade de uma partilha já publicada (pedido do cliente,
+  // 27/08: "se a pessoa criou um post privado, ela pode mudar pra público
+  // quando ela quiser") — mesmo padrão de handleEditar acima: PUT em
+  // comentarios.php, atualização local otimista sem refetch completo (só a
+  // visibilidade muda, não afeta ordenação/paginação). Só respostas de topo
+  // têm `visibilidade` (respostas não têm essa coluna própria, ver GET em
+  // comentarios.php), então não precisa checar `respostas` como handleEditar
+  // faz. Só o próprio autor chama isso — ComentarioCard só mostra o menu de
+  // troca quando souAutor.
+  async function handleAlterarVisibilidade(id, novaVisibilidade) {
+    const resposta = await fetch(`${COMENTARIOS_URL}?id=${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, visibilidade: novaVisibilidade }),
+    });
+    const data = await resposta.json();
+    if (data?.erro) throw new Error(data.erro);
+
+    setItens((atual) => atual.map((c) => (c.id === id ? { ...c, visibilidade: novaVisibilidade } : c)));
+  }
+
   // Acha um comentário (raiz OU resposta) pelo id nos `itens` atuais — usado
   // por handleReagir abaixo pra saber o `reacoes`/`minhaReacao` de ANTES,
   // antes de aplicar a atualização otimista.
@@ -948,6 +958,8 @@ function DificuldadeDoDia() {
               onIniciarMensagem={setDestinatarioMensagem}
               onEditar={handleEditar}
               onReagir={handleReagir}
+              mostrarVisibilidade
+              onAlterarVisibilidade={handleAlterarVisibilidade}
             />
           ))}
           {carregandoMais && [0, 1, 2].map((i) => <SkeletonMensagem key={`mais-${i}`} />)}

@@ -51,10 +51,14 @@ if ($metodo === 'GET') {
     // ela também. 'publico'/NULL cobre tanto partilha nova quanto qualquer
     // linha antiga de antes desta coluna existir (DEFAULT 'publico' cobre
     // isso também, o NULL aqui é só defensivo).
-    $condVisibilidade = "(visibilidade = 'publico' OR visibilidade IS NULL OR (visibilidade = 'privado' AND email = ?) OR (visibilidade = 'orientador' AND ? = 1))";
+    // 'orientador' é visível pro AUTOR também, não só pra quem está na lista
+    // de admins/orientadores (pedido do cliente, 27/08: "quero que apareça
+    // pra pessoa que postou e também pro orientador, não somente pro
+    // orientador") — daí o `OR email = ?` extra dentro do último grupo.
+    $condVisibilidade = "(visibilidade = 'publico' OR visibilidade IS NULL OR (visibilidade = 'privado' AND email = ?) OR (visibilidade = 'orientador' AND (? = 1 OR email = ?)))";
     // Mesma condição, só com o alias `c.` do JOIN — usada no SELECT logo
     // abaixo (o COUNT acima não tem alias, é direto na tabela).
-    $condVisibilidadeC = "(c.visibilidade = 'publico' OR c.visibilidade IS NULL OR (c.visibilidade = 'privado' AND c.email = ?) OR (c.visibilidade = 'orientador' AND ? = 1))";
+    $condVisibilidadeC = "(c.visibilidade = 'publico' OR c.visibilidade IS NULL OR (c.visibilidade = 'privado' AND c.email = ?) OR (c.visibilidade = 'orientador' AND (? = 1 OR c.email = ?)))";
 
     // Dois jeitos de pedir página no mesmo endpoint: `page`/`per_page` (usado
     // por ComentariosFeed.jsx, mural "Comentários" em Aulas, paginação 1/3
@@ -76,7 +80,7 @@ if ($metodo === 'GET') {
     }
 
     $stmtTotal = $mysqli->prepare("SELECT COUNT(*) AS total FROM comentarios WHERE aula_id = ? AND parent_id IS NULL AND $condVisibilidade");
-    $stmtTotal->bind_param('ssi', $aulaId, $emailAtual, $souAdminOuOrientador);
+    $stmtTotal->bind_param('ssis', $aulaId, $emailAtual, $souAdminOuOrientador, $emailAtual);
     $stmtTotal->execute();
     $total = (int) $stmtTotal->get_result()->fetch_assoc()['total'];
     $stmtTotal->close();
@@ -114,7 +118,7 @@ if ($metodo === 'GET') {
          WHERE c.aula_id = ? AND c.parent_id IS NULL AND $condVisibilidadeC
          ORDER BY c.created_at DESC, c.id DESC LIMIT ? OFFSET ?"
     );
-    $stmt->bind_param('ssiii', $aulaId, $emailAtual, $souAdminOuOrientador, $limite, $offset);
+    $stmt->bind_param('ssisii', $aulaId, $emailAtual, $souAdminOuOrientador, $emailAtual, $limite, $offset);
     $stmt->execute();
     $res = $stmt->get_result();
     $itens = [];
@@ -363,21 +367,38 @@ if ($metodo === 'POST') {
 }
 
 if ($metodo === 'PUT') {
-    // Editar comentário (pedido do cliente, 26/08: "como em rede social",
-    // hoje só chamado por DificuldadeDoDia.jsx / "Sua prática hoje" — ver
-    // handleEditar lá). Diferente do DELETE acima, aqui NÃO existe exceção
-    // pra admin/orientador: edição é SEMPRE só do próprio dono, sem lista de
-    // admins envolvida. Mesmo espírito "sem autenticação real" documentado
-    // no DELETE — o email de quem pede vem do corpo da requisição, não de
-    // sessão/cookie.
+    // Editar comentário e/ou trocar a visibilidade (pedido do cliente,
+    // 26/08: texto, "como em rede social"; 27/08: visibilidade, "se a
+    // pessoa criou um post privado, ela pode mudar pra público quando ela
+    // quiser") — hoje só chamado por DificuldadeDoDia.jsx / "Sua prática
+    // hoje" (ver handleEditar/handleAlterarVisibilidade lá). Diferente do
+    // DELETE acima, aqui NÃO existe exceção pra admin/orientador: as duas
+    // edições são SEMPRE só do próprio dono, sem lista de admins envolvida.
+    // Mesmo espírito "sem autenticação real" documentado no DELETE — o email
+    // de quem pede vem do corpo da requisição, não de sessão/cookie.
     $input = json_decode(file_get_contents('php://input'), true) ?: [];
     $id = intval($_GET['id'] ?? $input['id'] ?? 0);
     $emailSolicitante = strtolower(trim($input['email'] ?? ''));
-    $comentario = trim($input['comentario'] ?? '');
+    // Os dois campos são opcionais e independentes — o front manda só um por
+    // vez hoje (editar texto OU trocar visibilidade), mas o endpoint aceita
+    // qualquer combinação sem exigir o outro junto.
+    $temComentario = array_key_exists('comentario', $input);
+    $temVisibilidade = array_key_exists('visibilidade', $input);
+    $comentario = $temComentario ? trim($input['comentario']) : null;
+    $visibilidade = $temVisibilidade ? trim($input['visibilidade']) : null;
 
-    if ($id <= 0 || $emailSolicitante === '' || $comentario === '') {
+    if ($id <= 0 || $emailSolicitante === '' || (!$temComentario && !$temVisibilidade) || ($temComentario && $comentario === '')) {
         http_response_code(400);
-        echo json_encode(['erro' => 'id, email e comentario obrigatórios']);
+        echo json_encode(['erro' => 'id, email e ao menos um de comentario/visibilidade são obrigatórios']);
+        exit;
+    }
+    // Mesma lista fixa aceita no POST acima — aqui um valor fora dela é
+    // rejeitado (400) em vez de cair num default silencioso: um PUT com
+    // visibilidade inválida é sinal de bug no cliente, não uma escolha
+    // legítima de usuário como no POST.
+    if ($temVisibilidade && !in_array($visibilidade, ['publico', 'privado', 'orientador'], true)) {
+        http_response_code(400);
+        echo json_encode(['erro' => 'visibilidade inválida']);
         exit;
     }
     // Limite de 140 chars — mesmo LIMITE_TEXTO do textarea em
@@ -386,7 +407,7 @@ if ($metodo === 'PUT') {
     // ainda cairia aqui. Se um dia o mural "geral" (ComentariosFeed.jsx,
     // limite de 2000 no POST acima) ganhar edição também, este cap fixo
     // precisa virar condicional por aula_id.
-    if (mb_strlen($comentario) > 140) {
+    if ($temComentario && mb_strlen($comentario) > 140) {
         $comentario = mb_substr($comentario, 0, 140);
     }
 
@@ -409,12 +430,33 @@ if ($metodo === 'PUT') {
         exit;
     }
 
-    $stmt = $mysqli->prepare("UPDATE comentarios SET comentario = ? WHERE id = ?");
-    $stmt->bind_param('si', $comentario, $id);
+    // Monta o SET dinamicamente — só os campos que vieram no corpo, pra um
+    // PUT que só troca visibilidade não sobrescrever o texto (e vice-versa).
+    $campos = [];
+    $tipos = '';
+    $valores = [];
+    if ($temComentario) {
+        $campos[] = 'comentario = ?';
+        $tipos .= 's';
+        $valores[] = $comentario;
+    }
+    if ($temVisibilidade) {
+        $campos[] = 'visibilidade = ?';
+        $tipos .= 's';
+        $valores[] = $visibilidade;
+    }
+    $tipos .= 'i';
+    $valores[] = $id;
+
+    $stmt = $mysqli->prepare('UPDATE comentarios SET ' . implode(', ', $campos) . ' WHERE id = ?');
+    $stmt->bind_param($tipos, ...$valores);
     $stmt->execute();
     $stmt->close();
 
-    echo json_encode(['ok' => true, 'comentario' => $comentario]);
+    $resposta = ['ok' => true];
+    if ($temComentario) $resposta['comentario'] = $comentario;
+    if ($temVisibilidade) $resposta['visibilidade'] = $visibilidade;
+    echo json_encode($resposta);
     exit;
 }
 

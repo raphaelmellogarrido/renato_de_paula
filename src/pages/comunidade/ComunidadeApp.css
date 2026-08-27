@@ -1463,6 +1463,46 @@
   color: #f59e0b; /* mesma cor de .cm-badge-orientador */
 }
 
+.cm-comentario-card-visibilidade-publico {
+  color: var(--cm-text-soft);
+}
+
+/* Wrapper só existe quando o selinho é clicável (podeAlterarVisibilidade em
+   ComentarioCard.jsx, 27/08) — position:relative ancora o menu de troca
+   (abaixo) relativo a ESTE selinho, não ao card inteiro. */
+.cm-comentario-card-visibilidade-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.cm-comentario-card-visibilidade-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.cm-comentario-card-visibilidade-btn:hover {
+  opacity: 0.7;
+}
+
+/* Reaproveita o menu/opções de .cm-duvida-visibilidade-popover (mesmo menu
+   do composer, ver acima) só que abrindo pra BAIXO (top:100%) em vez de pra
+   cima — este selinho fica no TOPO do card, não no rodapé do form, então
+   abrir pra cima ficaria fora da área visível na maioria dos casos. O card
+   destrava a altura fixa via .cm-comentario-card-expandido (classeExpandido
+   em ComentarioCard.jsx inclui visibilidadeAberta) enquanto este menu está
+   aberto, senão o overflow:hidden de 92px (.cm-duvida .cm-comentario-card)
+   cortaria o menu pela metade. */
+.cm-comentario-card-visibilidade-popover {
+  top: calc(100% + 6px);
+  bottom: auto;
+  right: 0;
+  left: auto;
+}
+
 .cm-comentario-card-texto {
   margin: 4px 0 0;
   font-size: 0.88rem;
