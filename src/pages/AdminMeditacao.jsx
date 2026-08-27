@@ -8,10 +8,7 @@ function formatarData(iso) {
 }
 
 function baixarCsv(inscricoes) {
-  const linhas = [
-    ["email", "telefone", "cadastrado_em"],
-    ...inscricoes.map((i) => [i.email, i.telefone || "", i.criado_em]),
-  ];
+  const linhas = [["email", "telefone", "cadastrado_em"], ...inscricoes.map((i) => [i.email, i.telefone || "", i.criado_em])];
   const csv = linhas.map((linha) => linha.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
@@ -23,15 +20,15 @@ function baixarCsv(inscricoes) {
 }
 
 async function copiarTelefones(inscricoes) {
-  const telefones = inscricoes.map((i) => i.telefone).filter(Boolean).join("\n");
+  const telefones = inscricoes
+    .map((i) => i.telefone)
+    .filter(Boolean)
+    .join("\n");
   await navigator.clipboard.writeText(telefones);
 }
 
 function escapeHtml(texto) {
-  return String(texto)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return String(texto).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 function verMensagemCompleta(item) {
@@ -361,9 +358,7 @@ function AdminMeditacao() {
   // semana atual (tabela desafio_semana). Não mexe no texto dos itens
   // (desafiosForm/desafio_config) — só o progresso de quem já marcou.
   async function handleResetarDesafios() {
-    const confirmado = window.confirm(
-      "Tem certeza? Isso vai desmarcar todos os checks de desafios de todos os alunos."
-    );
+    const confirmado = window.confirm("Tem certeza? Isso vai desmarcar todos os checks de desafios de todos os alunos.");
     if (!confirmado) return;
 
     setResetDesafiosErro("");
@@ -422,7 +417,14 @@ function AdminMeditacao() {
   // Aceita colar vários e-mails separados por vírgula, espaço ou quebra de
   // linha — o campo "nome" só se aplica quando sobra exatamente 1 e-mail.
   function parseEmailsColados(texto) {
-    return [...new Set(texto.split(/[\s,]+/).map((e) => e.trim().toLowerCase()).filter(Boolean))];
+    return [
+      ...new Set(
+        texto
+          .split(/[\s,]+/)
+          .map((e) => e.trim().toLowerCase())
+          .filter(Boolean),
+      ),
+    ];
   }
 
   async function handleAdicionarTeste(e) {
@@ -455,11 +457,7 @@ function AdminMeditacao() {
         // quando é falha de envio) — nunca esconder.
         setTesteErro(data.error || "Falha ao adicionar.");
       } else {
-        setTesteToast(
-          data.sent_via
-            ? `✅ Convite enviado para ${alvo} e e-mail disparado via ${data.sent_via}`
-            : `✅ ${data.message || "E-mail liberado"} para ${alvo}`
-        );
+        setTesteToast(data.sent_via ? `✅ Convite enviado para ${alvo} e e-mail disparado via ${data.sent_via}` : `✅ ${data.message || "E-mail liberado"} para ${alvo}`);
         // Envio parcial em lote: liberou mas algum convite falhou — ainda é
         // sucesso (data.success !== false), mas o admin precisa saber quais.
         if (data.error) setTesteErro(data.error);
@@ -679,19 +677,12 @@ function AdminMeditacao() {
       <section className="section">
         <div className="container" style={{ maxWidth: 420, width: "100%", margin: "0 auto" }}>
           <div className="form-card">
-            <h2>Área administrativa</h2>
+            <h2>Área admin</h2>
             {erroLogin && <div className="error-box">{erroLogin}</div>}
             <form onSubmit={handleLogin} noValidate>
               <div className="field">
                 <label htmlFor="secret">Chave de administrador</label>
-                <input
-                  id="secret"
-                  type="password"
-                  required
-                  value={secret}
-                  onChange={(e) => setSecret(e.target.value)}
-                  placeholder="ADMIN_SECRET"
-                />
+                <input id="secret" type="password" required value={secret} onChange={(e) => setSecret(e.target.value)} placeholder="ADMIN_SECRET" />
               </div>
               <button type="submit" className="btn btn-primary btn-block" disabled={!secret || carregando}>
                 {carregando ? "Entrando..." : "Entrar"}
@@ -773,25 +764,13 @@ function AdminMeditacao() {
           </label>
 
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => setPage((p) => Math.max(0, p - 1))}
-              disabled={paginaAtual === 0}
-              aria-label="Página anterior"
-            >
+            <button type="button" className="btn btn-secondary" onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={paginaAtual === 0} aria-label="Página anterior">
               ‹
             </button>
             <span>
               Página {paginaAtual + 1} de {totalPaginas}
             </span>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => setPage((p) => Math.min(totalPaginas - 1, p + 1))}
-              disabled={paginaAtual >= totalPaginas - 1}
-              aria-label="Próxima página"
-            >
+            <button type="button" className="btn btn-secondary" onClick={() => setPage((p) => Math.min(totalPaginas - 1, p + 1))} disabled={paginaAtual >= totalPaginas - 1} aria-label="Próxima página">
               ›
             </button>
           </div>
@@ -861,25 +840,13 @@ function AdminMeditacao() {
                 </label>
 
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => setHistoricoPage((p) => Math.max(0, p - 1))}
-                    disabled={historicoPaginaAtual === 0}
-                    aria-label="Página anterior do histórico"
-                  >
+                  <button type="button" className="btn btn-secondary" onClick={() => setHistoricoPage((p) => Math.max(0, p - 1))} disabled={historicoPaginaAtual === 0} aria-label="Página anterior do histórico">
                     ‹
                   </button>
                   <span>
                     Página {historicoPaginaAtual + 1} de {historicoTotalPaginas}
                   </span>
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => setHistoricoPage((p) => Math.min(historicoTotalPaginas - 1, p + 1))}
-                    disabled={historicoPaginaAtual >= historicoTotalPaginas - 1}
-                    aria-label="Próxima página do histórico"
-                  >
+                  <button type="button" className="btn btn-secondary" onClick={() => setHistoricoPage((p) => Math.min(historicoTotalPaginas - 1, p + 1))} disabled={historicoPaginaAtual >= historicoTotalPaginas - 1} aria-label="Próxima página do histórico">
                     ›
                   </button>
                 </div>
@@ -890,9 +857,7 @@ function AdminMeditacao() {
 
         <div className="form-card" style={{ marginTop: 40 }}>
           <h3>Controle da Live</h3>
-          <p style={{ marginTop: -8, marginBottom: 16, color: "#666" }}>
-            Trava/libera o botão "Entrar na live" que o aluno vê em /comunidade — independente do link salvo abaixo em "Encontro ao Vivo".
-          </p>
+          <p style={{ marginTop: -8, marginBottom: 16, color: "#666" }}>Trava/libera o botão "Entrar na live" que o aluno vê em /comunidade — independente do link salvo abaixo em "Encontro ao Vivo".</p>
           {liveErro && <div className="error-box">{liveErro}</div>}
           <button
             type="button"
@@ -915,55 +880,28 @@ function AdminMeditacao() {
             }}
           >
             <span>{liveLiberada ? "🟢 Liberar entrada" : "🔴 Live Fechada"}</span>
-            <span style={{ fontSize: 12, color: "#666", fontWeight: 400 }}>
-              {salvandoLive ? "Salvando..." : "Clique para alternar"}
-            </span>
+            <span style={{ fontSize: 12, color: "#666", fontWeight: 400 }}>{salvandoLive ? "Salvando..." : "Clique para alternar"}</span>
           </button>
-          <p style={{ marginTop: 10, marginBottom: 0, fontSize: 13, color: "#666" }}>
-            Status atual:{" "}
-            {liveLiberada
-              ? 'Liberada — o aluno vê o botão "Entrar na live" clicável.'
-              : 'Travada — o aluno vê "Aguardando liberação do professor".'}
-          </p>
+          <p style={{ marginTop: 10, marginBottom: 0, fontSize: 13, color: "#666" }}>Status atual: {liveLiberada ? 'Liberada — o aluno vê o botão "Entrar na live" clicável.' : 'Travada — o aluno vê "Aguardando liberação do professor".'}</p>
         </div>
 
         <div className="form-card" style={{ marginTop: 40 }}>
           <h3>Encontro ao Vivo</h3>
-          <p style={{ marginTop: -8, marginBottom: 16, color: "#666" }}>
-            Edita o card "Próximo encontro ao vivo" que o aluno vê em /comunidade.
-          </p>
+          <p style={{ marginTop: -8, marginBottom: 16, color: "#666" }}>Edita o card "Próximo encontro ao vivo" que o aluno vê em /comunidade.</p>
           {encontroSucesso && <div className="success-box">Atualizado</div>}
           {encontroErro && <div className="error-box">{encontroErro}</div>}
           <form onSubmit={handleSalvarEncontro} noValidate>
             <div className="field">
               <label htmlFor="encontro-titulo">Título do encontro</label>
-              <input
-                id="encontro-titulo"
-                type="text"
-                value={encontroForm.titulo}
-                onChange={handleEncontroChange("titulo")}
-                placeholder="Aterramento Matinal"
-              />
+              <input id="encontro-titulo" type="text" value={encontroForm.titulo} onChange={handleEncontroChange("titulo")} placeholder="Aterramento Matinal" />
             </div>
             <div className="field">
               <label htmlFor="encontro-data">Data (ex: Qui, 15 Mai)</label>
-              <input
-                id="encontro-data"
-                type="text"
-                value={encontroForm.data_texto}
-                onChange={handleEncontroChange("data_texto")}
-                placeholder="Qui, 15 Mai"
-              />
+              <input id="encontro-data" type="text" value={encontroForm.data_texto} onChange={handleEncontroChange("data_texto")} placeholder="Qui, 15 Mai" />
             </div>
             <div className="field">
               <label htmlFor="encontro-horario">Horário (ex: 7:00 - 7:30)</label>
-              <input
-                id="encontro-horario"
-                type="text"
-                value={encontroForm.horario}
-                onChange={handleEncontroChange("horario")}
-                placeholder="7:00 - 7:30"
-              />
+              <input id="encontro-horario" type="text" value={encontroForm.horario} onChange={handleEncontroChange("horario")} placeholder="7:00 - 7:30" />
             </div>
             <div className="field">
               <label htmlFor="encontro-linha1">Linha 1</label>
@@ -979,13 +917,7 @@ function AdminMeditacao() {
             </div>
             <div className="field">
               <label htmlFor="encontro-link">Link da live</label>
-              <input
-                id="encontro-link"
-                type="text"
-                value={encontroForm.link_live}
-                onChange={handleEncontroChange("link_live")}
-                placeholder="https://..."
-              />
+              <input id="encontro-link" type="text" value={encontroForm.link_live} onChange={handleEncontroChange("link_live")} placeholder="https://..." />
             </div>
             <button type="submit" className="btn btn-primary btn-block" disabled={salvandoEncontro}>
               {salvandoEncontro ? "Salvando..." : "Salvar"}
@@ -1018,9 +950,7 @@ function AdminMeditacao() {
               ))}
             </ul>
             {encontroForm.link_live ? (
-              <span style={{ display: "block", padding: "8px 12px", border: "1px solid #333", borderRadius: 8, textAlign: "center", fontSize: 13 }}>
-                Entrar na live
-              </span>
+              <span style={{ display: "block", padding: "8px 12px", border: "1px solid #333", borderRadius: 8, textAlign: "center", fontSize: 13 }}>Entrar na live</span>
             ) : (
               <span
                 style={{
@@ -1041,9 +971,7 @@ function AdminMeditacao() {
 
         <div className="form-card" style={{ marginTop: 40 }}>
           <h3>Desafio da Semana</h3>
-          <p style={{ marginTop: -8, marginBottom: 16, color: "#666" }}>
-            Edita os 3 itens do card "Desafio da Semana" que o aluno vê em /comunidade.
-          </p>
+          <p style={{ marginTop: -8, marginBottom: 16, color: "#666" }}>Edita os 3 itens do card "Desafio da Semana" que o aluno vê em /comunidade.</p>
           {desafiosSucesso && <div className="success-box">Atualizado</div>}
           {desafiosErro && <div className="error-box">{desafiosErro}</div>}
           {desafiosForm.length === 0 ? (
@@ -1062,21 +990,11 @@ function AdminMeditacao() {
                   <p style={{ margin: "0 0 8px", fontWeight: 600 }}>Item {idx + 1}</p>
                   <div className="field">
                     <label htmlFor={`desafio-titulo-${item.id}`}>Título</label>
-                    <input
-                      id={`desafio-titulo-${item.id}`}
-                      type="text"
-                      value={item.titulo}
-                      onChange={handleDesafioChange(idx, "titulo")}
-                    />
+                    <input id={`desafio-titulo-${item.id}`} type="text" value={item.titulo} onChange={handleDesafioChange(idx, "titulo")} />
                   </div>
                   <div className="field">
                     <label htmlFor={`desafio-descricao-${item.id}`}>Descrição</label>
-                    <input
-                      id={`desafio-descricao-${item.id}`}
-                      type="text"
-                      value={item.descricao}
-                      onChange={handleDesafioChange(idx, "descricao")}
-                    />
+                    <input id={`desafio-descricao-${item.id}`} type="text" value={item.descricao} onChange={handleDesafioChange(idx, "descricao")} />
                   </div>
                 </div>
               ))}
@@ -1116,32 +1034,17 @@ function AdminMeditacao() {
 
         <div className="form-card" style={{ marginTop: 40 }}>
           <h3>Frase Motivacional da Semana</h3>
-          <p style={{ marginTop: -8, marginBottom: 16, color: "#666" }}>
-            Edita o card "Frase Motivacional da Semana" que o aluno vê em /comunidade (fim da coluna da direita).
-          </p>
+          <p style={{ marginTop: -8, marginBottom: 16, color: "#666" }}>Edita o card "Frase Motivacional da Semana" que o aluno vê em /comunidade (fim da coluna da direita).</p>
           {fraseSucesso && <div className="success-box">Atualizado</div>}
           {fraseErro && <div className="error-box">{fraseErro}</div>}
           <form onSubmit={handleSalvarFrase} noValidate>
             <div className="field">
               <label htmlFor="frase-principal">Frase principal</label>
-              <textarea
-                id="frase-principal"
-                rows={3}
-                required
-                value={fraseForm.frase}
-                onChange={handleFraseChange("frase")}
-                placeholder="Cada momento de presença é uma semente de transformação."
-              />
+              <textarea id="frase-principal" rows={3} required value={fraseForm.frase} onChange={handleFraseChange("frase")} placeholder="Cada momento de presença é uma semente de transformação." />
             </div>
             <div className="field">
               <label htmlFor="frase-subfrase">Subfrase</label>
-              <input
-                id="frase-subfrase"
-                type="text"
-                value={fraseForm.subfrase}
-                onChange={handleFraseChange("subfrase")}
-                placeholder="frase teste"
-              />
+              <input id="frase-subfrase" type="text" value={fraseForm.subfrase} onChange={handleFraseChange("subfrase")} placeholder="frase teste" />
             </div>
             <button type="submit" className="btn btn-primary btn-block" disabled={!fraseForm.frase.trim() || salvandoFrase}>
               {salvandoFrase ? "Salvando..." : "Salvar"}
@@ -1162,23 +1065,15 @@ function AdminMeditacao() {
             }}
           >
             <p style={{ margin: "0 0 4px", fontSize: 12, textTransform: "uppercase", color: "#999" }}>Prévia</p>
-            <span style={{ display: "block", fontSize: 40, lineHeight: 1, fontFamily: "Georgia, serif", color: "#7c9473" }}>
-              “
-            </span>
-            <strong style={{ display: "block", marginBottom: 8, fontSize: 18 }}>
-              {fraseForm.frase || "—"}
-            </strong>
-            <span style={{ display: "block", fontSize: 14, fontStyle: "italic", color: "#666" }}>
-              {fraseForm.subfrase || "—"}
-            </span>
+            <span style={{ display: "block", fontSize: 40, lineHeight: 1, fontFamily: "Georgia, serif", color: "#7c9473" }}>“</span>
+            <strong style={{ display: "block", marginBottom: 8, fontSize: 18 }}>{fraseForm.frase || "—"}</strong>
+            <span style={{ display: "block", fontSize: 14, fontStyle: "italic", color: "#666" }}>{fraseForm.subfrase || "—"}</span>
           </div>
         </div>
 
         <div className="form-card" style={{ marginTop: 40 }}>
           <h3>Acesso de Teste 🔑</h3>
-          <p style={{ marginTop: -8, marginBottom: 16, color: "#666" }}>
-            Convidar para a comunidade
-          </p>
+          <p style={{ marginTop: -8, marginBottom: 16, color: "#666" }}>Convidar para a comunidade</p>
 
           {testeToast && <div className="success-box">{testeToast}</div>}
           {testeErro && <div className="error-box">{testeErro}</div>}
@@ -1196,22 +1091,10 @@ function AdminMeditacao() {
             </div>
             <div className="field">
               <label htmlFor="teste-nome">Nome</label>
-              <input
-                id="teste-nome"
-                type="text"
-                value={testeNome}
-                onChange={(e) => setTesteNome(e.target.value)}
-                placeholder="Nome do amigo"
-              />
+              <input id="teste-nome" type="text" value={testeNome} onChange={(e) => setTesteNome(e.target.value)} placeholder="Nome do amigo" />
             </div>
             <div className="field" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <input
-                id="teste-enviar-email"
-                type="checkbox"
-                checked={testeEnviarEmail}
-                onChange={(e) => setTesteEnviarEmail(e.target.checked)}
-                style={{ width: "auto" }}
-              />
+              <input id="teste-enviar-email" type="checkbox" checked={testeEnviarEmail} onChange={(e) => setTesteEnviarEmail(e.target.checked)} style={{ width: "auto" }} />
               <label htmlFor="teste-enviar-email" style={{ margin: 0 }}>
                 Enviar e-mail de convite automaticamente
               </label>
@@ -1229,12 +1112,7 @@ function AdminMeditacao() {
           </div>
 
           <div className="field">
-            <input
-              type="text"
-              value={testeBusca}
-              onChange={(e) => setTesteBusca(e.target.value)}
-              placeholder="Buscar por e-mail ou nome..."
-            />
+            <input type="text" value={testeBusca} onChange={(e) => setTesteBusca(e.target.value)} placeholder="Buscar por e-mail ou nome..." />
           </div>
 
           {testeCarregando ? (
