@@ -367,7 +367,22 @@ function DificuldadeDoDia() {
             return { ...c, comentario: fresco.comentario, reacoes: fresco.reacoes, minhaReacao: fresco.minhaReacao, respostas: respostasFrescas };
           });
           if (!mudou) return atual; // mesma referência — React não re-renderiza à toa
-          return novos.length > 0 ? [...novos, ...comRespostasAtualizadas] : comRespostasAtualizadas;
+          if (novos.length === 0) return comRespostasAtualizadas;
+          // `novos` nem sempre é comentário GENUINAMENTE novo (bug reportado
+          // 27/08): um post que o autor tinha marcado "Privado"/"Orientador"
+          // e mudou pra "Público" (handleAlterarVisibilidade) só passa a
+          // aparecer no GET de QUEM MAIS está com o feed aberto a partir de
+          // agora — pra esse viewer o id nunca esteve em itensRef.current,
+          // então cai aqui junto com os de verdade recém-criados, mesmo
+          // tendo sido escrito há dias. Empurrar direto pro topo (como
+          // antes) fazia ele "pular" pra 1ª posição igual algo escrito agora
+          // — só desfazia com F5 (recarrega já ordenado certo pelo
+          // servidor). Reordenar pelo created_at real do servidor evita o
+          // pulo sem precisar de F5: um "novo" antigo (visibilidade mudou)
+          // volta pra posição cronológica que já era dele; um novo de
+          // verdade (criado agora) continua subindo pro topo naturalmente,
+          // por ter o created_at mais recente de todos.
+          return [...novos, ...comRespostasAtualizadas].sort((a, b) => (a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0));
         });
       })
       .catch(() => {
