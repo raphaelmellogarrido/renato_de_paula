@@ -151,20 +151,32 @@ function ColunaEncontros() {
     };
   }, [eventId, email]);
 
+  // Repete a cada 3s pra pegar em quase tempo real quando o admin muda
+  // dia/horário em /admin (seção "Encontro ao Vivo") — pedido explícito do
+  // cliente. Fetch imediato no mount (mesmo padrão do Controle da Live
+  // logo abaixo) pra não esperar o primeiro intervalo pro card já vir
+  // atualizado.
   useEffect(() => {
     let cancelado = false;
-    fetch("/api/encontro.php")
-      .then((r) => r.json())
-      .then((dados) => {
-        if (!cancelado && dados?.ok) {
-          setEncontro((atual) => ({ ...atual, ...dados }));
-        }
-      })
-      .catch(() => {
-        // Sem PHP disponível (dev local) — mantém o conteúdo padrão acima.
-      });
+
+    function buscarEncontro() {
+      fetch("/api/encontro.php")
+        .then((r) => r.json())
+        .then((dados) => {
+          if (!cancelado && dados?.ok) {
+            setEncontro((atual) => ({ ...atual, ...dados }));
+          }
+        })
+        .catch(() => {
+          // Sem PHP disponível (dev local) — mantém o conteúdo padrão acima.
+        });
+    }
+
+    buscarEncontro();
+    const intervalo = setInterval(buscarEncontro, 3000);
     return () => {
       cancelado = true;
+      clearInterval(intervalo);
     };
   }, []);
 
