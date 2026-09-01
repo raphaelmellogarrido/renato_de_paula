@@ -1,12 +1,73 @@
-name: Git Push Tracker
+name: Deploy to Hostinger (FTP)
+
+# Substitui o antigo workflow "Git Push Tracker" (só logava uma mensagem,
+# não fazia deploy nenhum). O deploy real até agora era o "deploy via
+# Git" nativo da Hostinger (hPanel), que RECRIA public_html do zero a
+# cada push — apagando qualquer coisa gerada em runtime que não veio do
+# Git (ver HANDOFF.md e o histórico de video-log.txt). Este workflow builda
+# o site (npm run build -> dist/, que já inclui tudo de public/, incluindo
+# public/api/*.php e .htaccess — Vite copia public/ pro dist/ automaticamente)
+# e sobe só isso por FTP, sem tocar em mais nada que já esteja no servidor.
+#
+# IMPORTANTE (ver conversa que criou este arquivo): depois que este
+# workflow rodar com sucesso pelo menos uma vez, desativar o "deploy via
+# Git" no hPanel da Hostinger pra esse domínio — com os dois mecanismos
+# ativos ao mesmo tempo, o deploy via Git continua recriando/zerando
+# public_html a cada push, e o problema que este workflow resolve volta.
+#
+# Secrets necessários (GitHub -> Settings -> Secrets and variables ->
+# Actions -> New repository secret), valores em hPanel -> Arquivos ->
+# Contas FTP:
+#   FTP_SERVER   — host FTP (ex.: ftp.renatodepaula.com ou o IP da conta)
+#   FTP_USERNAME — usuário da conta FTP
+#   FTP_PASSWORD — senha da conta FTP
+#
+# server-dir abaixo assume conta FTP com acesso a partir da raiz da conta
+# Hostinger (enxerga /domains, /mail etc.). Se a conta FTP usada já for
+# escopada só pro domínio (raiz do FTP = pasta do site), troca pra
+# "/public_html/" ou "/".
 
 on:
   push:
     branches: [main]
 
+# Evita dois deploys rodando ao mesmo tempo se houver pushes em sequência
+# rápida — o mais novo cancela o anterior ainda em andamento.
+concurrency:
+  group: deploy-producao
+  cancel-in-progress: true
+
 jobs:
-  track-push:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Log push status
-        run: echo "Push registrado com sucesso no repositório."
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (gera dist/, com public/ já copiado pra dentro)
+        run: npm run build
+
+      - name: Deploy dist/ por FTP pra public_html
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          local-dir: ./dist/
+          server-dir: /domains/renatodepaula.com/public_html/
+          # false = nunca apaga no servidor um arquivo que não esteja em
+          # dist/ (uploads antigos, o que sobrar fora do Git etc.) — só
+          # envia/atualiza o que mudou. É exatamente o oposto do
+          # comportamento do deploy via Git da Hostinger que causava o
+          # problema original.
+          dangerous-clean-slate: false
