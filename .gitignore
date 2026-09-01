@@ -40,6 +40,14 @@ server/curso-meditacao-raiz/*
 public/uploads/posts/*
 !public/uploads/posts/.gitkeep
 
+# Log de progresso de vídeo (IP + video + % + página), gerado em runtime
+# por public/api/video-log.php — nunca deve ir pro Git. Mesmo aviso de
+# "some a cada deploy" documentado acima pra uploads/posts e em
+# HANDOFF.md (Problema 1) pra server/videos: como esse arquivo é
+# recriado do zero em toda pasta do app na Hostinger a cada push, o
+# conteúdo dele não sobrevive a um novo deploy.
+public/api/video-log.txt
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
