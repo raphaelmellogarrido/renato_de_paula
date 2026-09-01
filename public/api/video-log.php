@@ -6,13 +6,19 @@
 // Hostinger (a Meta não devolve IP no evento do Pixel).
 //
 // ATENÇÃO (ver HANDOFF.md, "Vídeos" / .gitignore): a Hostinger recreia a
-// pasta do app do zero a cada `git push` + deploy, apagando qualquer
-// arquivo gerado em runtime que não veio do Git — mesmo motivo que fez
-// avatar/foto de comentário deste projeto migrarem pra dentro do MySQL
-// (avatar_blob/image_blob). video-log.txt tem o mesmo problema: some no
-// próximo deploy. Aceito por enquanto porque foi pedido assim; se isso
-// incomodar, o caminho é o mesmo já usado pro resto do projeto (tabela no
-// MySQL via _conexao.php) em vez de arquivo.
+// pasta do app (public_html) do zero a cada `git push` + deploy, apagando
+// qualquer arquivo gerado em runtime que não veio do Git — mesmo motivo
+// que fez avatar/foto de comentário deste projeto migrarem pra dentro do
+// MySQL (avatar_blob/image_blob). Por isso video-log.txt NÃO fica dentro
+// de public_html: vive em caminho absoluto irmão de meditacao-videos e
+// private, fora da árvore que a Hostinger recria no deploy — sobrevive a
+// pushes futuros. Diferente da tentativa que falhou com VIDEOS_DIR (ver
+// HANDOFF.md, Problema 1): aquele era o processo Node.js sandboxed
+// (Node.js Selector/Passenger) sem acesso a pastas fora da própria app;
+// aqui é PHP rodando dentro do public_html via Apache/suexec, que enxerga
+// o restante do home do usuário normalmente.
+$logFile = '/home/u790959747/domains/renatodepaula.com/video-logs-data/video-log.txt';
+@mkdir(dirname($logFile), 0755, true);
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
@@ -76,7 +82,7 @@ if ($video !== '' && preg_match('/^\d{1,3}$/', $percent) && $page !== '') {
 
     // FILE_APPEND + LOCK_EX: vários alunos assistindo ao mesmo tempo não
     // corrompem/misturam linha um do outro no arquivo.
-    @file_put_contents(__DIR__ . '/video-log.txt', $linha, FILE_APPEND | LOCK_EX);
+    @file_put_contents($logFile, $linha, FILE_APPEND | LOCK_EX);
 }
 
 // 204 sempre, sem corpo: o fetch(keepalive) do front não lê a resposta.

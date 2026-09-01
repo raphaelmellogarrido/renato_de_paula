@@ -1,9 +1,11 @@
 <?php
 // Visualizador manual do video-log.txt (gravado por video-log.php) — pra
 // não precisar abrir o Gerenciador de Arquivos da Hostinger toda vez só
-// pra ver quem tá assistindo o quê. O .txt em si continua bloqueado por
-// URL direta (ver <Files "video-log.txt"> em public/api/.htaccess); esta
-// página é a única forma de olhar o conteúdo sem SFTP/painel.
+// pra ver quem tá assistindo o quê. Como o .txt agora vive fora de
+// public_html (ver comentário em video-log.php), nem precisa mais do
+// bloqueio <Files "video-log.txt"> — ele já não é alcançável por URL;
+// esta página continua sendo a forma mais simples de olhar o conteúdo
+// sem SFTP/painel.
 //
 // Senha simples via ?senha=, não o X-Admin-Secret do painel /admin — essa
 // página é pra abrir direto no navegador (link + senha na URL), não
@@ -15,7 +17,7 @@ if (($_GET['senha'] ?? '') !== SENHA) {
     die('Senha incorreta ou ausente. Use ?senha=SUASENHA na URL.');
 }
 
-$arquivoTxt = __DIR__ . '/video-log.txt';
+$arquivoTxt = '/home/u790959747/domains/renatodepaula.com/video-logs-data/video-log.txt';
 
 // Limpeza só em POST (form abaixo, nunca um link) — assim um crawler ou
 // link pré-carregado não apaga o log sozinho. Redirect depois (POST-then-

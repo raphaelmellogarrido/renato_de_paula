@@ -1,9 +1,7 @@
 RewriteEngine Off
 
-# video-log.txt guarda IP + comportamento de vídeo por visitante — nunca
-# pode ser servido direto por URL (só leitura manual no Gerenciador de
-# Arquivos da Hostinger). Mesmo padrão de bloqueio de hotmart/.htaccess
-# (config.php / _conexao.php).
-<Files "video-log.txt">
-    Require all denied
-</Files>
+# video-log.txt morava aqui e tinha bloqueio de URL direta (<Files>) —
+# mesmo padrão de hotmart/.htaccess (config.php / _conexao.php). Removido
+# porque o arquivo agora vive fora de public_html (ver comentário em
+# video-log.php), então já não é alcançável por URL nenhuma; nada a
+# bloquear neste diretório.
