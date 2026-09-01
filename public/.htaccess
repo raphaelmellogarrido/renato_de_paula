@@ -1,6 +1,13 @@
 RewriteEngine On
 RewriteBase /
 
+# 0. Reforço explícito pras rotas de log de vídeo — a regra genérica
+# "^api/ -" logo abaixo já devia bastar, mas isso aqui deixa essas duas
+# rotas blindadas do fallback de SPA mesmo se a regra genérica for
+# alterada/removida no futuro.
+RewriteRule ^api/video-log\.php - [L]
+RewriteRule ^api/ver-logs\.php - [L]
+
 # 1. SE FOR /api/ -> NÃO MEXER, deixa o PHP rodar
 RewriteRule ^api/ - [L]
 
