@@ -67,8 +67,8 @@ export function agendarScriptsTerceiros() {
 
 // ---------------------------------------------------------------------
 // Tracking de progresso de vídeo (25/50/75/95%): evento custom pro Meta
-// Pixel + fetch pro back-end (log de IP em /api/video-log, já que a Meta
-// não devolve IP).
+// Pixel + fetch pro back-end (log de IP em /api/video-log.php, já que a
+// Meta não devolve IP).
 //
 // O site troca de tela via React Router sem dar reload de página, e alguns
 // vídeos (mito-2, mito-3) só entram no DOM depois que o anterior termina —
@@ -103,9 +103,14 @@ function registrarProgressoVideo(videoId, marco) {
 
   // keepalive garante que a requisição saia mesmo se o usuário trocar de
   // rota/aba logo em seguida. Erro de rede aqui não pode quebrar nada.
-  fetch(`/api/video-log?video=${encodeURIComponent(videoId)}&percent=${marco}&page=${encodeURIComponent(pathname)}`, {
-    method: "GET",
+  // POST /api/video-log.php (extensão explícita — GET /api/video-log sem
+  // ".php" dependia do Apache resolver a extensão sozinho via MultiViews
+  // e parou de gravar em produção sem nenhuma mudança de código aqui).
+  fetch("/api/video-log.php", {
+    method: "POST",
     keepalive: true,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ video: videoId, pct: marco, page: pathname }),
   }).catch(() => {});
 }
 
