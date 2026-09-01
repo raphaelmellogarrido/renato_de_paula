@@ -204,7 +204,7 @@ function VideoHeroMeditacao() {
       <div className="container">
         <div className="meditacao-hero-video-slot" ref={slotRef}>
           <div className={`meditacao-hero-video ${flutuante ? "is-floating" : ""}`} ref={wrapperRef}>
-            <video ref={videoRef} id="video-meditacao" src={`${API_URL}/videos/meditacao.mp4`} autoPlay muted={mudo} loop playsInline onClick={togglePlay} onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onError={handleVideoError} />
+            <video ref={videoRef} id="video-meditacao" src="/api/stream.php?f=meditacao.mp4" autoPlay muted={mudo} loop playsInline onClick={togglePlay} onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onError={handleVideoError} />
 
             <button type="button" className={`guarded-video-toggle ${playing ? "is-playing" : ""}`} onClick={togglePlay} aria-label={playing ? "Pausar" : "Reproduzir"}>
               {playing ? "❚❚" : "▶"}
@@ -383,7 +383,7 @@ function Meditacao() {
               <ProgressoMitos passo={1} />
               <h3 className="mitos-video-title">Mito #1 — "{MITOS_TITULOS[0]}"</h3>
             </div>
-            <GuardedVideo id="mito-1" src={`${API_URL}/videos/mito1.mp4`} label="Mito 1" onEnded={handleVideo1Ended} />
+            <GuardedVideo id="mito-1" src="/api/stream.php?f=mito1.mp4" label="Mito 1" onEnded={handleVideo1Ended} />
             {!video1Assistido && <p className="mitos-lock-hint center">🔒 Assista até o final para liberar o próximo conteúdo</p>}
           </div>
         </section>
@@ -454,7 +454,7 @@ function Meditacao() {
               <h3 className="mitos-video-title">Mito #2 — "{MITOS_TITULOS[1]}"</h3>
             </div>
             <div className="container guarded-video-list" style={{ maxWidth: 860, width: "100%", margin: "0 auto" }}>
-              <GuardedVideo id="mito-2" src={`${API_URL}/videos/mito2.mp4`} label="Mito 2" onEnded={handleVideo2Ended} />
+              <GuardedVideo id="mito-2" src="/api/stream.php?f=mito2.mp4" label="Mito 2" onEnded={handleVideo2Ended} />
             </div>
           </section>
         )}
@@ -467,7 +467,7 @@ function Meditacao() {
               <p className="mitos-lede-small">Você chegou ao último vídeo da série.</p>
             </div>
             <div className="container guarded-video-list" style={{ maxWidth: 860, width: "100%", margin: "0 auto" }}>
-              <GuardedVideo id="mito-3" src={`${API_URL}/videos/mito3.mp4`} label="Mito 3" onEnded={handleVideo3Ended} />
+              <GuardedVideo id="mito-3" src="/api/stream.php?f=mito3.mp4" label="Mito 3" onEnded={handleVideo3Ended} />
             </div>
           </section>
         )}

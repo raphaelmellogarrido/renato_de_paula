@@ -71,3 +71,14 @@ jobs:
           # comportamento do deploy via Git da Hostinger que causava o
           # problema original.
           dangerous-clean-slate: false
+          # Guarda extra (redundante com dangerous-clean-slate: false e com
+          # server-dir apontar só pra public_html): garante que esses dois
+          # cofres nunca entram no que é enviado/varrido pelo FTP, mesmo que
+          # algum dia apareçam pastas com esse nome dentro de dist/. Os
+          # cofres de verdade ficam fora de public_html, em
+          # /domains/renatodepaula.com/video-logs-data/ e
+          # /domains/renatodepaula.com/meditacao-videos/ — ver video-log.php,
+          # ver-logs.php e HANDOFF.md.
+          exclude: |
+            **/meditacao-videos/**
+            **/video-logs-data/**
