@@ -64,3 +64,97 @@ export function agendarScriptsTerceiros() {
     setTimeout(disparar, ATRASO_MAXIMO_MS);
   }
 }
+
+// ---------------------------------------------------------------------
+// Tracking de progresso de vídeo (25/50/75/95%): evento custom pro Meta
+// Pixel + fetch pro back-end (log de IP em /api/video-log, já que a Meta
+// não devolve IP).
+//
+// O site troca de tela via React Router sem dar reload de página, e alguns
+// vídeos (mito-2, mito-3) só entram no DOM depois que o anterior termina —
+// ou seja, um único document.querySelectorAll('video') no load não é
+// suficiente. Por isso: escaneia o que já existe e usa um MutationObserver
+// pra pegar vídeo que aparece depois.
+// ---------------------------------------------------------------------
+const MARCOS_PROGRESSO_VIDEO = [25, 50, 75, 95];
+const videosComListener = new WeakSet(); // evita registrar timeupdate 2x no mesmo elemento
+const tracked = {}; // tracked['video-meditacao'] = { 25: false, 50: false, 75: false, 95: false }
+
+function criarFlagsDeVideo() {
+  const flags = {};
+  MARCOS_PROGRESSO_VIDEO.forEach((marco) => {
+    flags[marco] = false;
+  });
+  return flags;
+}
+
+function registrarProgressoVideo(videoId, marco) {
+  const pathname = window.location.pathname;
+
+  console.log(`[VIDEO TRACK] ${videoId} - ${marco}%`);
+
+  if (typeof window.fbq === "function") {
+    window.fbq("trackCustom", "VideoProgress", {
+      video_name: videoId,
+      progress: marco,
+      page: pathname,
+    });
+  }
+
+  // keepalive garante que a requisição saia mesmo se o usuário trocar de
+  // rota/aba logo em seguida. Erro de rede aqui não pode quebrar nada.
+  fetch(`/api/video-log?video=${encodeURIComponent(videoId)}&percent=${marco}&page=${encodeURIComponent(pathname)}`, {
+    method: "GET",
+    keepalive: true,
+  }).catch(() => {});
+}
+
+// Handler leve de propósito: só aritmética e leitura de flag, nada de DOM
+// query aqui dentro — timeupdate dispara várias vezes por segundo.
+function aoAtualizarTempoVideo(video) {
+  const videoId = video.id;
+  if (!videoId || !video.duration) return;
+
+  const percentualAtual = (video.currentTime / video.duration) * 100;
+  const flags = tracked[videoId];
+
+  for (const marco of MARCOS_PROGRESSO_VIDEO) {
+    if (!flags[marco] && percentualAtual >= marco) {
+      flags[marco] = true;
+      registrarProgressoVideo(videoId, marco);
+    }
+  }
+}
+
+function observarVideo(video) {
+  if (videosComListener.has(video)) return;
+  if (!video.id) {
+    console.warn("[VIDEO TRACK] <video> sem id foi ignorado — adicione um id único pra ele ser trackeado.", video);
+    return;
+  }
+
+  videosComListener.add(video);
+  if (!tracked[video.id]) tracked[video.id] = criarFlagsDeVideo();
+
+  video.addEventListener("timeupdate", () => aoAtualizarTempoVideo(video), { passive: true });
+}
+
+// Chamado uma vez em main.jsx. Ao contrário do Pixel/GA, não adia pra
+// idle/timeout — precisa estar escutando desde já pro vídeo com autoPlay
+// (hero de /meditacao) não perder o começo do progresso.
+export function iniciarTrackingDeVideo() {
+  if (typeof window === "undefined") return;
+
+  document.querySelectorAll("video").forEach(observarVideo);
+
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      mutation.addedNodes.forEach((node) => {
+        if (node.nodeType !== 1) return; // só elementos
+        if (node.tagName === "VIDEO") observarVideo(node);
+        node.querySelectorAll?.("video").forEach(observarVideo);
+      });
+    });
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+}

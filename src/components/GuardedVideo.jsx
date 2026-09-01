@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react'
 // "pular vídeo" casual. Passando `permitirAvancar`, esse bloqueio some por
 // completo (usado nas 49 aulas da Jornada, onde o aluno pode ir e voltar
 // livremente) — os vídeos de venda/intro continuam com o padrão travado.
-function GuardedVideo({ src, onEnded, label, autoPlay = false, onTimeUpdate, permitirAvancar = false }) {
+function GuardedVideo({ src, onEnded, label, autoPlay = false, onTimeUpdate, permitirAvancar = false, id }) {
   const videoRef = useRef(null)
   const wrapperRef = useRef(null)
   const maxTimeRef = useRef(0)
@@ -242,6 +242,7 @@ function GuardedVideo({ src, onEnded, label, autoPlay = false, onTimeUpdate, per
       {label && <span className="guarded-video-label">{label}</span>}
       <video
         ref={videoRef}
+        id={id}
         src={src}
         controls={false}
         controlsList="nodownload"

@@ -306,9 +306,7 @@ function DificuldadeDoDia() {
         const novos = recentes.filter((c) => !idsAtuais.has(c.id));
 
         const idsRecentes = idsDoLote(recentes);
-        const idsRemovidos = new Set(
-          [...idsConhecidosRef.current].filter((id) => !idsRecentes.has(id))
-        );
+        const idsRemovidos = new Set([...idsConhecidosRef.current].filter((id) => !idsRecentes.has(id)));
         idsConhecidosRef.current = idsRecentes;
 
         if (idsRemovidos.size > 0) {
@@ -341,9 +339,7 @@ function DificuldadeDoDia() {
             // veriam a mudança com F5. Cobre tanto o comentário raiz quanto
             // cada resposta dele (mesma janela dos ids que já bate).
             const textoRaizMudou = fresco.comentario !== c.comentario;
-            const algumTextoRespostaMudou =
-              idsAtuaisResp === idsFrescosResp &&
-              respostasAtuais.some((r, i) => r.comentario !== respostasFrescas[i]?.comentario);
+            const algumTextoRespostaMudou = idsAtuaisResp === idsFrescosResp && respostasAtuais.some((r, i) => r.comentario !== respostasFrescas[i]?.comentario);
             // Reação rápida (27/08, mesmo espírito da edição acima): pega a
             // reação de OUTRO aluno em até ~3s sem F5. JSON.stringify nas
             // contagens é suficiente aqui (objeto pequeno e fixo, 3 chaves) —
@@ -355,14 +351,7 @@ function DificuldadeDoDia() {
                 const fr = respostasFrescas[i];
                 return !fr || JSON.stringify(fr.reacoes) !== JSON.stringify(r.reacoes) || fr.minhaReacao !== r.minhaReacao;
               });
-            if (
-              idsAtuaisResp === idsFrescosResp &&
-              !textoRaizMudou &&
-              !algumTextoRespostaMudou &&
-              !reacoesRaizMudou &&
-              !algumaReacaoRespostaMudou
-            )
-              return c;
+            if (idsAtuaisResp === idsFrescosResp && !textoRaizMudou && !algumTextoRespostaMudou && !reacoesRaizMudou && !algumaReacaoRespostaMudou) return c;
             mudou = true;
             return { ...c, comentario: fresco.comentario, reacoes: fresco.reacoes, minhaReacao: fresco.minhaReacao, respostas: respostasFrescas };
           });
@@ -437,7 +426,7 @@ function DificuldadeDoDia() {
       (entradas) => {
         if (entradas[0]?.isIntersecting) carregarMais();
       },
-      { root: listaRef.current, threshold: 0.1 }
+      { root: listaRef.current, threshold: 0.1 },
     );
     observer.observe(alvo);
     return () => observer.disconnect();
@@ -655,7 +644,7 @@ function DificuldadeDoDia() {
           return { ...c, respostas: c.respostas.map((r) => (r.id === id ? { ...r, comentario: novoTexto } : r)) };
         }
         return c;
-      })
+      }),
     );
   }
 
@@ -704,7 +693,7 @@ function DificuldadeDoDia() {
           return { ...c, respostas: c.respostas.map((r) => (r.id === id ? { ...r, ...patch } : r)) };
         }
         return c;
-      })
+      }),
     );
   }
 
@@ -801,11 +790,7 @@ function DificuldadeDoDia() {
           align-items:center faz a centralização vertical, ver
           .cm-duvida-cabecalho no CSS) + eyebrow/título/subtítulo. */}
       <div className="cm-duvida-cabecalho">
-        {session?.avatarUrl ? (
-          <img src={session.avatarUrl} alt="" className="cm-duvida-avatar cm-duvida-avatar-img" />
-        ) : (
-          <div className="cm-duvida-avatar">{iniciais(nomeSessao)}</div>
-        )}
+        {session?.avatarUrl ? <img src={session.avatarUrl} alt="" className="cm-duvida-avatar cm-duvida-avatar-img" /> : <div className="cm-duvida-avatar">{iniciais(nomeSessao)}</div>}
         <div className="cm-duvida-cabecalho-textos">
           <span className="cm-duvida-eyebrow">Sua prática hoje</span>
           <h2 className="cm-duvida-titulo">Qual foi sua dificuldade ao meditar hoje?</h2>
@@ -814,15 +799,7 @@ function DificuldadeDoDia() {
       </div>
 
       <form className="cm-duvida-form" onSubmit={handleEnviar}>
-        <textarea
-          ref={textareaRef}
-          className="cm-duvida-textarea"
-          placeholder="Hoje eu senti..."
-          value={texto}
-          onChange={(e) => setTexto(e.target.value)}
-          rows={3}
-          maxLength={LIMITE_TEXTO}
-        />
+        <textarea ref={textareaRef} className="cm-duvida-textarea" placeholder="Como sua mente acordou hoje? [😌 Calma] [🌪️ Agitada] [😴 Cansada]" value={texto} onChange={(e) => setTexto(e.target.value)} rows={3} maxLength={LIMITE_TEXTO} />
 
         {fotoPreview && (
           <div className="cm-duvida-foto-preview">
@@ -842,32 +819,11 @@ function DificuldadeDoDia() {
           <button type="button" className="cm-toolbar-btn" aria-label="Itálico" title="Itálico" onClick={() => aplicarMarcador("*")}>
             <Italic size={18} />
           </button>
-          <button
-            ref={emojiBotaoRef}
-            type="button"
-            className={`cm-toolbar-btn cm-btn-emoji ${emojiAberto ? "is-ativo" : ""}`}
-            aria-label="Inserir emoji"
-            title="Inserir emoji"
-            onClick={() => setEmojiAberto((v) => !v)}
-          >
+          <button ref={emojiBotaoRef} type="button" className={`cm-toolbar-btn cm-btn-emoji ${emojiAberto ? "is-ativo" : ""}`} aria-label="Inserir emoji" title="Inserir emoji" onClick={() => setEmojiAberto((v) => !v)}>
             <Smile size={18} />
           </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="cm-duvida-anexar-input"
-            onChange={handleSelecionarFoto}
-            tabIndex={-1}
-          />
-          <button
-            type="button"
-            className="cm-toolbar-btn"
-            aria-label="Anexar foto"
-            title="Anexar foto"
-            disabled={enviando}
-            onClick={() => fileInputRef.current?.click()}
-          >
+          <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="cm-duvida-anexar-input" onChange={handleSelecionarFoto} tabIndex={-1} />
+          <button type="button" className="cm-toolbar-btn" aria-label="Anexar foto" title="Anexar foto" disabled={enviando} onClick={() => fileInputRef.current?.click()}>
             <ImageIcon size={18} />
           </button>
 
@@ -987,13 +943,7 @@ function DificuldadeDoDia() {
         </div>
       )}
 
-      {destinatarioMensagem && (
-        <MensagemModal
-          destinatario={destinatarioMensagem}
-          onEnviar={handleEnviarMensagem}
-          onClose={() => setDestinatarioMensagem(null)}
-        />
-      )}
+      {destinatarioMensagem && <MensagemModal destinatario={destinatarioMensagem} onEnviar={handleEnviarMensagem} onClose={() => setDestinatarioMensagem(null)} />}
     </div>
   );
 }
