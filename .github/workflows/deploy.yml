@@ -47,7 +47,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
@@ -64,7 +64,7 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: ftps
           local-dir: ./dist/
-          server-dir: /domains/renatodepaula.com/public_html/
+          server-dir: /
           # false = nunca apaga no servidor um arquivo que não esteja em
           # dist/ (uploads antigos, o que sobrar fora do Git etc.) — só
           # envia/atualiza o que mudou. É exatamente o oposto do
