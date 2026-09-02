@@ -655,70 +655,63 @@
   margin: 0 auto 22px;
 }
 
-/* PhoneLeadInput — select de país (bandeira + código) + input + botão na
-   mesma linha; empilha só em telas bem estreitas (media query abaixo). */
+/* PhoneLeadInput — wrapper do <PhoneInput> da react-international-phone
+   (bandeiras SVG, 200+ países já vêm da lib) + botão de liberar embaixo
+   (largura cheia). Sem Tailwind neste projeto, então o visual pill de
+   48px vem daqui, sobrescrevendo as classes próprias da lib. */
 .phone-lead-input {
   max-width: 520px;
   margin: 0 auto;
 }
 
-.phone-lead-input-row {
-  display: flex;
+.phone-lead-input .react-international-phone-input-container {
   gap: 10px;
 }
 
-.phone-lead-input-country {
-  display: flex;
-  align-items: center;
-  flex: 0 0 auto;
-  gap: 4px;
-  padding: 0 6px 0 12px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
+.phone-lead-input .react-international-phone-country-selector-button {
+  height: 48px;
+  border-radius: 999px;
+  border-color: var(--border);
   background: #fff;
+  padding: 0 10px;
+  margin-right: 0;
 }
 
-.phone-lead-input-flag {
-  font-size: 18px;
-  pointer-events: none;
+.phone-lead-input .react-international-phone-country-selector-button:hover {
+  border-color: #8b7355;
 }
 
-.phone-lead-input-country select {
-  border: none;
-  background: transparent;
-  font: inherit;
-  color: var(--text-h);
-  padding: 12px 4px;
-}
-
-.phone-lead-input-country select:focus {
-  outline: none;
-}
-
-.phone-lead-input-number {
+.phone-lead-input .react-international-phone-input {
   flex: 1;
   min-width: 0;
-  padding: 12px 14px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  font: inherit;
+  height: 48px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border-color: var(--border);
   color: var(--text-h);
-  background: #fff;
+  font-size: 15px;
 }
 
-.phone-lead-input-number:focus {
-  outline: 2px solid var(--primary);
-  outline-offset: 1px;
+.phone-lead-input .react-international-phone-input:focus {
+  border-color: #8b7355;
+  box-shadow: 0 0 0 3px rgba(139, 115, 85, 0.15);
 }
 
-.phone-lead-input-number.valid {
-  border-color: var(--primary);
+@media (max-width: 480px) {
+  .phone-lead-input .react-international-phone-input-container {
+    flex-wrap: wrap;
+  }
+  .phone-lead-input .react-international-phone-input {
+    flex: 1 1 160px;
+  }
 }
 
 .phone-lead-submit {
-  flex: 0 0 auto;
+  display: block;
+  width: 100%;
+  margin-top: 14px;
   white-space: nowrap;
-  padding: 12px 22px;
+  padding: 13px 22px;
   border: none;
   border-radius: 999px;
   font-weight: 700;
@@ -750,18 +743,6 @@
   font-size: 12px;
   color: var(--text);
   text-align: center;
-}
-
-@media (max-width: 480px) {
-  .phone-lead-input-row {
-    flex-wrap: wrap;
-  }
-  .phone-lead-input-number {
-    flex: 1 1 160px;
-  }
-  .phone-lead-submit {
-    flex: 1 1 100%;
-  }
 }
 
 .form-row {
