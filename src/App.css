@@ -611,6 +611,159 @@
   text-align: center;
 }
 
+/* Gate "Desbloqueio Consciente" — aparece a 95% do Mito 1, abaixo do
+   player (ver Meditacao.jsx). overflow:hidden no wrapper + padding só no
+   -inner é o que deixa a animação de altura do framer-motion suave, sem
+   o padding "pular" de uma vez no início. */
+.desbloqueio-consciente {
+  overflow: hidden;
+  margin-top: 22px;
+}
+
+.desbloqueio-consciente-inner {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px 30px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+
+.desbloqueio-consciente-titulo {
+  font-family: var(--title);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--gold-dark);
+  margin: 0 0 6px;
+}
+
+.desbloqueio-consciente-subtitulo {
+  color: var(--text-h);
+  margin: 0 0 18px;
+}
+
+.desbloqueio-consciente-pergunta {
+  font-weight: 700;
+  color: var(--text-h);
+  font-size: 18px;
+  margin: 0 0 8px;
+}
+
+.desbloqueio-consciente-teaser {
+  color: var(--text);
+  max-width: 520px;
+  margin: 0 auto 22px;
+}
+
+/* PhoneLeadInput — select de país (bandeira + código) + input + botão na
+   mesma linha; empilha só em telas bem estreitas (media query abaixo). */
+.phone-lead-input {
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.phone-lead-input-row {
+  display: flex;
+  gap: 10px;
+}
+
+.phone-lead-input-country {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 4px;
+  padding: 0 6px 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.phone-lead-input-flag {
+  font-size: 18px;
+  pointer-events: none;
+}
+
+.phone-lead-input-country select {
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: var(--text-h);
+  padding: 12px 4px;
+}
+
+.phone-lead-input-country select:focus {
+  outline: none;
+}
+
+.phone-lead-input-number {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font: inherit;
+  color: var(--text-h);
+  background: #fff;
+}
+
+.phone-lead-input-number:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+.phone-lead-input-number.valid {
+  border-color: var(--primary);
+}
+
+.phone-lead-submit {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  padding: 12px 22px;
+  border: none;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 15px;
+  color: #fff;
+  background: #8b7355;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+  box-shadow: 0 10px 26px rgba(139, 115, 85, 0.28);
+}
+
+.phone-lead-submit:hover:not(:disabled) {
+  background: #75603f;
+  transform: translateY(-1px);
+}
+
+.phone-lead-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.phone-lead-trust {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--text);
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .phone-lead-input-row {
+    flex-wrap: wrap;
+  }
+  .phone-lead-input-number {
+    flex: 1 1 160px;
+  }
+  .phone-lead-submit {
+    flex: 1 1 100%;
+  }
+}
+
 .form-row {
   display: flex;
   gap: 18px;

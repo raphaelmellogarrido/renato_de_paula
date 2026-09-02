@@ -101,6 +101,12 @@ function registrarProgressoVideo(videoId, marco) {
     });
   }
 
+  // whatsapp/country vêm do lead capturado na gate "Desbloqueio Consciente"
+  // (/mitos, entre Mito 1 e Mito 2) — vazios até lá, presentes em todo log
+  // depois que o lead preenche o WhatsApp.
+  const whatsapp = localStorage.getItem("lead_whatsapp") || "";
+  const country = localStorage.getItem("lead_country") || "";
+
   // keepalive garante que a requisição saia mesmo se o usuário trocar de
   // rota/aba logo em seguida. Erro de rede aqui não pode quebrar nada.
   // POST /api/video-log.php (extensão explícita — GET /api/video-log sem
@@ -110,7 +116,7 @@ function registrarProgressoVideo(videoId, marco) {
     method: "POST",
     keepalive: true,
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ video: videoId, pct: marco, page: pathname }),
+    body: JSON.stringify({ video: videoId, pct: marco, page: pathname, whatsapp, country }),
   }).catch(() => {});
 }
 

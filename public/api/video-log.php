@@ -75,7 +75,9 @@ function limparParaLog(string $valor): string
     return substr(str_replace(["\r", "\n"], ' ', trim($valor)), 0, 200);
 }
 
-// Corpo JSON de {video, pct, page} (ver comentário no topo). php://input
+// Corpo JSON de {video, pct, page, whatsapp, country} (ver comentário no
+// topo). whatsapp/country vêm da gate "Desbloqueio Consciente" de /mitos —
+// opcionais, gravados vazios até o lead preencher o WhatsApp. php://input
 // vem vazio em GET, então json_decode devolve null e o ?: [] cobre isso
 // sem esquentar — cai direto pro fallback em $_GET logo abaixo.
 $corpo = json_decode(file_get_contents('php://input'), true) ?: [];
@@ -83,19 +85,25 @@ $corpo = json_decode(file_get_contents('php://input'), true) ?: [];
 $video = limparParaLog((string) ($corpo['video'] ?? $_GET['video'] ?? ''));
 $percent = trim((string) ($corpo['pct'] ?? $_GET['percent'] ?? ''));
 $page = limparParaLog((string) ($corpo['page'] ?? $_GET['page'] ?? ''));
+$whatsapp = limparParaLog((string) ($corpo['whatsapp'] ?? $_GET['whatsapp'] ?? ''));
+$country = limparParaLog((string) ($corpo['country'] ?? $_GET['country'] ?? ''));
 
 // Validação mínima antes de gravar — mas nunca responde 4xx: quem chama
 // isso é um fetch(keepalive) disparado no timeupdate do vídeo, sem
 // ninguém olhando a resposta; erro aqui não pode aparecer pro usuário.
+// whatsapp/country não são obrigatórios (log de progresso normal, sem
+// lead ainda, continua gravando igual a antes).
 $gravou = false;
 if ($video !== '' && preg_match('/^\d{1,3}$/', $percent) && $page !== '') {
     $linha = sprintf(
-        "%s | %s | %s | %s%% | %s\n",
+        "%s | %s | %s | %s%% | %s | %s | %s\n",
         date('Y-m-d H:i:s'),
         ipRealDoVisitante(),
         $video,
         $percent,
-        $page
+        $page,
+        $whatsapp,
+        $country
     );
 
     // FILE_APPEND + LOCK_EX: vários alunos assistindo ao mesmo tempo não

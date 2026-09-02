@@ -31,15 +31,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['limpar'])) {
 }
 
 // Lê o .txt, mais recente primeiro. Formato gravado por video-log.php:
-// "Y-m-d H:i:s | ip | video | percent% | page" — trim() em cada coluna
-// tira os espaços ao redor do "|".
+// "Y-m-d H:i:s | ip | video | percent% | page | whatsapp | country" — as
+// últimas duas colunas (whatsapp/country) foram adicionadas junto com a
+// gate "Desbloqueio Consciente" de /mitos; linhas gravadas antes disso só
+// têm as 5 primeiras, por isso o array_pad — sem isso ficariam sem coluna
+// pra exibir e quebrariam a tabela. trim() em cada coluna tira os espaços
+// ao redor do "|".
 $linhasTxt = [];
 if (file_exists($arquivoTxt)) {
     $linhasBrutas = file($arquivoTxt, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     foreach (array_reverse($linhasBrutas) as $linha) {
         $colunas = array_map('trim', explode('|', $linha));
-        if (count($colunas) === 5) {
-            $linhasTxt[] = $colunas;
+        if (count($colunas) === 5 || count($colunas) === 7) {
+            $linhasTxt[] = array_pad($colunas, 7, '');
         }
     }
 }
@@ -102,7 +106,7 @@ try {
   <?php if ($linhasTxt): ?>
     <div class="tabela-wrap">
       <table>
-        <tr><th>Data</th><th>IP</th><th>Vídeo</th><th>%</th><th>Página</th></tr>
+        <tr><th>Data</th><th>IP</th><th>Vídeo</th><th>%</th><th>Página</th><th>WhatsApp</th><th>País</th></tr>
         <?php foreach ($linhasTxt as $colunas): ?>
           <tr><?php foreach ($colunas as $col): ?><td><?= htmlspecialchars($col) ?></td><?php endforeach; ?></tr>
         <?php endforeach; ?>

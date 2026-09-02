@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import GuardedVideo from "../components/GuardedVideo";
-import { COUNTRIES } from "../config/countries";
+import PhoneLeadInput from "../components/PhoneLeadInput";
 import "./meditacao/MeditacaoV9.css";
 import DepoimentosDestaqueSection from "./meditacao/DepoimentosDestaqueSection";
 import HistoriaSection from "./meditacao/HistoriaSection";
@@ -13,10 +14,6 @@ import OfertaSection from "./meditacao/OfertaSection";
 import GarantiaSection from "./meditacao/GarantiaSection";
 import DuvidasSection from "./meditacao/DuvidasSection";
 
-const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://localhost:3001" : "");
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const GENERIC_MAX_DIGITS = 14;
-const GENERIC_MIN_DIGITS = 6;
 const HOTMART_LINK = "https://go.hotmart.com/I99615540I?dp=1";
 const WHATSAPP_DUVIDAS_LINK = "https://wa.me/5521976624767?text=" + encodeURIComponent("Olá! Conheci o Meditação Raiz pelo site e gostaria de tirar uma dúvida antes de começar o treinamento.");
 const WHATSAPP_METODOLOGIA_LINK = "https://wa.me/5521976624767?text=" + encodeURIComponent("Olá! Assisti aos 3 vídeos sobre os mitos da meditação e gostaria de saber mais sobre a metodologia do curso.");
@@ -38,10 +35,6 @@ function ProgressoMitos({ passo }) {
       <span className="mitos-progress-label">Vídeo {passo} de 3</span>
     </div>
   );
-}
-
-function onlyDigits(value) {
-  return value.replace(/\D/g, "");
 }
 
 function BotaoComprarCurso() {
@@ -271,14 +264,12 @@ function BarraFixaMeditacao() {
 function Meditacao() {
   const { hash, pathname } = useLocation();
   const variante = pathname === "/mitos" ? "mitos" : undefined;
-  const [email, setEmail] = useState("");
-  const [pais, setPais] = useState("BR");
-  const [ddd, setDdd] = useState("");
-  const [numero, setNumero] = useState("");
-  const [status, setStatus] = useState("idle");
-  const [erro, setErro] = useState("");
 
-  const [inscrito, setInscrito] = useState(() => localStorage.getItem("meditacao_inscrito") === "true");
+  const [hasLead, setHasLead] = useState(() => !!localStorage.getItem("lead_whatsapp"));
+  const [showGate, setShowGate] = useState(false);
+  const justUnlockedRef = useRef(false);
+  const mito2SectionRef = useRef(null);
+
   const [video1Assistido, setVideo1Assistido] = useState(() => localStorage.getItem("meditacao_video1_assistido") === "true");
   const [video2Assistido, setVideo2Assistido] = useState(() => localStorage.getItem("meditacao_video2_assistido") === "true");
   const [video3Assistido, setVideo3Assistido] = useState(() => localStorage.getItem("meditacao_video3_assistido") === "true");
@@ -291,54 +282,41 @@ function Meditacao() {
     }
   }, [hash]);
 
-  const emailValido = EMAIL_REGEX.test(email);
-  const country = COUNTRIES.find((c) => c.code === pais);
-  const dddValido = country.hasDDD ? ddd.length === 2 : true;
-  const numeroValido = country.phoneDigits != null ? numero.length === country.phoneDigits : numero.length >= GENERIC_MIN_DIGITS && numero.length <= GENERIC_MAX_DIGITS;
-  const telefonePreenchido = numero.length > 0;
-  const telefoneValido = country.hasDDD ? dddValido && numeroValido : numeroValido;
-  const formValido = emailValido;
-
-  function handleDddChange(e) {
-    setDdd(onlyDigits(e.target.value).slice(0, 2));
-  }
-
-  function handleNumeroChange(e) {
-    const max = country.hasDDD ? country.phoneDigits : GENERIC_MAX_DIGITS;
-    setNumero(onlyDigits(e.target.value).slice(0, max));
-  }
-
-  async function handleCadastrar(e) {
-    e.preventDefault();
-    if (!formValido) return;
-
-    setStatus("enviando");
-    setErro("");
-
-    const telefone = numero ? (country.hasDDD ? `${country.dial} (${ddd}) ${numero}` : `${country.dial} ${numero}`) : "";
-
-    try {
-      const res = await fetch(`${API_URL}/api/meditacao/inscrever`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, telefone }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || "Falha ao cadastrar.");
-      }
-
-      setStatus("sucesso");
-      setEmail("");
-      setDdd("");
-      setNumero("");
-      localStorage.setItem("meditacao_inscrito", "true");
-      setInscrito(true);
-    } catch (err) {
-      setStatus("erro");
-      setErro(err.message || "Não foi possível cadastrar. Tente novamente.");
+  // Só rola a tela na transição real dentro da sessão (após o submit do
+  // lead) — quem já tem hasLead salvo do localStorage e recarrega a página
+  // não é jogado pra baixo sozinho.
+  useEffect(() => {
+    if (hasLead && justUnlockedRef.current) {
+      mito2SectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      justUnlockedRef.current = false;
     }
+  }, [hasLead]);
+
+  // Dispara a gate "Desbloqueio Consciente" a 95% do Mito 1 — não espera
+  // o vídeo terminar. GuardedVideo já expõe onTimeUpdate(currentTime,
+  // duration) com esse mesmo padrão de threshold (usado em
+  // /comunidade/aulas-raiz pra marcar aula concluída aos 90%).
+  function handleMito1Progress(currentTime, duration) {
+    if (hasLead || showGate || !duration) return;
+    if (currentTime / duration >= 0.95) setShowGate(true);
+  }
+
+  // Fire-and-forget, mesmo padrão de /api/video-log.php com keepalive usado
+  // em src/utils/loadThirdParty.js — a liberação do vídeo não pode depender
+  // da rede.
+  function handleLeadSubmit({ whatsapp, country }) {
+    localStorage.setItem("lead_whatsapp", whatsapp);
+    localStorage.setItem("lead_country", country);
+
+    fetch("/api/video-log.php", {
+      method: "POST",
+      keepalive: true,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ video: "lead-capturado", pct: 100, page: "/mitos", whatsapp, country }),
+    }).catch(() => {});
+
+    justUnlockedRef.current = true;
+    setHasLead(true);
   }
 
   function handleVideo1Ended() {
@@ -359,12 +337,13 @@ function Meditacao() {
   // Variante /mitos: landing page de funil, uma única sequência guiada —
   // só o estágio atual fica visível por vez (não os 3 players de uma vez).
   // Vídeo 1 toca sem gate nenhum (clique pra dar play, com som — autoplay
-  // com som é bloqueado pelos navegadores de qualquer forma). Só depois que
-  // ele termina é que o formulário de email aparece, liberando o vídeo 2 —
-  // vídeo 3 libera sozinho ao final do 2, sem gate novo. No final dos 3, os
-  // dois CTAs (curso e metodologia).
+  // com som é bloqueado pelos navegadores de qualquer forma). A 95% do
+  // progresso, a gate "Desbloqueio Consciente" aparece abaixo do player —
+  // captura o WhatsApp e libera o vídeo 2 (com scroll + autoplay). Vídeo 3
+  // libera sozinho ao final do 2, sem gate novo. No final dos 3, os dois
+  // CTAs (curso e metodologia).
   if (variante === "mitos") {
-    const progressoSalvo = video1Assistido || inscrito;
+    const progressoSalvo = video1Assistido || hasLead;
 
     return (
       <>
@@ -383,78 +362,40 @@ function Meditacao() {
               <ProgressoMitos passo={1} />
               <h3 className="mitos-video-title">Mito #1 — "{MITOS_TITULOS[0]}"</h3>
             </div>
-            <GuardedVideo id="mito-1" src="/api/stream.php?f=mito1.mp4" label="Mito 1" onEnded={handleVideo1Ended} />
-            {!video1Assistido && <p className="mitos-lock-hint center">🔒 Assista até o final para liberar o próximo conteúdo</p>}
+            <GuardedVideo id="mito-1" src="/api/stream.php?f=mito1.mp4" label="Mito 1" onEnded={handleVideo1Ended} onTimeUpdate={handleMito1Progress} />
+            {!video1Assistido && !showGate && <p className="mitos-lock-hint center">🔒 Assista até o final para liberar o próximo conteúdo</p>}
+
+            <AnimatePresence>
+              {showGate && !hasLead && (
+                <motion.div
+                  className="desbloqueio-consciente"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
+                >
+                  <div className="desbloqueio-consciente-inner">
+                    <h3 className="desbloqueio-consciente-titulo">Mito #1 desvendado ✓</h3>
+                    <p className="desbloqueio-consciente-subtitulo">Você já entendeu por que a inquietação não é sua culpa.</p>
+                    <p className="desbloqueio-consciente-pergunta">Quer desbloquear o Mito #2 agora?</p>
+                    <p className="desbloqueio-consciente-teaser">No próximo eu te mostro por que "você precisa de muito tempo disponível para meditar" é a maior mentira — e como 5 minutos já mudam seu dia.</p>
+                    <PhoneLeadInput onSubmit={handleLeadSubmit} />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </section>
 
-        {video1Assistido && !inscrito && (
-          <section id="cadastro-live" className="section section-alt">
-            <div className="container" style={{ maxWidth: 560, width: "100%", margin: "0 auto" }}>
-              <div className="form-card center">
-                <h2>Você está a 1 passo do segundo mito</h2>
-                <p className="triagem-ajuda">O primeiro vídeo foi só o começo. Informe seu e-mail para salvar seu acesso e liberar agora o próximo vídeo.</p>
-
-                {status === "erro" && <div className="error-box">{erro}</div>}
-
-                <form onSubmit={handleCadastrar} noValidate>
-                  <div className={`field ${emailValido ? "valid" : ""}`}>
-                    <label htmlFor="email-live">E-mail {emailValido && <span className="valid-check">✓</span>}</label>
-                    <input id="email-live" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Digite seu melhor e-mail" />
-                  </div>
-
-                  <div className={`field ${telefonePreenchido && telefoneValido ? "valid" : ""}`}>
-                    <label htmlFor="numero-live">
-                      Telefone <span style={{ fontWeight: 400, opacity: 0.7 }}>(opcional)</span> {telefonePreenchido && telefoneValido && <span className="valid-check">✓</span>}
-                    </label>
-                    <div className="phone-group">
-                      <select
-                        value={pais}
-                        onChange={(e) => {
-                          setPais(e.target.value);
-                          setDdd("");
-                          setNumero("");
-                        }}
-                        aria-label="País"
-                      >
-                        {COUNTRIES.map((c) => (
-                          <option key={c.code} value={c.code}>
-                            {c.name} ({c.dial})
-                          </option>
-                        ))}
-                      </select>
-                      {country.hasDDD && (
-                        <div className="input-check-wrap ddd-wrap">
-                          <input className={`ddd-input ${dddValido ? "valid" : ""}`} type="tel" inputMode="numeric" value={ddd} onChange={handleDddChange} placeholder="DDD" aria-label="DDD" />
-                          {dddValido && <span className="input-check">✓</span>}
-                        </div>
-                      )}
-                      <div className="input-check-wrap numero-wrap">
-                        <input id="numero-live" className={`numero-input ${numeroValido ? "valid" : ""}`} type="tel" inputMode="numeric" value={numero} onChange={handleNumeroChange} placeholder={country.phoneDigits ? `${country.phoneDigits} dígitos` : "Número"} />
-                        {numeroValido && <span className="input-check">✓</span>}
-                      </div>
-                    </div>
-                  </div>
-
-                  <button type="submit" className="btn btn-primary btn-block" disabled={!formValido || status === "enviando"}>
-                    {status === "enviando" ? "Liberando vídeo..." : "Liberar o vídeo 2"}
-                  </button>
-                </form>
-                <p className="mitos-form-trust">🔒 Sem spam. Você também poderá receber conteúdos do Dr. Renato sobre meditação e bem-estar.</p>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {inscrito && (
-          <section className="section">
+        {hasLead && (
+          <section className="section" ref={mito2SectionRef}>
             <div className="container center" style={{ marginBottom: 18 }}>
               <p className="mitos-unlocked">Muito bem. Seu próximo vídeo está liberado.</p>
               <ProgressoMitos passo={2} />
               <h3 className="mitos-video-title">Mito #2 — "{MITOS_TITULOS[1]}"</h3>
             </div>
             <div className="container guarded-video-list" style={{ maxWidth: 860, width: "100%", margin: "0 auto" }}>
-              <GuardedVideo id="mito-2" src="/api/stream.php?f=mito2.mp4" label="Mito 2" onEnded={handleVideo2Ended} />
+              <GuardedVideo id="mito-2" src="/api/stream.php?f=mito2.mp4" label="Mito 2" autoPlay onEnded={handleVideo2Ended} />
             </div>
           </section>
         )}
