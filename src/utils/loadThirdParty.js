@@ -66,9 +66,15 @@ export function agendarScriptsTerceiros() {
 }
 
 // ---------------------------------------------------------------------
-// Tracking de progresso de vídeo (25/50/75/95%): evento custom pro Meta
-// Pixel + fetch pro back-end (log de IP em /api/video-log.php, já que a
-// Meta não devolve IP).
+// Tracking de progresso de vídeo: evento custom pro Meta Pixel + fetch pro
+// back-end (log de IP em /api/video-log.php, já que a Meta não devolve IP).
+//
+// Marcos de 5 em 5% (+ 1% cravado logo no play) — granularidade fina o
+// bastante pra enxergar em que % exato a galera desiste (bounce nos
+// primeiros segundos vs. abandono no meio do vídeo). Isso é até 21
+// chamadas por pessoa/vídeo, mas o back-end (video-log.php) faz UPSERT:
+// vira 1 linha só no arquivo, sempre atualizada com o maior % visto — o
+// log não cresce por causa da granularidade maior (ver comentário lá).
 //
 // O site troca de tela via React Router sem dar reload de página, e alguns
 // vídeos (mito-2, mito-3) só entram no DOM depois que o anterior termina —
@@ -76,9 +82,11 @@ export function agendarScriptsTerceiros() {
 // suficiente. Por isso: escaneia o que já existe e usa um MutationObserver
 // pra pegar vídeo que aparece depois.
 // ---------------------------------------------------------------------
-const MARCOS_PROGRESSO_VIDEO = [25, 50, 75, 95];
+const MARCOS_PROGRESSO_VIDEO = [1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100];
+const THROTTLE_LOG_MS = 1000; // no máx. 1 request/s por vídeo, mesmo se um seek cruzar vários marcos de uma vez
 const videosComListener = new WeakSet(); // evita registrar timeupdate 2x no mesmo elemento
-const tracked = {}; // tracked['video-meditacao'] = { 25: false, 50: false, 75: false, 95: false }
+const tracked = {}; // tracked['mito-1'] = { 1: false, 5: false, ..., 100: false }
+const ultimoLogEm = {}; // ultimoLogEm['mito-1'] = timestamp do último POST enviado (throttle)
 
 function criarFlagsDeVideo() {
   const flags = {};
@@ -106,25 +114,37 @@ function registrarProgressoVideo(videoId, marco) {
   // depois que o lead preenche o WhatsApp.
   const whatsapp = localStorage.getItem("lead_whatsapp") || "";
   const country = localStorage.getItem("lead_country") || "";
+  const corpo = JSON.stringify({ video: videoId, pct: marco, page: pathname, whatsapp, country });
 
-  // keepalive garante que a requisição saia mesmo se o usuário trocar de
-  // rota/aba logo em seguida. Erro de rede aqui não pode quebrar nada.
-  // POST /api/video-log.php (extensão explícita — GET /api/video-log sem
-  // ".php" dependia do Apache resolver a extensão sozinho via MultiViews
-  // e parou de gravar em produção sem nenhuma mudança de código aqui).
-  fetch("/api/video-log.php", {
-    method: "POST",
-    keepalive: true,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ video: videoId, pct: marco, page: pathname, whatsapp, country }),
-  }).catch(() => {});
+  // sendBeacon: o navegador garante o envio mesmo se a aba fechar ou a rota
+  // trocar logo em seguida (ao contrário de fetch, não depende do JS
+  // continuar vivo). POST /api/video-log.php (extensão explícita — GET
+  // /api/video-log sem ".php" dependia do Apache resolver sozinho via
+  // MultiViews e parou de gravar em produção sem mudança nenhuma de
+  // código). Fallback pra fetch+keepalive só em navegador sem sendBeacon.
+  const enviado =
+    typeof navigator.sendBeacon === "function" &&
+    navigator.sendBeacon("/api/video-log.php", new Blob([corpo], { type: "application/json" }));
+
+  if (!enviado) {
+    fetch("/api/video-log.php", {
+      method: "POST",
+      keepalive: true,
+      headers: { "Content-Type": "application/json" },
+      body: corpo,
+    }).catch(() => {});
+  }
 }
 
 // Handler leve de propósito: só aritmética e leitura de flag, nada de DOM
-// query aqui dentro — timeupdate dispara várias vezes por segundo.
+// query aqui dentro — timeupdate dispara várias vezes por segundo. Throttle
+// de 1s: se um seek cruzar vários marcos de uma vez, esse tick não loga
+// nada — os marcos ainda não logados ficam pendentes e saem no próximo
+// timeupdate, já fora da janela de throttle.
 function aoAtualizarTempoVideo(video) {
   const videoId = video.id;
   if (!videoId || !video.duration) return;
+  if (Date.now() - (ultimoLogEm[videoId] || 0) < THROTTLE_LOG_MS) return;
 
   const percentualAtual = (video.currentTime / video.duration) * 100;
   const flags = tracked[videoId];
@@ -132,6 +152,7 @@ function aoAtualizarTempoVideo(video) {
   for (const marco of MARCOS_PROGRESSO_VIDEO) {
     if (!flags[marco] && percentualAtual >= marco) {
       flags[marco] = true;
+      ultimoLogEm[videoId] = Date.now();
       registrarProgressoVideo(videoId, marco);
     }
   }
@@ -148,6 +169,23 @@ function observarVideo(video) {
   if (!tracked[video.id]) tracked[video.id] = criarFlagsDeVideo();
 
   video.addEventListener("timeupdate", () => aoAtualizarTempoVideo(video), { passive: true });
+
+  // Primeiro play: loga o marco de 1% na hora, sem esperar o timeupdate —
+  // pega quem dá play e sai/pausa antes do primeiro tick (bounce real, o
+  // motivo de baixar o marco inicial de 25% pra 1%). Dispara de novo em
+  // cada play (retomar depois de pausa também é "play"), mas a flag[1] só
+  // deixa passar uma vez.
+  video.addEventListener(
+    "play",
+    () => {
+      const flags = tracked[video.id];
+      if (flags[1]) return;
+      flags[1] = true;
+      ultimoLogEm[video.id] = Date.now();
+      registrarProgressoVideo(video.id, 1);
+    },
+    { passive: true }
+  );
 }
 
 // Chamado uma vez em main.jsx. Ao contrário do Pixel/GA, não adia pra

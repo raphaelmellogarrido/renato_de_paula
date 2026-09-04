@@ -30,22 +30,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['limpar'])) {
     exit;
 }
 
-// Lê o .txt, mais recente primeiro. Formato gravado por video-log.php:
-// "Y-m-d H:i:s | ip | video | percent% | page | whatsapp | country" — as
-// últimas duas colunas (whatsapp/country) foram adicionadas junto com a
-// gate "Desbloqueio Consciente" de /mitos; linhas gravadas antes disso só
-// têm as 5 primeiras, por isso o array_pad — sem isso ficariam sem coluna
-// pra exibir e quebrariam a tabela. trim() em cada coluna tira os espaços
-// ao redor do "|".
+// Lê 1 linha do .txt e devolve como array associativo — mesma função (e
+// mesma lógica de migração de formato antigo) que video-log.php usa pra
+// reescrever o arquivo; duplicada aqui de propósito porque essa página só
+// lê (nunca deveria puxar a lógica de escrita/lock por engano). Formatos:
+//   9 colunas (atual, pós-UPSERT, 04/09): last_seen | ip | video | max_percent% | page | whatsapp | country | all_milestones | user_agent
+//   7 colunas (legado): timestamp | ip | video | percent% | page | whatsapp | country
+//   5 colunas (bem antigo): timestamp | ip | video | percent% | page
+// Uma linha 7/5-colunas só aparece aqui se video-log.php ainda não rodou
+// nem uma vez após o deploy dessa mudança (ele migra tudo pro formato novo
+// na primeira reescrita) — o parse abaixo cobre isso sem quebrar a tabela.
+function parseLinhaLog(string $linha): ?array
+{
+    $colunas = array_map('trim', explode('|', $linha));
+
+    if (count($colunas) === 9) {
+        return [
+            'timestamp'   => $colunas[0],
+            'ip'          => $colunas[1],
+            'video'       => $colunas[2],
+            'max_percent' => (int) rtrim($colunas[3], '%'),
+            'page'        => $colunas[4],
+            'whatsapp'    => $colunas[5],
+            'country'     => $colunas[6],
+            'milestones'  => $colunas[7],
+            'user_agent'  => $colunas[8],
+        ];
+    }
+
+    if (count($colunas) === 7 || count($colunas) === 5) {
+        $percent = (int) rtrim($colunas[3], '%');
+        return [
+            'timestamp'   => $colunas[0],
+            'ip'          => $colunas[1],
+            'video'       => $colunas[2],
+            'max_percent' => $percent,
+            'page'        => $colunas[4],
+            'whatsapp'    => $colunas[5] ?? '',
+            'country'     => $colunas[6] ?? '',
+            'milestones'  => (string) $percent,
+            'user_agent'  => '',
+        ];
+    }
+
+    return null;
+}
+
+// last_seen DESC — não depende da ordem física do arquivo (uma linha
+// existente é atualizada no lugar, não movida pro fim, quando o UPSERT em
+// video-log.php acha uma pessoa que já tinha linha), por isso o sort
+// explícito aqui em vez de só inverter o array lido.
 $linhasTxt = [];
 if (file_exists($arquivoTxt)) {
     $linhasBrutas = file($arquivoTxt, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    foreach (array_reverse($linhasBrutas) as $linha) {
-        $colunas = array_map('trim', explode('|', $linha));
-        if (count($colunas) === 5 || count($colunas) === 7) {
-            $linhasTxt[] = array_pad($colunas, 7, '');
-        }
+    foreach ($linhasBrutas as $linhaBruta) {
+        $parsed = parseLinhaLog($linhaBruta);
+        if ($parsed !== null) $linhasTxt[] = $parsed;
     }
+    usort($linhasTxt, fn($a, $b) => strcmp($b['timestamp'], $a['timestamp']));
 }
 
 // Fallback MySQL, só se a tabela video_log existir: video-log.php hoje só
@@ -94,21 +136,50 @@ try {
   form.limpar { margin:12px 0 0; }
   button { background:#7f1d1d; color:#fff; border:none; padding:8px 14px; border-radius:6px; font-size:13px; cursor:pointer; }
   button:hover { background:#991b1b; }
+  .progresso-cel { display:flex; align-items:center; gap:8px; min-width:140px; }
+  .progresso-barra { position:relative; width:90px; height:8px; border-radius:4px; background:#2a2a2a; overflow:hidden; flex:none; }
+  .progresso-preenchido { position:absolute; inset:0 auto 0 0; height:100%; border-radius:4px; background:linear-gradient(90deg,#4ade80,#22c55e); }
+  .progresso-preenchido.is-baixo { background:linear-gradient(90deg,#f87171,#ef4444); }
+  .progresso-preenchido.is-medio { background:linear-gradient(90deg,#facc15,#f59e0b); }
+  .progresso-num { font-variant-numeric: tabular-nums; color:#ccc; }
+  .marcos { color:#888; font-size:12px; max-width:220px; overflow:hidden; text-overflow:ellipsis; }
+  .ua { color:#777; font-size:11px; max-width:220px; overflow:hidden; text-overflow:ellipsis; }
   @media (max-width: 480px) { th, td { padding:6px 8px; font-size:12px; } }
 </style>
 <body>
   <h1>Logs de vídeo — Clube Presença</h1>
   <p class="meta">
-    <?= count($linhasTxt) ?> linha(s) no .txt<?= $temTabelaMysql ? ' · ' . count($linhasMysql) . ' linha(s) no MySQL' : '' ?>
+    <?= count($linhasTxt) ?> pessoa(s)/vídeo no .txt · ordenado por última atividade<?= $temTabelaMysql ? ' · ' . count($linhasMysql) . ' linha(s) no MySQL' : '' ?>
   </p>
 
-  <h2>video-log.txt (mais recente primeiro)</h2>
+  <h2>video-log.txt (última atividade primeiro)</h2>
   <?php if ($linhasTxt): ?>
     <div class="tabela-wrap">
       <table>
-        <tr><th>Data</th><th>IP</th><th>Vídeo</th><th>%</th><th>Página</th><th>WhatsApp</th><th>País</th></tr>
-        <?php foreach ($linhasTxt as $colunas): ?>
-          <tr><?php foreach ($colunas as $col): ?><td><?= htmlspecialchars($col) ?></td><?php endforeach; ?></tr>
+        <tr><th>Última atividade</th><th>IP</th><th>Vídeo</th><th>Progresso máx.</th><th>Página</th><th>WhatsApp</th><th>País</th><th>Marcos</th><th>User-Agent</th></tr>
+        <?php foreach ($linhasTxt as $linha): ?>
+          <?php
+            $pct = max(0, min(100, (int) $linha['max_percent']));
+            $classeCor = $pct >= 75 ? '' : ($pct >= 25 ? 'is-medio' : 'is-baixo');
+          ?>
+          <tr>
+            <td><?= htmlspecialchars($linha['timestamp']) ?></td>
+            <td><?= htmlspecialchars($linha['ip']) ?></td>
+            <td><?= htmlspecialchars($linha['video']) ?></td>
+            <td>
+              <div class="progresso-cel">
+                <div class="progresso-barra">
+                  <div class="progresso-preenchido <?= $classeCor ?>" style="width:<?= $pct ?>%"></div>
+                </div>
+                <span class="progresso-num"><?= $pct ?>%</span>
+              </div>
+            </td>
+            <td><?= htmlspecialchars($linha['page']) ?></td>
+            <td><?= htmlspecialchars($linha['whatsapp']) ?></td>
+            <td><?= htmlspecialchars($linha['country']) ?></td>
+            <td class="marcos" title="<?= htmlspecialchars($linha['milestones']) ?>"><?= htmlspecialchars($linha['milestones']) ?></td>
+            <td class="ua" title="<?= htmlspecialchars($linha['user_agent']) ?>"><?= htmlspecialchars($linha['user_agent']) ?></td>
+          </tr>
         <?php endforeach; ?>
       </table>
     </div>
