@@ -186,6 +186,19 @@ if ($video !== '' && preg_match('/^\d{1,3}$/', $percent) && $page !== '') {
     // fica como registro do que rolou antes do lead, sem ser reescrita.
     $whatsappChave = $whatsapp;
 
+    // 'lead-capturado' (POST feito por handleLeadSubmit em Meditacao.jsx na
+    // hora que a gate "Desbloqueio Consciente" captura o WhatsApp) NÃO vira
+    // linha própria (04/09) — antes disso, o mesmo segundo gravava 2 linhas
+    // pra mesma pessoa (lead-capturado 100% + mito-2 1% do autoplay logo em
+    // seguida). Agora casa direto no registro de mito-1 do mesmo IP (que já
+    // existe com os marcos 1,5,10...95/100 de quem assistiu até o fim) e só
+    // preenche phone/country + garante o marco 100 nos milestones. $ehLead
+    // casa por ip+video (ignorando whatsapp, que ainda tá vazio no registro
+    // anônimo de mito-1 nesse ponto); se por algum motivo não achar a linha
+    // de mito-1 (edge case), cria ela — nunca uma linha 'lead-capturado'.
+    $ehLeadCapturado = $video === 'lead-capturado';
+    $videoAlvo = $ehLeadCapturado ? 'mito-1' : $video;
+
     // 'c+': abre (cria se não existir) sem truncar, permite ler e escrever
     // no mesmo handle. flock(LOCK_EX) travado durante TODO o
     // read-modify-write — sem isso, dois alunos assistindo ao mesmo tempo
@@ -207,14 +220,19 @@ if ($video !== '' && preg_match('/^\d{1,3}$/', $percent) && $page !== '') {
 
         $encontrou = false;
         foreach ($linhas as &$linha) {
-            $mesmaPessoa = $linha['ip'] === $ip
-                && $linha['video'] === $video
-                && $linha['whatsapp'] === $whatsappChave;
+            $mesmaPessoa = $ehLeadCapturado
+                ? ($linha['ip'] === $ip && $linha['video'] === $videoAlvo)
+                : ($linha['ip'] === $ip && $linha['video'] === $video && $linha['whatsapp'] === $whatsappChave);
             if ($mesmaPessoa) {
                 $linha['max_percent'] = max($linha['max_percent'], $percentInt);
                 $linha['milestones'] = mesclarMarcos($linha['milestones'], $percentInt);
                 $linha['timestamp'] = $agora; // last_seen
                 $linha['page'] = $page;
+                // whatsapp só é sobrescrito quando vem preenchido (caso do
+                // lead-capturado achando a linha anônima de mito-1) — fora
+                // disso a chave já garante que $whatsappChave === o que já
+                // tava na linha, então não muda nada.
+                if ($whatsapp !== '') $linha['whatsapp'] = $whatsapp;
                 if ($country !== '') $linha['country'] = $country;
                 if ($userAgent !== '') $linha['user_agent'] = $userAgent;
                 $encontrou = true;
@@ -227,7 +245,7 @@ if ($video !== '' && preg_match('/^\d{1,3}$/', $percent) && $page !== '') {
             $linhas[] = [
                 'timestamp'   => $agora,
                 'ip'          => $ip,
-                'video'       => $video,
+                'video'       => $videoAlvo,
                 'max_percent' => $percentInt,
                 'page'        => $page,
                 'whatsapp'    => $whatsapp,

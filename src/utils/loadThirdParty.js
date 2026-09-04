@@ -178,6 +178,15 @@ function observarVideo(video) {
   video.addEventListener(
     "play",
     () => {
+      // GuardedVideo marca esse atributo antes de chamar .play() programaticamente
+      // (autoplay, ex: mito-2 liberado logo após o lead em /mitos) — ignora só essa
+      // 1ª vez pra não logar o marco 1% como se fosse o usuário assistindo de
+      // verdade (ver comentário em GuardedVideo.jsx). Um play manual depois
+      // (pausar e apertar play de novo) não tem essa flag e loga normalmente.
+      if (video.dataset.autoplayIgnorarLog) {
+        delete video.dataset.autoplayIgnorarLog;
+        return;
+      }
       const flags = tracked[video.id];
       if (flags[1]) return;
       flags[1] = true;

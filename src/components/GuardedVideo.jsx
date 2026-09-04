@@ -31,6 +31,15 @@ function GuardedVideo({ src, onEnded, label, autoPlay = false, onTimeUpdate, per
   useEffect(() => {
     if (!autoPlay) return
     const v = videoRef.current
+    // Marca o elemento antes de chamar .play() programaticamente — o evento
+    // nativo "play" do <video> é idêntico entre autoplay e um clique real do
+    // usuário, então sem essa marcação o tracking de vídeo (loadThirdParty.js)
+    // contaria esse autoplay como "usuário assistiu" e logaria o marco 1% na
+    // mesma hora de outro evento que disparou esse autoplay (ex: mito-2
+    // liberado just depois do lead-capturado em /mitos — 2 linhas coincidindo
+    // no log). O listener de play lê essa flag e ignora só essa 1ª vez; um
+    // play/pause manual depois do usuário loga normalmente.
+    if (v) v.dataset.autoplayIgnorarLog = '1'
     const resultado = v?.play()
     if (resultado?.catch) resultado.catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps

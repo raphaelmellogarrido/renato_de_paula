@@ -90,6 +90,25 @@ if (file_exists($arquivoTxt)) {
     usort($linhasTxt, fn($a, $b) => strcmp($b['timestamp'], $a['timestamp']));
 }
 
+// Evita telefone repetido na tela quando ainda sobra duplicata antiga no
+// .txt (linhas gravadas antes do UPSERT de lead-capturado, 04/09, cada uma
+// virando linha própria em vez de casar com o mito-1) — mesmo IP+telefone
+// aparecendo em mais de uma linha. Mostra o telefone só na linha mais
+// recente daquele IP+telefone (a primeira que aparece, já que $linhasTxt
+// está ordenado por last_seen DESC) e deixa em branco nas demais — só
+// afeta a exibição, não reescreve o arquivo.
+$telefonesJaMostrados = [];
+foreach ($linhasTxt as &$linha) {
+    if ($linha['whatsapp'] === '') continue;
+    $chave = $linha['ip'] . '|' . $linha['whatsapp'];
+    if (isset($telefonesJaMostrados[$chave])) {
+        $linha['whatsapp'] = '';
+    } else {
+        $telefonesJaMostrados[$chave] = true;
+    }
+}
+unset($linha);
+
 // Fallback MySQL, só se a tabela video_log existir: video-log.php hoje só
 // grava no .txt (ver comentário lá — a Hostinger apaga o .txt a cada
 // `git push`+deploy), mas se algum dia passar a gravar também no banco,

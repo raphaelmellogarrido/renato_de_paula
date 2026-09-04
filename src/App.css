@@ -664,30 +664,48 @@
   margin: 0 auto;
 }
 
+/* Bandeira (BR) + input +55 lado a lado, mesma altura exata — a lib por
+   padrão só define height em .react-international-phone-country-selector-button
+   direto (1 classe), enquanto o container escopado ".react-international-phone-
+   -input-container .react-international-phone-country-selector-button" (2
+   classes) reseta margin/border-radius com a mesma especificidade das nossas
+   regras antigas (1 classe aqui embaixo), então dependendo da ordem de import
+   do CSS o "margin-right: -1px" e o radius quadrado da lib podiam vencer e
+   descolar visualmente o quadrado da bandeira do input. Point de correção:
+   align-items: stretch no container + height/box-sizing/margin com !important
+   e seletor tão específico quanto o da lib nos dois elementos, pra nunca mais
+   depender de ordem de import. */
 .phone-lead-input .react-international-phone-input-container {
-  gap: 10px;
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
 }
 
-.phone-lead-input .react-international-phone-country-selector-button {
-  height: 48px;
-  border-radius: 999px;
-  border-color: var(--border);
+.phone-lead-input .react-international-phone-input-container .react-international-phone-country-selector-button {
+  height: 48px !important;
+  box-sizing: border-box !important;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 999px !important;
   background: #fff;
   padding: 0 10px;
-  margin-right: 0;
+  margin: 0 !important;
 }
 
 .phone-lead-input .react-international-phone-country-selector-button:hover {
   border-color: #8b7355;
 }
 
-.phone-lead-input .react-international-phone-input {
+.phone-lead-input .react-international-phone-input-container .react-international-phone-input {
   flex: 1;
   min-width: 0;
-  height: 48px;
+  height: 48px !important;
+  box-sizing: border-box !important;
   padding: 0 18px;
-  border-radius: 999px;
-  border-color: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 999px !important;
+  margin: 0 !important;
   color: var(--text-h);
   font-size: 15px;
 }
