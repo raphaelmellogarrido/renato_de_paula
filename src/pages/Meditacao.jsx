@@ -367,18 +367,12 @@ function Meditacao() {
 
             <AnimatePresence>
               {showGate && !hasLead && (
-                <motion.div
-                  className="desbloqueio-consciente"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.4, ease: "easeOut" }}
-                >
+                <motion.div className="desbloqueio-consciente" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.4, ease: "easeOut" }}>
                   <div className="desbloqueio-consciente-inner">
                     <h3 className="desbloqueio-consciente-titulo">Mito #1 desvendado ✓</h3>
                     <p className="desbloqueio-consciente-subtitulo">Você já entendeu por que a inquietação não é sua culpa.</p>
                     <p className="desbloqueio-consciente-pergunta">Quer desbloquear o Mito #2 agora?</p>
-                    <p className="desbloqueio-consciente-teaser">No próximo eu te mostro por que "você precisa de muito tempo disponível para meditar" é a maior mentira — e como 5 minutos já mudam seu dia.</p>
+                    <p className="desbloqueio-consciente-teaser">No próximo eu derrubo a crença que mais faz gente desistir da meditação: "para meditar é preciso parar de pensar." Você vai entender por que a mente acelerada não é um problema — é o próprio sintoma que te trouxe até aqui.</p>
                     <PhoneLeadInput onSubmit={handleLeadSubmit} />
                   </div>
                 </motion.div>
