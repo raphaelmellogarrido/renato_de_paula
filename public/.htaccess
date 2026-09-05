@@ -7,5 +7,4 @@
   RewriteRule. /index.html [L]
 </IfModule>
 
-# Desativa MultiViews que causa 503 na Hostinger
 Options -MultiViews
