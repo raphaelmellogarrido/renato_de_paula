@@ -49,6 +49,13 @@ public/uploads/posts/*
 # já não corresponde a nada real — mantida só de referência histórica.
 public/api/video-log.txt
 
+# Quarentena da limpeza de 04-05/09 (arquivos órfãos/aposentados movidos
+# via `git mv`, não deletados — ver LIMPEZA_RELATORIO.md). Fica fora do
+# Git de propósito: se precisar restaurar algo, o histórico do commit que
+# fez o mv ainda tem o conteúdo; esta pasta é só uma área de rascunho local
+# pra não sumir do disco de uma vez.
+_ARQUIVO_MORTO*
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
